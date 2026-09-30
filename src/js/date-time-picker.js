@@ -2938,8 +2938,6 @@ export default class DateTimePicker extends BaseComponent {
             text: this.constructor.lang.set,
             attributes: {
                 'type': 'button',
-                'data-ui-dismiss': 'modal',
-
             },
         });
 

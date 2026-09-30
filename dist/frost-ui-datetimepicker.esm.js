@@ -2206,10 +2206,7 @@ var DateTimePicker = class extends BaseComponent {
 		this.#setBtn = $.create("button", {
 			class: this.constructor.classes.modalBtnPrimary,
 			text: this.constructor.lang.set,
-			attributes: {
-				"type": "button",
-				"data-ui-dismiss": "modal"
-			}
+			attributes: { "type": "button" }
 		});
 		$.append(modalFooter, this.#setBtn);
 	}

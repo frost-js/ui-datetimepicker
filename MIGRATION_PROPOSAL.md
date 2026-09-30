@@ -14,24 +14,34 @@ Numbers refer to the main sections below. Section 9 summarizes acceptance and do
 | --- | --- |
 | 1. Dependencies and package metadata | Committed in `c044075`: 4.0.0 metadata and lockfile, runtime peers, `.npmrc`/`.gitignore`, and shared lint configuration. |
 | 2. Vite and distribution | Committed in `c044075`: Vite ESM/UMD builds, source maps, and `browser.js`. |
-| 3. JavaScript component migration | The initial UI 4/DateTime 8 migration was also included in `c044075`. Uncommitted changes add form reset synchronization, owned-resource cleanup, transition guards, modal draft/focus handling, accessibility states, and selection fixes. Final behavioral validation remains outstanding. |
-| 4. Sass and styling | Uncommitted: Sass modules, UI-prefixed CSS variables, current UI color tokens, logical RTL styles, and the matching 992px wide-layout breakpoint. |
-| 5. Playwright and Codecov | Deferred. The basic harness and 43 tests per browser already exist in `c044075`. The mistakenly added uncommitted test expansion, Monocart dependency, and coverage configuration have been removed. |
-| 6. CI and publishing | Pending. |
+| 3. JavaScript component migration | Committed in `c044075` and `b178ee9`: UI 4/DateTime 8 APIs, private class state, form reset synchronization, owned-resource cleanup, transition guards, modal draft/focus handling, accessibility states, and selection fixes. Section 5 adds a regression fix for duplicate modal Set dismissal. |
+| 4. Sass and styling | Committed in `b178ee9`: Sass modules, UI-prefixed CSS variables, current UI color tokens, logical RTL styles, and the matching 992px wide-layout breakpoint. |
+| 5. Playwright and Codecov | Implemented: reference-style method/event/option suites and separate form/modal/format/style files, deterministic browser clock, source-mapped Monocart reports and Codecov configuration. All 204 cases pass in Chromium, Firefox, and WebKit (612 total). |
+| 6. CI and publishing | Implemented: Node 20/22/24 and Chromium/Firefox/WebKit CI matrix, OIDC coverage upload, and a release-triggered npm provenance workflow. Remote service configuration remains to be verified before release. |
 | 7. README and demos | Pending. |
 
-Validation recorded for commit `c044075`: build, JavaScript/SCSS lint, Sass-unused audit, and package-content inspection passed. **43 tests passed in each of Chromium, Firefox, and WebKit (129 total)**, including all four JavaScript bundle variants. This result predates the uncommitted section 3–4 changes. Node 20/22 matrix runs remain part of later CI work; local validation used Node 24.
+Validation recorded for commit `c044075`: build, JavaScript/SCSS lint, Sass-unused audit, and package-content inspection passed. **43 tests passed in each of Chromium, Firefox, and WebKit (129 total)**, including all four JavaScript bundle variants. This result predates the section 3–4 changes in `b178ee9`. Node 20/22 matrix runs remain part of later CI work; local validation used Node 24.
+
+Section 5–6 validation: **612 browser tests pass** on Node 24 with no skipped tests or retries. JavaScript/SCSS lint, the Sass-unused audit, workflow/Codecov YAML parsing, and `npm pack --dry-run` pass. The package contains all 12 distribution artifacts and excludes tests, reports, and workflows. The suite uses locator assertions for DOM behavior and contains no object-shape `.toEqual()` assertions or arbitrary timeout waits. It does not duplicate UI's light/dark theme tests.
+
+A clean `npm ci --offline` from the populated npm cache also passed. All 12 tracked distribution files rebuilt byte-for-byte identically afterward, and a subsequent Chromium coverage run passed all 204 tests. Monocart reports **95.32% source lines, 94.12% statements, 87.52% branches, and 97.92% functions**. The LCOV export counts executable lines separately: **1,420 / 1,509 (94.10%)**, within the configured 95% target's five-percentage-point allowance. Reports are generated at `coverage/index.html` and `coverage/lcov.info`; the only source exclusion is the erased `browser.js` re-export, matching SelectMenu. Actual Codecov service status awaits the first CI upload.
 
 Implementation decisions and remaining notes:
 
 - Runtime peers are UI 4.0.0, fQuery 5.0.0, and DateTime 8.1.3. `npx sort-package-json` was run. `postcss-cli` remains on 11 to preserve UI's Node baseline.
 - The shared three-day release-age policy rejected Sass 1.105.1 at installation time. The manifest uses `sass-embedded: ^1.105.0` and `vite: ^8.3.0`; the lockfile resolved Sass 1.105.0 and Vite 8.3.1.
+- The coverage manifest uses `monocart-reporter: ^2.13.1`, locked to 2.13.1. Registry metadata checked on 1 October shows 2.14.0 was published on 29 September at 16:37 UTC, so it is not yet eligible under the same three-day policy. No release-age exception was added.
 - Fixed multi-date clearing, numeric epoch zero, constructor string bounds with a derived format, invalid Date/DateTime/numeric inputs, format-cache hour-cycle collisions, explicit 12/24-hour formats, and unsafe stepping. Invalid `minuteStepping` now throws a `RangeError` for values outside integer 1–60; multi-date setters require an array or null and reject scalar input with a `TypeError`.
 - Strings intentionally use the configured format and `altFormats`. The ineffective general-string fallback was removed; ISO strings require a matching configured format or conversion to a Date/DateTime before calling the picker.
-- Invalid stepping and unsupported formats release the base registration when initialization fails. Broader constructor-callback and lifecycle cleanup is included in the uncommitted section 3 work.
+- Invalid stepping and unsupported formats release the base registration when initialization fails. Constructor-callback and lifecycle cleanup is included in `b178ee9`.
 - The test server defaults to port 3001 and accepts a `PORT` override consistently in the server and Playwright configuration. Port 3001's initial availability check was slow in this environment; the remaining checks used `PORT=34567`.
 - Section 4 replaces Sass `@import` with `@use`/`@forward`, removing that deprecation warning.
-- Additional issues encountered during section 3: returning input focus after hiding could reopen the popup; an opening input click could reach UI 4's modal backdrop handler and immediately close the modal. The uncommitted source corrects focus ordering and stops propagation of modal-opening clicks. The interrupted test expansion did not establish a passing final behavioral suite.
+- Additional issues encountered during section 3: returning input focus after hiding could reopen the popup; an opening input click could reach UI 4's modal backdrop handler and immediately close the modal. Commit `b178ee9` corrects focus ordering and stops propagation of modal-opening clicks.
+- Section 5 found and fixed **duplicate modal Set dismissal**: Set had both a picker click handler and `data-ui-dismiss="modal"`. A canceled first hide was followed by UI's second hide, discarding the draft. Set now uses only the picker handler; Cancel retains UI's dismiss attribute.
+- **Inherited UI 4 focus-trap limitation:** forward Tab from a modal at the end of the document can move focus to browser chrome when there is no following page control. UI's trap redirects `focusin` from outside page controls but does not intercept this browser-boundary case. Reproduced in Chromium; the integration suite verifies forward/reverse redirection between page controls and nested-modal focus restoration. Fixing UI's shared focus trap is outside this repository's scope.
+- The clean install reports deprecated transitive development dependencies: `clean-css-cli → glob@7 → inflight`. This comes from the CSS minifier also used by the reference projects; no dependency override or minifier replacement was introduced in sections 5–6.
+
+Section 6 release setup still requires the repository owner to verify Codecov activation for `elusivecodes/FrostUI-DateTimePicker` and configure npm trusted publishing for `@fr0st/ui-datetimepicker` with repository `elusivecodes/FrostUI-DateTimePicker` and workflow `publish.yml`. The workflows use OIDC; no static publishing token was added. Workflow execution, Codecov upload, and npm publication have not been performed locally.
 
 ## Reference projects and precedence
 

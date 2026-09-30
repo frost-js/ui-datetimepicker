@@ -2238,10 +2238,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.#setBtn = _fr0st_query.default.create("button", {
 				class: this.constructor.classes.modalBtnPrimary,
 				text: this.constructor.lang.set,
-				attributes: {
-					"type": "button",
-					"data-ui-dismiss": "modal"
-				}
+				attributes: { "type": "button" }
 			});
 			_fr0st_query.default.append(modalFooter, this.#setBtn);
 		}

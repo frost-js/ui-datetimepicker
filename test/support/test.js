@@ -1,10 +1,19 @@
+import process from 'node:process';
 import { test as base, expect } from '@playwright/test';
+import { addCoverageReport } from 'monocart-reporter';
 import { setupClock } from '../setup/browser.js';
+
+const collectCoverage = process.env.FROST_UI_DATETIMEPICKER_COVERAGE === 'true';
 
 const test = base.extend({
     entry: ['/', { option: true }],
     uiPage: [
-        async ({ page, entry }, use) => {
+        async ({ page, entry }, use, testInfo) => {
+            const errors = [];
+            page.on('pageerror', (error) => errors.push(error.message));
+            if (collectCoverage) {
+                await page.coverage.startJSCoverage({ resetOnNavigation: false });
+            }
             await setupClock(page);
             await page.goto(entry, { waitUntil: 'load' });
             await page.waitForFunction((_) => window.UI?.DateTimePicker);
@@ -27,6 +36,10 @@ const test = base.extend({
             });
 
             await use();
+            if (collectCoverage) {
+                await addCoverageReport(await page.coverage.stopJSCoverage(), testInfo);
+            }
+            expect(errors, 'Uncaught browser errors').toHaveLength(0);
         },
         { auto: true },
     ],
