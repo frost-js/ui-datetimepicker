@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frost UI DateTimePicker Demo</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui.min.css">
+    <link rel="stylesheet" href="../dist/frost-ui-datetimepicker.css">
+    <link rel="stylesheet" href="assets/demo.css">
+    <script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fr0st/datetime@8/dist/frost-datetime.min.js"></script>
+    <script src="../dist/frost-ui-datetimepicker.js"></script>
+    <script src="assets/demo.js" defer></script>
+</head>
+
+<body>
+    <header class="navbar bg-glass sticky-top border-bottom">
+        <div class="container d-flex align-items-center justify-content-between gap-3">
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="#top">
+                <span class="badge bg-primary bg-gradient shadow-glow fs-5" aria-hidden="true">F</span>
+                <span>DateTimePicker</span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <label class="small fw-bold mb-0" for="demo-theme">Theme</label>
+                <select class="input-outline input-sm w-auto rounded-pill" id="demo-theme">
+                    <option value="system">System</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <main class="container py-4 py-lg-5" id="top">
+        <section class="card border-0 overflow-hidden shadow-lg mb-5">
+            <div class="row g-0 align-items-stretch">
+                <div class="col-lg-7 d-flex align-items-center bg-ambient">
+                    <div class="p-4 p-md-5">
+                        <span class="badge bg-primary-subtle text-primary-subtle mb-3">DateTimePicker v4 · Frost UI v4</span>
+                        <h1 class="display-2 mb-4">Make time for <span class="text-gradient">what’s next.</span></h1>
+                        <p class="lead text-body-secondary mb-4">Choose a day, plan several dates, or confirm an appointment. Explore calendars, time zones, and native forms.</p>
+                        <nav class="d-flex flex-wrap gap-2" aria-label="Demo sections">
+                            <a class="btn btn-primary ripple" href="#styles">Inputs</a>
+                            <a class="btn btn-secondary ripple" href="#formats">Formats</a>
+                            <a class="btn btn-outline-primary ripple" href="#selection">Selection</a>
+                            <a class="btn btn-outline-primary ripple" href="#layouts">Layouts</a>
+                            <a class="btn btn-outline-primary ripple" href="#forms">Forms</a>
+                            <a class="btn btn-outline-primary ripple" href="#methods-events">API &amp; events</a>
+                        </nav>
+                    </div>
+                </div>
+                <div class="col-lg-5 d-flex align-items-center bg-glass">
+                    <div class="p-4 p-md-5 w-100">
+                        <label class="fw-bold mb-2" for="hero-date">Your next appointment</label>
+                        <input class="input-outline" id="hero-date" type="text" autocomplete="off"
+                            data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd HH:mm"
+                            data-ui-minute-stepping="5" data-ui-show-close="true" data-ui-use-current="true" aria-describedby="hero-help">
+                        <p class="form-text mb-0" id="hero-help">Starts at the current time. Choose a date, then a time in five-minute steps. Format: YYYY-MM-DD HH:mm.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="styles">
+            <header class="border-bottom pb-3 mb-4">
+                <h2 class="h3 mb-1">Filled and outline inputs</h2>
+                <p class="text-body-secondary mb-0">The original input keeps its Frost UI style and size.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Filled</h3>
+                    <label class="mb-2" for="filled-date">Departure date</label>
+                    <input class="input-filled" id="filled-date" type="text" placeholder="YYYY-MM-DD" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd">
+                    <p class="form-text mb-0">Pick a day or type the date.</p>
+                </div></div>
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Outline</h3>
+                    <label class="mb-2" for="outline-date">Return date</label>
+                    <input class="input-outline" id="outline-date" type="text" placeholder="YYYY-MM-DD" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd">
+                    <p class="form-text mb-0">Select a day to close the calendar.</p>
+                </div></div>
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Small</h3>
+                    <label class="mb-2" for="small-date">Reminder date</label>
+                    <input class="input-outline input-sm" id="small-date" type="text" placeholder="YYYY-MM-DD" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd">
+                </div></div>
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Large</h3>
+                    <label class="mb-2" for="large-date">Celebration date</label>
+                    <input class="input-filled input-lg" id="large-date" type="text" placeholder="YYYY-MM-DD" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd">
+                </div></div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="formats">
+            <header class="border-bottom pb-3 mb-4">
+                <h2 class="h3 mb-1">Dates, times, and places</h2>
+                <p class="text-body-secondary mb-0">The format determines which controls appear. Locale sets calendar labels and week starts.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Month and year</h3>
+                    <label class="mb-2" for="month-date">Reporting month</label>
+                    <input class="input-outline mb-3" id="month-date" type="text" placeholder="YYYY-MM" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM">
+                    <label class="mb-2" for="year-date">Planning year</label>
+                    <input class="input-outline" id="year-date" type="text" placeholder="YYYY" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="yyyy">
+                </div></div>
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">24-hour and 12-hour clocks</h3>
+                    <label class="mb-2" for="time-24">Arrival time · 24-hour</label>
+                    <input class="input-filled mb-3" id="time-24" type="text" value="14:30" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="HH:mm" data-ui-show-close="true">
+                    <label class="mb-2" for="time-12">Departure time · 12-hour</label>
+                    <input class="input-filled" id="time-12" type="text" value="04:30 pm" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="hh:mm a" data-ui-show-close="true">
+                </div></div>
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Localized calendars</h3>
+                    <label class="mb-2" for="locale-us">US date · MM/DD/YYYY</label>
+                    <input class="input-outline mb-3" id="locale-us" type="text" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="MM/dd/yyyy" data-ui-locale="en-US">
+                    <label class="mb-2" for="locale-fr">French date · DD/MM/YYYY</label>
+                    <input class="input-outline" id="locale-fr" type="text" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="dd/MM/yyyy" data-ui-locale="fr-FR">
+                    <p class="form-text mb-0">Sunday and Monday week starts. Navigation controls keep this demo’s English labels.</p>
+                </div></div>
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">One instant, two time zones</h3>
+                    <label class="mb-2" for="zone-utc">UTC · YYYY-MM-DD HH:mm</label>
+                    <input class="input-outline mb-3" id="zone-utc" type="text" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd HH:mm" data-ui-time-zone="UTC">
+                    <label class="mb-2" for="zone-brisbane">Brisbane · YYYY-MM-DD HH:mm</label>
+                    <input class="input-outline" id="zone-brisbane" type="text" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd HH:mm" data-ui-time-zone="Australia/Brisbane">
+                    <button class="btn btn-outline-primary ripple mt-3 align-self-start" id="sync-zones" type="button">Set both to now</button>
+                    <p class="form-text mb-0">Start from the same instant, then edit either appointment independently.</p>
+                </div></div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="selection">
+            <header class="border-bottom pb-3 mb-4">
+                <h2 class="h3 mb-1">Selection and availability</h2>
+                <p class="text-body-secondary mb-0">Choose several dates, accept alternate input formats, or limit available appointments.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Multiple dates</h3>
+                    <label class="mb-2" for="multi-date">Workshop days</label>
+                    <input class="input-outline" id="multi-date" type="text" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd" data-ui-multi-date="true"
+                        data-ui-multi-date-separator="; " aria-describedby="multi-help">
+                    <p class="form-text mb-0" id="multi-help">Toggle dates to add or remove them. Values are sorted and separated with a semicolon and space.</p>
+                </div></div>
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Alternate input formats</h3>
+                    <label class="mb-2" for="alternate-date">Invoice date</label>
+                    <input class="input-outline" id="alternate-date" type="text" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd" data-ui-alt-formats='["dd/MM/yyyy"]'
+                        aria-describedby="alternate-help">
+                    <p class="form-text mb-0" id="alternate-help">Type YYYY-MM-DD or DD/MM/YYYY. Leaving the field normalizes to YYYY-MM-DD.</p>
+                </div></div>
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">The next 30 days</h3>
+                    <label class="mb-2" for="limited-date">Booking date</label>
+                    <input class="input-filled" id="limited-date" type="text" autocomplete="off" data-ui-toggle="datetimepicker">
+                    <p class="form-text mb-0" id="limit-help"></p>
+                </div></div>
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Working hours</h3>
+                    <label class="mb-2" for="work-date">Weekday appointment</label>
+                    <input class="input-filled" id="work-date" type="text" autocomplete="off" data-ui-toggle="datetimepicker"
+                        aria-describedby="work-help">
+                    <p class="form-text mb-0" id="work-help">Monday–Friday, 09:00–16:45, in 15-minute steps. The 15th is marked as a planning day.</p>
+                </div></div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="layouts">
+            <header class="border-bottom pb-3 mb-4">
+                <h2 class="h3 mb-1">Inline calendars and modal confirmation</h2>
+                <p class="text-body-secondary mb-0">Keep a calendar visible, stack date/time panels, or confirm a draft before saving.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-lg-8"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Date and time together</h3>
+                    <p class="text-body-secondary" id="inline-help">The two panels sit side by side on wide screens and stack below 992px.</p>
+                    <label class="visually-hidden" for="inline-date">Inline appointment</label>
+                    <input id="inline-date" type="text" data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd HH:mm"
+                        data-ui-inline="true" data-ui-side-by-side="true" data-ui-show-toolbar="true" aria-describedby="inline-help">
+                    <output class="small text-body-secondary mt-3" id="inline-value" for="inline-date" aria-live="polite"></output>
+                </div></div>
+                <div class="col-lg-4"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Always stacked</h3>
+                    <p class="text-body-secondary" id="vertical-help">A compact calendar and time panel.</p>
+                    <label class="visually-hidden" for="vertical-date">Stacked appointment</label>
+                    <input id="vertical-date" type="text" data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd HH:mm"
+                        data-ui-inline="true" data-ui-side-by-side="true" data-ui-vertical="true" aria-describedby="vertical-help">
+                </div></div>
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Confirm with Set</h3>
+                    <label class="mb-2" for="modal-date">Confirmed appointment</label>
+                    <input class="input-outline" id="modal-date" type="text" autocomplete="off" data-ui-toggle="datetimepicker"
+                        data-ui-format="yyyy-MM-dd HH:mm" data-ui-modal="true" data-ui-show-toolbar="true" aria-describedby="modal-help">
+                    <p class="form-text mb-0" id="modal-help">Set commits your draft. Cancel, Escape, or the backdrop keeps the original value.</p>
+                </div></div>
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Inside another modal</h3>
+                    <p class="text-body-secondary">Open the editor, then its date picker. Closing the picker returns focus to the editor. Use Close editor to dismiss the static-backdrop dialog.</p>
+                    <button class="btn btn-primary ripple align-self-start" type="button" data-ui-toggle="modal" data-ui-target="#booking-modal">Open booking editor</button>
+                    <label class="mb-2 mt-4" for="mobile-date">Automatic mobile modal</label>
+                    <input class="input-outline" id="mobile-date" type="text" autocomplete="off" data-ui-toggle="datetimepicker"
+                        data-ui-format="yyyy-MM-dd" data-ui-mobile-modal="true">
+                    <p class="form-text mb-0">A popup on desktop; a modal on supported mobile user agents.</p>
+                </div></div>
+                <div class="col-12"><div class="card card-body p-4" dir="rtl">
+                    <h3 class="h5">Right-to-left layout</h3>
+                    <label class="mb-2" for="rtl-date">Date · YYYY-MM-DD</label>
+                    <input class="input-outline" id="rtl-date" type="text" autocomplete="off" data-ui-toggle="datetimepicker"
+                        data-ui-format="yyyy-MM-dd" data-ui-position="start">
+                    <p class="form-text mb-0">Alignment and the today marker follow the surrounding direction.</p>
+                </div></div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="forms">
+            <header class="border-bottom pb-3 mb-4">
+                <h2 class="h3 mb-1">Native form submission and reset</h2>
+                <p class="text-body-secondary mb-0">The original input carries the submitted value. Reset restores its initial value and calendar selection.</p>
+            </header>
+            <div class="card card-body p-4 mb-4">
+                <form id="booking-form">
+                    <label class="mb-2" for="form-date">Booking day (required)</label>
+                    <input class="input-outline" id="form-date" name="bookingDate" type="text" required autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd" aria-describedby="form-help">
+                    <p class="form-text" id="form-help">Choose a valid day or enter YYYY-MM-DD. Submit previews the form value locally.</p>
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <button class="btn btn-primary ripple" type="submit">Preview submission</button>
+                        <button class="btn btn-secondary ripple" type="reset">Reset form</button>
+                        <button class="btn btn-outline-primary ripple" id="clear-form" type="button">Clear date</button>
+                    </div>
+                </form>
+                <output class="d-block mt-3" id="form-result" for="form-date" aria-live="polite">No submission yet.</output>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Readonly input</h3>
+                    <label class="mb-2" for="readonly-date">Choose through the calendar</label>
+                    <input class="input-outline" id="readonly-date" type="text" readonly data-ui-toggle="datetimepicker"
+                        data-ui-format="yyyy-MM-dd" data-ui-ignore-readonly="true">
+                    <p class="form-text mb-0">Typing is disabled; <code>ignoreReadonly</code> permits calendar selection.</p>
+                </div></div>
+                <div class="col-md-6"><div class="card card-body h-100 p-4">
+                    <h3 class="h5">Disabled calendar</h3>
+                    <p class="text-body-secondary" id="disabled-help">A disabled input keeps all calendar choices unavailable.</p>
+                    <label class="visually-hidden" for="disabled-date">Unavailable date</label>
+                    <input id="disabled-date" type="text" disabled data-ui-toggle="datetimepicker"
+                        data-ui-format="yyyy-MM-dd" data-ui-inline="true" aria-describedby="disabled-help">
+                </div></div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="methods-events">
+            <header class="border-bottom pb-3 mb-4">
+                <h2 class="h3 mb-1">API and events</h2>
+                <p class="text-body-secondary mb-0">Call the public methods and watch opening, selection, and refresh events.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-lg-7"><div class="card card-body h-100 p-4">
+                    <label class="mb-2" for="api-date">API appointment · YYYY-MM-DD HH:mm</label>
+                    <input class="input-outline" id="api-date" type="text" autocomplete="off" data-ui-toggle="datetimepicker"
+                        data-ui-format="yyyy-MM-dd HH:mm" data-ui-placement="top">
+                    <div class="d-flex flex-wrap gap-2 mt-3" role="group" aria-label="Instance and visibility">
+                        <button class="btn btn-primary ripple" type="button" data-demo-method="init">Init</button>
+                        <button class="btn btn-outline-danger ripple" type="button" data-demo-method="dispose">Dispose</button>
+                        <button class="btn btn-secondary ripple" type="button" data-demo-method="enable">Enable</button>
+                        <button class="btn btn-secondary ripple" type="button" data-demo-method="disable">Disable</button>
+                        <button class="btn btn-secondary ripple" type="button" data-demo-method="show">Show</button>
+                        <button class="btn btn-secondary ripple" type="button" data-demo-method="hide">Hide</button>
+                        <button class="btn btn-secondary ripple" type="button" data-demo-method="toggle">Toggle</button>
+                        <button class="btn btn-secondary ripple" type="button" data-demo-method="refresh">Refresh</button>
+                        <button class="btn btn-secondary ripple" type="button" data-demo-method="update">Update</button>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-3" role="group" aria-label="Read dates">
+                        <button class="btn btn-outline-primary ripple" type="button" data-demo-method="getDate">Get date</button>
+                        <button class="btn btn-outline-primary ripple" type="button" data-demo-method="getMinDate">Get minimum</button>
+                        <button class="btn btn-outline-primary ripple" type="button" data-demo-method="getMaxDate">Get maximum</button>
+                        <button class="btn btn-outline-primary ripple" type="button" data-demo-method="getViewDate">Get view date</button>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-3" role="group" aria-label="Change dates">
+                        <button class="btn btn-outline-primary ripple" type="button" data-demo-method="setDate">Set now</button>
+                        <button class="btn btn-outline-primary ripple" type="button" data-demo-method="clear">Clear</button>
+                        <button class="btn btn-outline-primary ripple" type="button" data-demo-method="setMinDate">Minimum: −3 months</button>
+                        <button class="btn btn-outline-primary ripple" type="button" data-demo-method="setMaxDate">Maximum: +3 months</button>
+                        <button class="btn btn-outline-primary ripple" type="button" data-demo-method="removeBounds">Remove bounds</button>
+                    </div>
+                    <output class="d-block mt-3" id="api-result" for="api-date" aria-live="polite">Ready.</output>
+                </div></div>
+                <div class="col-lg-5"><div class="card card-body h-100 p-4">
+                    <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                        <h3 class="h5 mb-0" id="event-title">Event log</h3>
+                        <button class="btn btn-outline-secondary btn-sm ripple" id="clear-log" type="button">Clear log</button>
+                    </div>
+                    <div class="demo-event-log overflow-auto font-monospace small" id="event-log" role="log" aria-labelledby="event-title" aria-live="polite"></div>
+                </div></div>
+            </div>
+        </section>
+        <footer class="text-body-secondary small border-top pt-4">
+            <a href="../README.md">Documentation</a> · <a href="https://github.com/elusivecodes/FrostUI-DateTimePicker">Source on GitHub</a> · MIT
+        </footer>
+    </main>
+
+    <div class="modal" id="booking-modal" tabindex="-1" role="dialog" aria-labelledby="booking-title" aria-hidden="true" data-ui-backdrop="static">
+        <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header"><h2 class="modal-title h5" id="booking-title">Booking editor</h2></div>
+            <div class="modal-body">
+                <label class="mb-2" for="nested-date">Booking editor date</label>
+                <input class="input-outline" id="nested-date" type="text" autocomplete="off" data-ui-toggle="datetimepicker"
+                    data-ui-format="yyyy-MM-dd" data-ui-modal="true">
+                <p class="form-text mb-0">Open the date picker, choose a day, then Set or Cancel.</p>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary ripple" type="button" data-ui-dismiss="modal">Close editor</button></div>
+        </div></div>
+    </div>
+</body>
+
+</html>
