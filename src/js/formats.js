@@ -6,7 +6,7 @@ const defaultTimeFormats = {};
 /**
  * Check a locale for day period component (and cache).
  * @param {string} locale The locale to check.
- * @return {Boolean} Whether the locale uses a day period component.
+ * @returns {boolean} Whether the locale uses a day period component.
  */
 export function checkDayPeriod(locale) {
     if (!(locale in dayPeriods)) {
@@ -24,7 +24,7 @@ export function checkDayPeriod(locale) {
 /**
  * Get the default date format for a locale.
  * @param {string} locale The input locale.
- * @return {string} The default date format.
+ * @returns {string} The default date format.
  */
 export function getDefaultDateFormat(locale) {
     if (!(locale in defaultDateFormats)) {
@@ -41,12 +41,13 @@ export function getDefaultDateFormat(locale) {
 /**
  * Get the default format for a locale.
  * @param {string} locale The input locale.
- * @param {Boolean} hasDayPeriod Whether the locale uses a dayPeriod.
- * @return {string} The default format.
+ * @param {boolean} [hasDayPeriod] Whether to use a 12-hour clock; defaults to the locale.
+ * @returns {string} The default format.
  */
-export function getDefaultFormat(locale, hasDayPeriod) {
-    if (!(locale in defaultFormats)) {
-        defaultFormats[locale] = formatFromParts(locale, {
+export function getDefaultFormat(locale, hasDayPeriod = checkDayPeriod(locale)) {
+    const key = `${locale}:${hasDayPeriod}`;
+    if (!(key in defaultFormats)) {
+        defaultFormats[key] = formatFromParts(locale, {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -55,35 +56,39 @@ export function getDefaultFormat(locale, hasDayPeriod) {
         }, hasDayPeriod);
     }
 
-    return defaultFormats[locale];
+    return defaultFormats[key];
 };
 
 /**
  * Get the default time format for a locale.
  * @param {string} locale The input locale.
- * @param {Boolean} hasDayPeriod Whether the locale uses a dayPeriod.
- * @return {string} The default time format.
+ * @param {boolean} [hasDayPeriod] Whether to use a 12-hour clock; defaults to the locale.
+ * @returns {string} The default time format.
  */
-export function getDefaultTimeFormat(locale, hasDayPeriod) {
-    if (!(locale in defaultTimeFormats)) {
-        defaultTimeFormats[locale] = formatFromParts(locale, {
+export function getDefaultTimeFormat(locale, hasDayPeriod = checkDayPeriod(locale)) {
+    const key = `${locale}:${hasDayPeriod}`;
+    if (!(key in defaultTimeFormats)) {
+        defaultTimeFormats[key] = formatFromParts(locale, {
             hour: '2-digit',
             minute: '2-digit',
         }, hasDayPeriod);
     }
 
-    return defaultTimeFormats[locale];
+    return defaultTimeFormats[key];
 };
 
 /**
  * Create a date format from a locale and options.
  * @param {string} locale The input locale.
- * @param {object} options Options for the formatter.
- * @param {Boolean} hasDayPeriod Whether the locale uses a dayPeriod.
- * @return {string} The date format.
+ * @param {Intl.DateTimeFormatOptions} options Options for the formatter.
+ * @param {boolean} [hasDayPeriod] Whether to use a 12-hour clock.
+ * @returns {string} The date format.
  */
 function formatFromParts(locale, options, hasDayPeriod) {
-    const formatter = new Intl.DateTimeFormat(locale, options);
+    const formatter = new Intl.DateTimeFormat(locale, {
+        ...options,
+        hour12: hasDayPeriod,
+    });
 
     return formatter.formatToParts(new Date)
         .map(
