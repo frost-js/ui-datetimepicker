@@ -1,20 +1,21 @@
 .datetimepicker {
-  --datetimepicker-z-index: 1000;
-  --datetimepicker-bg: var(--ui-body-bg);
-  --datetimepicker-border-width: var(--ui-border-width);
-  --datetimepicker-border-color: var(--ui-border-color-translucent);
-  z-index: var(--datetimepicker-z-index);
+  --ui-datetimepicker-z-index: 1000;
+  --ui-datetimepicker-bg: var(--ui-body-bg);
+  --ui-datetimepicker-border-width: var(--ui-border-width);
+  --ui-datetimepicker-border-color: var(--ui-border-color-translucent);
+  z-index: var(--ui-datetimepicker-z-index);
   display: block;
   width: 300px;
+  max-width: 100%;
   padding: 0;
   margin: 0;
   color: var(--ui-body-color);
-  text-align: left;
+  text-align: start;
   -webkit-user-select: none;
   user-select: none;
   list-style: none;
-  background-color: var(--datetimepicker-bg);
-  border: var(--datetimepicker-border-width) var(--ui-border-style) var(--datetimepicker-border-color);
+  background-color: var(--ui-datetimepicker-bg);
+  border: var(--ui-datetimepicker-border-width) var(--ui-border-style) var(--ui-datetimepicker-border-color);
 }
 .datetimepicker th {
   border-bottom: 0;
@@ -30,8 +31,8 @@
 }
 
 .datetimepicker-inline {
-  --datetimepicker-bg: transparent;
-  --datetimepicker-border-width: 0;
+  --ui-datetimepicker-bg: transparent;
+  --ui-datetimepicker-border-width: 0;
 }
 
 .datetimepicker-action {
@@ -50,7 +51,7 @@
   background-color: var(--ui-primary);
 }
 .datetimepicker-action.datetimepicker-active:hover, .datetimepicker-action.datetimepicker-active:focus-visible {
-  background-color: var(--ui-primary-emphasis);
+  background-color: var(--ui-primary-highlight);
 }
 
 .datetimepicker-disabled {
@@ -71,26 +72,28 @@
 }
 .datetimepicker-today::before {
   position: absolute;
-  right: 4px;
+  inset-inline-end: 4px;
   bottom: 4px;
   display: inline-block;
   content: "";
   border: solid transparent;
-  border-width: 0 0 7px 7px;
-  border-top-color: var(--ui-border-color-translucent);
-  border-bottom-color: var(--ui-primary);
+  border-width: 0;
+  border-block-start-color: var(--ui-border-color-translucent);
+  border-block-end-color: var(--ui-primary);
+  border-block-end-width: 7px;
+  border-inline-start-width: 7px;
 }
 .datetimepicker-today.datetimepicker-active::before {
-  border-bottom-color: var(--ui-primary-contrast);
+  border-block-end-color: var(--ui-primary-contrast);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 992px) {
   .datetimepicker-wide {
     width: 600px;
   }
 }
 .datetimepicker-modal {
-  --datetimepicker-border-width: 0;
+  --ui-datetimepicker-border-width: 0;
   width: 100%;
 }
 

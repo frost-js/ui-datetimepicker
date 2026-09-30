@@ -1,5 +1,5 @@
 import $ from "@fr0st/query";
-import { BaseComponent, Modal, Popper, getClickTarget, initComponent } from "@fr0st/ui";
+import { BaseComponent, Modal, Popper, generateId, getClickTarget, initComponent } from "@fr0st/ui";
 import DateTime from "@fr0st/datetime";
 
 //#region src/js/comparisons.js
@@ -22,13 +22,13 @@ function isAfterMonth(a, b) {
 	return isAfterYear(a, b) || isSameYear(a, b) && a.getMonth() > b.getMonth();
 }
 /**
-* Test if a date is after another date (second).
+* Test if a date is after another date (instant).
 * @param {DateTime} a The date to test.
 * @param {DateTime} b The date to compare against.
 * @returns {boolean} TRUE if the date is after the other date, otherwise FALSE.
 */
-function isAfterSecond(a, b) {
-	return a.getTimestamp() > b.getTimestamp();
+function isAfterInstant(a, b) {
+	return a.getTime() > b.getTime();
 }
 /**
 * Test if a date is after another date (year).
@@ -58,13 +58,13 @@ function isBeforeMonth(a, b) {
 	return isBeforeYear(a, b) || isSameYear(a, b) && a.getMonth() < b.getMonth();
 }
 /**
-* Test if a date is before another date (second).
+* Test if a date is before another date (instant).
 * @param {DateTime} a The date to test.
 * @param {DateTime} b The date to compare against.
 * @returns {boolean} TRUE if the date is before the other date, otherwise FALSE.
 */
-function isBeforeSecond(a, b) {
-	return a.getTimestamp() < b.getTimestamp();
+function isBeforeInstant(a, b) {
+	return a.getTime() < b.getTime();
 }
 /**
 * Test if a date is before another date (year).
@@ -94,13 +94,13 @@ function isSameMonth(a, b) {
 	return isSameYear(a, b) && a.getMonth() === b.getMonth();
 }
 /**
-* Test if a date is equal to another date (second).
+* Test if a date is equal to another date (instant).
 * @param {DateTime} a The date to test.
 * @param {DateTime} b The date to compare against.
 * @returns {boolean} TRUE if the date is equal to the other date, otherwise FALSE.
 */
-function isSameSecond(a, b) {
-	return a.getTimestamp() === b.getTimestamp();
+function isSameInstant(a, b) {
+	return a.getTime() === b.getTime();
 }
 /**
 * Test if a date is equal to another date (year).
@@ -371,7 +371,7 @@ var DateTimePicker = class extends BaseComponent {
 		set: "Set",
 		togglePeriod: "Toggle Period"
 	};
-	#activeTarget;
+	#attributes;
 	#closeTable;
 	#container;
 	#date = null;
@@ -380,6 +380,7 @@ var DateTimePicker = class extends BaseComponent {
 	#dates = [];
 	#defaultDate;
 	#defaultView;
+	#form;
 	#format;
 	#hasDate;
 	#hasHours;
@@ -387,12 +388,20 @@ var DateTimePicker = class extends BaseComponent {
 	#hasMonth;
 	#hasYear;
 	#keepDate;
+	#lifecycleEvent = false;
+	#listeners = [];
 	#maxDate = null;
 	#menuNode;
 	#minDate = null;
 	#minView;
 	#modal;
+	#open = false;
+	#originalDate;
 	#popper;
+	#refreshing = false;
+	#releaseDisplay;
+	#resetTimer;
+	#selectionId = 0;
 	#setBtn;
 	#showDateTable;
 	#showTimeTable;
@@ -401,10 +410,12 @@ var DateTimePicker = class extends BaseComponent {
 	#toolbarDate;
 	#toolbarTime;
 	#toolbarYear;
+	#transitionId = 0;
 	#useDayPeriod;
 	#useModal;
 	#viewDate;
 	#viewMode;
+	#viewTransitionId = 0;
 	/**
 	* Gets the default date format for a locale.
 	* @param {string} locale The locale.
@@ -437,56 +448,52 @@ var DateTimePicker = class extends BaseComponent {
 	* @param {DateTimePickerOptions} [options] The component options.
 	*/
 	constructor(node, options) {
+		if (node?.tagName !== "INPUT") throw new TypeError("DateTimePicker must be created on an input element.");
 		super(node, options);
-		this.#dateOptions = {
-			locale: this.options.locale || DateTime.getDefaultLocale(),
-			timeZone: this.options.timeZone || DateTime.getDefaultTimeZone()
-		};
-		if (!Number.isInteger(this.options.minuteStepping) || this.options.minuteStepping < 1 || this.options.minuteStepping > 60) {
-			super.dispose();
-			throw new RangeError("minuteStepping must be an integer between 1 and 60.");
-		}
+		this.#attributes = new Map([
+			"aria-controls",
+			"aria-expanded",
+			"aria-haspopup"
+		].map((name) => [name, node.getAttribute(name)]));
+		this.#form = node.form;
 		try {
+			this.#dateOptions = {
+				locale: this.options.locale || DateTime.getDefaultLocale(),
+				timeZone: this.options.timeZone || DateTime.getDefaultTimeZone()
+			};
+			if (!Number.isInteger(this.options.minuteStepping) || this.options.minuteStepping < 1 || this.options.minuteStepping > 60) throw new RangeError("minuteStepping must be an integer between 1 and 60.");
 			this.#useDayPeriod = checkDayPeriod(this.#dateOptions.locale);
 			this.#format = this.options.format || (this.options.multiDate ? getDefaultDateFormat(this.#dateOptions.locale) : getDefaultFormat(this.#dateOptions.locale, this.#useDayPeriod));
 			this.#useModal = !this.options.inline && (this.options.modal || this.options.mobileModal && /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent));
 			this.#checkFormat();
 			this.#minDate = this.#parseDate(this.options.minDate);
 			this.#maxDate = this.#parseDate(this.options.maxDate);
+			const value = $.getValue(this.node);
+			if (this.options.multiDate) this.#dates = this.#normalizeDates(value.split(this.options.multiDateSeparator).map((val) => this.#makeDate(val)));
+			else {
+				this.#date = this.#makeDate(value);
+				if (!this.#date && this.options.useCurrent) this.#date = this.#now();
+				if (this.#date && !this.#isValid(this.#date)) this.#date = null;
+			}
+			if (!this.node) return;
+			this.#defaultDate = this.#parseDate(this.options.defaultDate);
+			if (!this.#defaultDate) this.#defaultDate = this.#now();
+			if (this.#hasHours && !this.#isValid(this.#defaultDate)) this.#defaultDate = this.#findValidTime(this.#defaultDate) || this.#defaultDate;
+			if (!this.node) return;
+			if (this.#date || this.options.multiDate && this.#dates.length || value && !this.options.keepInvalid) this.#updateValue();
+			this.#render();
+			this.#events();
+			this.#resetView();
+			if (this.#useModal) {
+				this.#renderModal();
+				this.#eventsModal();
+			} else if (this.options.inline) this.#refresh();
+			this.#refreshDisabled();
+			$.setData(this.#menuNode, { input: this.node });
 		} catch (error) {
-			super.dispose();
+			this.dispose();
 			throw error;
 		}
-		const value = $.getValue(this.node);
-		if (this.options.multiDate) this.#dates = [...new Set(value.split(this.options.multiDateSeparator))].map((val) => this.#makeDate(val)).filter((date) => date && this.#isValid(date));
-		else {
-			this.#date = this.#makeDate(value);
-			if (!this.#date && this.options.useCurrent) this.#date = this.#now();
-			if (this.#date && !this.#isValid(this.#date)) this.#date = null;
-		}
-		this.#defaultDate = this.#parseDate(this.options.defaultDate);
-		if (!this.#defaultDate) this.#defaultDate = this.#now();
-		if (this.#hasHours && !this.#isValid(this.#defaultDate)) {
-			let current = this.#defaultDate.startOfDay();
-			const endOfDay = this.#defaultDate.endOfDay();
-			while (current.isBefore(endOfDay)) {
-				if (this.#isValid(current)) {
-					this.#defaultDate = current;
-					break;
-				}
-				current = current.addMinutes(5);
-			}
-		}
-		if (this.#date || this.options.multiDate && this.#dates.length || value && !this.options.keepInvalid) this.#updateValue();
-		this.#render();
-		this.#events();
-		this.#resetView();
-		if (this.#useModal) {
-			this.#renderModal();
-			this.#eventsModal();
-		} else if (this.options.inline) this.#refresh();
-		this.#refreshDisabled();
-		$.setData(this.#menuNode, { input: this.node });
 	}
 	/**
 	* Clear the current value.
@@ -499,6 +506,7 @@ var DateTimePicker = class extends BaseComponent {
 	*/
 	disable() {
 		$.setAttribute(this.node, { disabled: true });
+		this.hide();
 		this.#refreshDisabled();
 		this.#refresh();
 	}
@@ -506,39 +514,51 @@ var DateTimePicker = class extends BaseComponent {
 	* Dispose the DateTimePicker.
 	*/
 	dispose() {
-		if (this.#popper) {
-			this.#popper.dispose();
-			this.#popper = null;
-		}
+		if (!this.node) return;
+		++this.#transitionId;
+		++this.#viewTransitionId;
+		++this.#selectionId;
+		clearTimeout(this.#resetTimer);
+		for (const [node, events, handler] of this.#listeners) $.removeEvent(node, events, handler);
+		this.#listeners = [];
+		for (const node of [
+			this.#menuNode,
+			this.#dateContainer,
+			this.#timeContainer
+		]) if (node) $.stop(node);
+		this.#popper?.dispose();
 		if (this.#modal) {
-			Modal.init(this.#modal).dispose();
-			this.#modal = null;
-			this.#setBtn = null;
-			this.#toolbarYear = null;
-			this.#toolbarDate = null;
-			this.#toolbarTime = null;
+			$.getData(this.#modal, Modal.DATA_KEY)?.dispose();
+			$.remove(this.#modal);
 		}
-		$.removeEvent(this.node, "change.ui.datetimepicker");
-		$.removeEvent(this.node, "input.ui.datetimepicker");
-		$.removeEvent(this.node, "click.ui.datetimepicker");
-		$.removeEvent(this.node, "focus.ui.datetimepicker");
-		$.removeEvent(this.node, "keydown.ui.datetimepicker");
-		$.removeEvent(this.node, "keyup.ui.datetimepicker");
-		$.remove(this.#menuNode);
+		if (this.#menuNode) $.remove(this.#menuNode);
+		this.#releaseDisplay?.();
+		for (const [name, value] of this.#attributes) if (value === null) this.node.removeAttribute(name);
+		else this.node.setAttribute(name, value);
+		this.#open = false;
 		this.#date = null;
 		this.#dates = null;
+		this.#originalDate = null;
 		this.#minDate = null;
 		this.#maxDate = null;
 		this.#viewDate = null;
 		this.#defaultDate = null;
 		this.#dateOptions = null;
 		this.#menuNode = null;
+		this.#modal = null;
+		this.#popper = null;
 		this.#container = null;
 		this.#dateContainer = null;
 		this.#timeContainer = null;
 		this.#showTimeTable = null;
 		this.#showDateTable = null;
 		this.#closeTable = null;
+		this.#toolbarDate = null;
+		this.#toolbarTime = null;
+		this.#toolbarYear = null;
+		this.#setBtn = null;
+		this.#form = null;
+		this.#releaseDisplay = null;
 		super.dispose();
 	}
 	/**
@@ -554,8 +574,9 @@ var DateTimePicker = class extends BaseComponent {
 	* @returns {DateTime|null|DateTime[]} The current date(s).
 	*/
 	getDate() {
-		if (this.options.multiDate) return this.#dates.slice();
-		return this.#date;
+		const committed = this.options.multiDate ? this.#dates : this.#date;
+		const date = this.#useModal && this.#open ? this.#originalDate : committed;
+		return Array.isArray(date) ? date.slice() : date;
 	}
 	/**
 	* Get the maximum date.
@@ -584,31 +605,45 @@ var DateTimePicker = class extends BaseComponent {
 	* Hide the DateTimePicker.
 	*/
 	hide() {
-		if (this.options.inline) return;
+		if (!this.node || this.options.inline || !this.#open) return;
 		if (this.#useModal) {
 			Modal.init(this.#modal).hide();
 			return;
 		}
-		if (!$.isConnected(this.#menuNode) || $.getDataset(this.#menuNode, "uiAnimating") || !$.triggerOne(this.node, "hide.ui.datetimepicker")) return;
-		$.setDataset(this.#menuNode, { uiAnimating: "out" });
-		const focusableNodes = $.find("[tabindex]", this.#menuNode);
-		$.setAttribute(focusableNodes, { tabindex: -1 });
-		$.fadeOut(this.#menuNode, { duration: this.options.duration }).then((_) => {
-			this.#popper.dispose();
+		if (!this.#allowEvent("hide")) return;
+		this.#open = false;
+		$.setAttribute(this.node, { "aria-expanded": false });
+		$.setAttribute($.find("[tabindex]", this.#menuNode), { tabindex: -1 });
+		const menu = this.#menuNode;
+		const id = ++this.#transitionId;
+		$.stop(menu);
+		$.setDataset(menu, { uiAnimating: "out" });
+		$.fadeOut(menu, { duration: this.#duration() }).then((_) => {
+			if (!this.node || id !== this.#transitionId) return;
+			this.#popper?.dispose();
 			this.#popper = null;
-			$.detach(this.#menuNode);
-			$.removeDataset(this.#menuNode, "uiAnimating");
+			$.detach(menu);
+			$.removeDataset(menu, "uiAnimating");
 			$.triggerEvent(this.node, "hidden.ui.datetimepicker");
-		}).catch((_) => {
-			if ($.getDataset(this.#menuNode, "uiAnimating") === "out") $.removeDataset(this.#menuNode, "uiAnimating");
-		});
+		}).catch((_) => {});
 	}
 	/**
 	* Refresh the DateTimePicker.
 	*/
 	refresh() {
-		if (this.options.multiDate) this.#setDates(this.#dates);
-		else this.#setDate(this.#date);
+		if (!this.node) return;
+		this.#refreshDisabled();
+		if (!this.#isEditable()) {
+			this.#refresh();
+			return;
+		}
+		if (this.options.multiDate) {
+			this.#setDates(this.#dates);
+			if (!this.node) return;
+		} else {
+			this.#setDate(this.#date);
+			if (!this.node) return;
+		}
 	}
 	/**
 	* Set the current date(s).
@@ -618,9 +653,11 @@ var DateTimePicker = class extends BaseComponent {
 		if (this.options.multiDate) {
 			const dates = this.#parseDates(date);
 			this.#setDates(dates);
+			if (!this.node) return;
 		} else {
 			date = this.#parseDate(date);
 			this.#setDate(date);
+			if (!this.node) return;
 		}
 	}
 	/**
@@ -643,26 +680,32 @@ var DateTimePicker = class extends BaseComponent {
 	* Show the DateTimePicker.
 	*/
 	show() {
-		if (this.options.inline || $.isConnected(this.#menuNode) || !this.#isEditable()) return;
+		if (!this.node || this.options.inline || this.#open || !this.#isEditable()) return;
 		if (this.#useModal) {
 			if (this.options.appendTo) $.append(this.options.appendTo, this.#modal);
 			else {
 				const parentModal = $.closest(this.node, ".modal").shift();
-				if (parentModal) $.after(parentModal, this.#modal);
-				else $.after(this.node, this.#modal);
+				$.after(parentModal || this.node, this.#modal);
 			}
 			this.#resetView();
 			this.#refresh();
-			Modal.init(this.#modal).show(this.#activeTarget);
+			if (this.node) Modal.init(this.#modal).show(this.node);
 			return;
 		}
-		if ($.getDataset(this.#menuNode, "uiAnimating") || !$.triggerOne(this.node, "show.ui.datetimepicker")) return;
-		$.setDataset(this.#menuNode, { uiAnimating: "in" });
-		if (this.options.appendTo) $.append(this.options.appendTo, this.#menuNode);
-		else $.after(this.node, this.#menuNode);
+		if (!this.#allowEvent("show")) return;
+		this.#open = true;
+		$.setAttribute(this.node, { "aria-expanded": true });
+		const menu = this.#menuNode;
+		const id = ++this.#transitionId;
+		$.stop(menu);
+		$.setDataset(menu, { uiAnimating: "in" });
+		if (this.options.appendTo) $.append(this.options.appendTo, menu);
+		else $.after(this.node, menu);
 		this.#resetView();
 		this.#refresh();
-		this.#popper = new Popper(this.#menuNode, {
+		if (!this.node || id !== this.#transitionId) return;
+		this.#popper?.dispose();
+		this.#popper = new Popper(menu, {
 			reference: this.node,
 			placement: this.options.placement,
 			position: this.options.position,
@@ -670,18 +713,17 @@ var DateTimePicker = class extends BaseComponent {
 			spacing: this.options.spacing,
 			minContact: this.options.minContact
 		});
-		$.fadeIn(this.#menuNode, { duration: this.options.duration }).then((_) => {
-			$.removeDataset(this.#menuNode, "uiAnimating");
+		$.fadeIn(menu, { duration: this.#duration() }).then((_) => {
+			if (!this.node || id !== this.#transitionId) return;
+			$.removeDataset(menu, "uiAnimating");
 			$.triggerEvent(this.node, "shown.ui.datetimepicker");
-		}).catch((_) => {
-			if ($.getDataset(this.#menuNode, "uiAnimating") === "in") $.removeDataset(this.#menuNode, "uiAnimating");
-		});
+		}).catch((_) => {});
 	}
 	/**
 	* Toggle the DateTimePicker.
 	*/
 	toggle() {
-		if ($.isConnected(this.#menuNode)) this.hide();
+		if (this.#open) this.hide();
 		else this.show();
 	}
 	/**
@@ -689,6 +731,20 @@ var DateTimePicker = class extends BaseComponent {
 	*/
 	update() {
 		if (this.#popper) this.#popper.update();
+	}
+	/**
+	* Runs a cancellable lifecycle event without recursive show/hide calls.
+	* @param {string} name The event name.
+	* @returns {boolean} Whether the instance still exists and the action is allowed.
+	*/
+	#allowEvent(name) {
+		if (!this.node || this.#lifecycleEvent) return false;
+		this.#lifecycleEvent = true;
+		try {
+			return $.triggerOne(this.node, `${name}.ui.datetimepicker`) && !!this.node;
+		} finally {
+			this.#lifecycleEvent = false;
+		}
 	}
 	/**
 	* Check the format for date and time components.
@@ -749,8 +805,8 @@ var DateTimePicker = class extends BaseComponent {
 	* @returns {DateTime} The clamped date.
 	*/
 	#clampDate(date) {
-		if (!this.#isAfterMin(date)) date = date.withTimestamp(this.#minDate.getTimestamp());
-		if (!this.#isBeforeMax(date)) date = date.withTimestamp(this.#maxDate.getTimestamp());
+		if (!this.#isAfterMin(date)) date = this.#minDate;
+		if (!this.#isBeforeMax(date)) date = this.#maxDate;
 		return date;
 	}
 	/**
@@ -833,72 +889,57 @@ var DateTimePicker = class extends BaseComponent {
 		return table;
 	}
 	/**
+	* Gets the key for a selected day, month, or year.
+	* @param {DateTime} date The date.
+	* @returns {string} The selection key.
+	*/
+	#dateKey(date) {
+		if (this.#minView === "years") return `${date.getYear()}`;
+		if (this.#minView === "months") return `${date.getYear()}-${date.getMonth()}`;
+		return `${date.getYear()}-${date.getMonth()}-${date.getDate()}`;
+	}
+	/**
+	* Gets the effective animation duration, respecting reduced motion.
+	* @returns {number} The duration in milliseconds.
+	*/
+	#duration() {
+		return matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : this.options.duration;
+	}
+	/**
 	* Attach events for the DateTimePicker.
 	*/
 	#events() {
-		$.addEvent(this.node, "change.ui.datetimepicker", (e) => {
-			if (e.skipUpdate) return;
-			const value = $.getValue(this.node);
-			if (this.options.multiDate) {
-				const dates = value.split(this.options.multiDateSeparator);
-				const validDates = [...new Set(dates)].map((val) => this.#makeDate(val)).filter((date) => date && this.#isValid(date));
-				if (validDates.length === dates.length) this.#setDates(validDates);
-				else if (!this.options.keepInvalid && value) {
-					if (validDates.length) this.#setDates(validDates);
-					else this.#setDates(this.#dates);
-				} else {
-					this.#dates = validDates;
-					this.#refresh();
-				}
-			} else {
-				const date = this.#makeDate(value);
-				if (date && this.#isValid(date)) this.#setDate(date);
-				else if (!this.options.keepInvalid && value) this.#setDate(this.#date);
-				else {
-					this.#date = null;
-					this.#refresh();
-				}
-			}
+		this.#listen(this.node, "change.ui.datetimepicker", (event) => {
+			if (!event.skipUpdate) this.#readInput(true);
+		});
+		this.#listen(this.node, "input.ui.datetimepicker", (_) => this.#readInput(false));
+		if (this.#form) this.#listen(this.#form, "reset.ui.datetimepicker", (event) => {
+			clearTimeout(this.#resetTimer);
+			this.#resetTimer = setTimeout((_) => {
+				if (!this.node || event.defaultPrevented) return;
+				this.#date = null;
+				this.#dates = [];
+				this.#readInput(true);
+				this.#keepDate = false;
+				this.hide();
+			}, 0);
 		});
 		if (this.#hasYear) this.#eventsDate();
 		if (this.#hasHours) this.#eventsTime();
-		$.addEvent(this.#menuNode, "click.ui.datetimepicker", (e) => {
+		this.#listen(this.#menuNode, "click.ui.datetimepicker", (e) => {
 			e.stopPropagation();
 		});
 		if (this.options.inline) return;
-		$.addEvent(this.node, "input.ui.datetimepicker", (_) => {
-			const value = $.getValue(this.node);
-			if (this.options.multiDate) {
-				const dates = value.split(this.options.multiDateSeparator);
-				const validDates = [...new Set(dates)].map((val) => this.#makeDate(val)).filter((date) => date && this.#isValid(date));
-				if (validDates.length) {
-					this.#dates = validDates;
-					this.#refresh();
-				}
-			} else {
-				const date = this.#makeDate(value);
-				if (date && this.#isValid(date)) {
-					this.#date = date;
-					this.#refresh();
-				}
-			}
-		});
-		$.addEvent(this.node, "click.ui.datetimepicker", (_) => {
-			if ($.getDataset(this.#menuNode, "uiAnimating") === "in") return;
-			if (!this.#useModal) {
-				$.stop(this.#menuNode);
-				$.removeDataset(this.#menuNode, "uiAnimating");
-			} else this.#activeTarget = this.node;
+		this.#listen(this.node, "click.ui.datetimepicker", (event) => {
+			if (this.#useModal) event.stopPropagation();
 			this.show();
 		});
 		if (!this.#useModal) {
-			$.addEvent(this.node, "focus.ui.datetimepicker", (_) => {
+			this.#listen(this.node, "focus.ui.datetimepicker", (_) => {
 				if (!$.isSame(this.node, document.activeElement)) return;
-				$.stop(this.#menuNode);
-				$.removeDataset(this.#menuNode, "uiAnimating");
 				this.show();
 			});
-			$.addEvent(this.#menuNode, "keydown.ui.datetimepicker", (e) => {
+			this.#listen(this.#menuNode, "keydown.ui.datetimepicker", (e) => {
 				if (e.code !== "Tab") return;
 				const focusableNodes = $.find("[tabindex=\"0\"]", this.#menuNode);
 				const focusIndex = $.indexOf(focusableNodes, e.target);
@@ -911,7 +952,7 @@ var DateTimePicker = class extends BaseComponent {
 				}
 			});
 		}
-		$.addEvent(this.node, "keydown.ui.datetimepicker", (e) => {
+		this.#listen(this.node, "keydown.ui.datetimepicker", (e) => {
 			switch (e.code) {
 				case "Enter":
 				case "NumpadEnter":
@@ -951,16 +992,11 @@ var DateTimePicker = class extends BaseComponent {
 		const showTime = (_) => {
 			this.#timeViewMode = null;
 			this.#refreshTime();
-			$.insertAfter(this.#timeContainer, this.#dateContainer);
-			$.setStyle(this.#timeContainer, { display: "" });
-			$.squeezeIn(this.#timeContainer, { duration: 100 });
-			$.squeezeOut(this.#dateContainer, { duration: 100 }).then((_) => {
-				$.detach(this.#dateContainer);
-				this.update();
-				focusTime();
-			});
+			if (!this.node) return;
+			this.#switchView(this.#timeContainer, this.#dateContainer, focusTime);
 		};
 		const handleAction = (e) => {
+			if (!this.#isEditable()) return;
 			e.preventDefault();
 			const element = e.currentTarget;
 			const action = $.getDataset(element, "uiAction");
@@ -980,31 +1016,26 @@ var DateTimePicker = class extends BaseComponent {
 								break;
 							default: granularity = "day";
 						}
-						if (this.#isCurrent(tempDate, { granularity })) dates = this.#dates.filter((date) => !isSameDay(date, tempDate));
+						if (this.#isCurrent(tempDate, { granularity })) dates = this.#dates.filter((date) => this.#dateKey(date) !== this.#dateKey(tempDate));
 						else dates = this.#dates.concat([tempDate]);
 						this.#viewDate = tempDate;
 						this.#setDates(dates, { updateValue });
+						if (!this.node) return;
 					} else {
 						tempDate = this.#clampDate(tempDate);
 						if (this.#hasHours && !this.#isValid(tempDate)) {
-							let current = tempDate.startOfDay();
-							const endOfDay = tempDate.endOfDay();
-							while (current.isBefore(endOfDay)) {
-								if (this.#isValid(current)) {
-									tempDate = current;
-									break;
-								}
-								current = current.addMinutes(5);
-							}
+							tempDate = this.#findValidTime(tempDate);
+							if (!tempDate || !this.node) return;
 						}
 						this.#viewDate = tempDate;
 						this.#setDate(tempDate, { updateValue });
+						if (!this.node) return;
 						if (this.#hasHours) {
 							if (this.options.sideBySide) focusTime();
 							else showTime();
 						} else if (!this.options.keepOpen && !this.#useModal && !this.options.inline) {
-							this.hide();
 							$.focus(this.node);
+							this.hide();
 						}
 					}
 					break;
@@ -1012,6 +1043,7 @@ var DateTimePicker = class extends BaseComponent {
 					this.#viewMode = $.getDataset(element, "uiView");
 					if ($.hasDataset(element, "uiYear")) this.#viewDate = this.#viewDate.withYear($.getDataset(element, "uiYear"), $.getDataset(element, "uiMonth"), $.getDataset(element, "uiDate"));
 					this.#refreshDate();
+					if (!this.node) return;
 					const focusDate = $.findOne("[data-ui-focus=\"true\"]", this.#dateContainer);
 					$.focus(focusDate);
 					break;
@@ -1032,13 +1064,14 @@ var DateTimePicker = class extends BaseComponent {
 					}
 					this.#viewDate = this.#viewDate[method](amount);
 					this.#refreshDate();
+					if (!this.node) return;
 					const focusAction = $.findOne(`[data-ui-action="${action}"]`, this.#dateContainer);
 					$.focus(focusAction);
 					break;
 				}
 				case "close":
-					this.hide();
 					$.focus(this.node);
+					this.hide();
 			}
 		};
 		const refreshDate = () => {
@@ -1058,6 +1091,7 @@ var DateTimePicker = class extends BaseComponent {
 			let focusNode = $.findOne(focusSelector, this.#dateContainer);
 			if (!focusNode) {
 				this.#refreshDate();
+				if (!this.node) return;
 				focusNode = $.findOne(focusSelector, this.#dateContainer);
 			} else {
 				const oldFocusNode = $.findOne("[data-ui-focus=\"true\"]", this.#dateContainer);
@@ -1083,14 +1117,15 @@ var DateTimePicker = class extends BaseComponent {
 					return;
 			}
 		});
-		$.addEventDelegate(this.#dateContainer, "mousedown.ui.datetimepicker", "[data-ui-focus=\"false\"]", (e) => {
+		$.addEventDelegate(this.#dateContainer, "mousedown.ui.datetimepicker", "[data-ui-focus=\"false\"][aria-disabled=\"false\"]", (e) => {
 			let tempView = this.#viewDate;
 			tempView = tempView.withYear($.getDataset(e.currentTarget, "uiYear"), $.getDataset(e.currentTarget, "uiMonth"), $.getDataset(e.currentTarget, "uiDate"));
 			if (tempView.isSame(this.#viewDate)) return;
 			this.#viewDate = tempView;
 			refreshDate();
 		});
-		$.addEvent(this.#dateContainer, "keydown.ui.datetimepicker", (e) => {
+		this.#listen(this.#dateContainer, "keydown.ui.datetimepicker", (e) => {
+			if (!this.#isEditable()) return;
 			let tempView = this.#viewDate;
 			switch (e.code) {
 				case "ArrowUp":
@@ -1174,39 +1209,47 @@ var DateTimePicker = class extends BaseComponent {
 	* Attach events for the Modal.
 	*/
 	#eventsModal() {
-		let originalDate;
-		this.#keepDate = false;
-		$.addEvent(this.#modal, "show.ui.modal", (_) => {
-			if (!$.triggerOne(this.node, "show.ui.datetimepicker")) return false;
-			if (this.options.multiDate) originalDate = this.#dates;
-			else originalDate = this.#date;
+		this.#listen(this.#modal, "show.ui.modal", (_) => {
+			if (!this.#allowEvent("show")) {
+				if (this.node) $.detach(this.#modal);
+				return false;
+			}
+			this.#originalDate = this.options.multiDate ? this.#dates.slice() : this.#date;
+			this.#keepDate = false;
+			this.#open = true;
+			$.setAttribute(this.node, { "aria-expanded": true });
 		});
-		$.addEvent(this.#modal, "shown.ui.modal", (_) => {
+		this.#listen(this.#modal, "shown.ui.modal", (_) => {
 			$.triggerEvent(this.node, "shown.ui.datetimepicker");
 		});
-		$.addEvent(this.#modal, "hide.ui.modal", (_) => {
-			if (!$.triggerOne(this.node, "hide.ui.datetimepicker")) {
+		this.#listen(this.#modal, "hide.ui.modal", (_) => {
+			if (!this.#allowEvent("hide")) {
 				this.#keepDate = false;
 				return false;
 			}
-			this.#activeTarget = null;
 			if (this.#keepDate) {
-				if (this.options.multiDate) this.#setDates(this.#dates);
-				else this.#setDate(this.#date);
-			}
+				if (this.options.multiDate) {
+					this.#setDates(this.#dates);
+					if (!this.node) return false;
+				} else {
+					this.#setDate(this.#date);
+					if (!this.node) return false;
+				}
+			} else if (this.options.multiDate) this.#dates = this.#originalDate.slice();
+			else this.#date = this.#originalDate;
+			if (!this.node) return false;
+			this.#open = false;
+			$.setAttribute(this.node, { "aria-expanded": false });
 		});
-		$.addEvent(this.#modal, "hidden.ui.modal", (_) => {
-			if (!this.#keepDate) {
-				if (this.options.multiDate) this.#setDates(originalDate);
-				else this.#setDate(originalDate);
-				originalDate = null;
-			}
+		this.#listen(this.#modal, "hidden.ui.modal", (_) => {
 			this.#keepDate = false;
+			this.#originalDate = null;
 			$.detach(this.#modal);
 			$.triggerEvent(this.node, "hidden.ui.datetimepicker");
 		});
-		$.addEvent(this.#setBtn, "click.ui.modal", (_) => {
+		this.#listen(this.#setBtn, "click.ui.datetimepicker", (_) => {
 			this.#keepDate = true;
+			this.hide();
 		});
 	}
 	/**
@@ -1219,6 +1262,7 @@ var DateTimePicker = class extends BaseComponent {
 			return date.withHours(currentHours + (currentHours < 12 ? 12 : -12));
 		};
 		const handleAction = (e) => {
+			if (!this.#isEditable()) return;
 			e.preventDefault();
 			const element = e.currentTarget;
 			const action = $.getDataset(element, "uiAction");
@@ -1229,6 +1273,7 @@ var DateTimePicker = class extends BaseComponent {
 					tempDate = tempDate.withHours($.getDataset(element, "uiHour"));
 					this.#timeViewMode = null;
 					this.#setDate(tempDate, { updateValue });
+					if (!this.node) return;
 					if (this.#hasMinutes) focusSelector = "[data-ui-action=\"changeView\"][data-ui-time-view=\"minutes\"]";
 					else if (this.#useDayPeriod) focusSelector = "[data-ui-action=\"togglePeriod\"]";
 					break;
@@ -1236,16 +1281,19 @@ var DateTimePicker = class extends BaseComponent {
 					tempDate = tempDate.withMinutes($.getDataset(element, "uiMinute"));
 					this.#timeViewMode = null;
 					this.#setDate(tempDate, { updateValue });
+					if (!this.node) return;
 					if (this.#useDayPeriod) focusSelector = "[data-ui-action=\"togglePeriod\"]";
 					break;
 				case "togglePeriod":
 					tempDate = switchPeriod(tempDate);
 					this.#setDate(tempDate, { updateValue });
+					if (!this.node) return;
 					focusSelector = "[data-ui-action=\"togglePeriod\"]";
 					break;
 				case "changeView":
 					this.#timeViewMode = $.getDataset(element, "uiTimeView");
 					this.#refreshTime();
+					if (!this.node) return;
 					focusSelector = "[data-ui-focus=\"true\"]";
 					break;
 				case "next":
@@ -1261,24 +1309,22 @@ var DateTimePicker = class extends BaseComponent {
 					}
 					tempDate = tempDate[method](amount);
 					this.#setDate(tempDate, { updateValue });
+					if (!this.node) return;
 					focusSelector = `[data-ui-action="${action}"][data-ui-unit="${unit}"]`;
 					break;
 				}
 				case "showDate":
-					$.insertBefore(this.#dateContainer, this.#timeContainer);
-					$.setStyle(this.#dateContainer, { display: "" });
-					$.squeezeIn(this.#dateContainer, { duration: 100 });
-					$.squeezeOut(this.#timeContainer, { duration: 100 }).then((_) => {
-						$.detach(this.#timeContainer);
-						this.update();
-						const focusDate = $.findOne("[data-ui-focus=\"true\"]", this.#dateContainer);
-						$.focus(focusDate);
+					this.#switchView(this.#dateContainer, this.#timeContainer, () => {
+						$.focus($.findOne("[data-ui-focus=\"true\"]", this.#dateContainer));
 					});
 					break;
 				case "close":
-					if (!this.#date && !this.#hasDate) this.#setDate(this.#viewDate);
-					this.hide();
+					if (!this.#date && !this.#hasDate) {
+						this.#setDate(this.#viewDate);
+						if (!this.node) return;
+					}
 					$.focus(this.node);
+					this.hide();
 			}
 			if (focusSelector) {
 				const focusNode = $.findOne(focusSelector, this.#timeContainer);
@@ -1290,6 +1336,7 @@ var DateTimePicker = class extends BaseComponent {
 			handleAction(e);
 		});
 		$.addEventDelegate(this.#timeContainer, "keydown.ui.datetimepicker", "[data-ui-action]", (e) => {
+			if (!this.#isEditable()) return;
 			switch (e.code) {
 				case "Enter":
 				case "NumpadEnter":
@@ -1356,13 +1403,16 @@ var DateTimePicker = class extends BaseComponent {
 			}
 			const newDate = !this.#date || !tempDate.isSame(this.#date);
 			if (newDate || focusSelector) e.preventDefault();
-			if (newDate) this.#setDate(tempDate, { updateValue });
+			if (newDate) {
+				this.#setDate(tempDate, { updateValue });
+				if (!this.node) return;
+			}
 			if (focusSelector) {
 				const focusNode = $.findOne(focusSelector, this.#timeContainer);
 				$.focus(focusNode);
 			}
 		});
-		$.addEventDelegate(this.#timeContainer, "mousedown.ui.datetimepicker", "[data-ui-focus=\"false\"]", (e) => {
+		$.addEventDelegate(this.#timeContainer, "mousedown.ui.datetimepicker", "[data-ui-focus=\"false\"][aria-disabled=\"false\"]", (e) => {
 			const focusNode = e.currentTarget;
 			const oldFocusNode = $.findOne("[data-ui-focus=\"true\"]", this.#timeContainer);
 			if (!$.isSame(focusNode, oldFocusNode)) {
@@ -1373,12 +1423,12 @@ var DateTimePicker = class extends BaseComponent {
 			}
 			$.focus(focusNode);
 		});
-		$.addEvent(this.#timeContainer, "keydown.ui.datetimepicker", (e) => {
+		this.#listen(this.#timeContainer, "keydown.ui.datetimepicker", (e) => {
 			let focusNode;
 			switch (this.#timeViewMode) {
 				case "hours":
 				case "minutes": {
-					const nodes = $.find("[data-ui-focus]", this.#timeContainer);
+					const nodes = $.find("[data-ui-focus][aria-disabled=\"false\"]", this.#timeContainer);
 					const focusedIndex = $.indexOf(nodes, "[data-ui-focus=\"true\"]") || 0;
 					switch (e.code) {
 						case "ArrowUp":
@@ -1412,6 +1462,20 @@ var DateTimePicker = class extends BaseComponent {
 		});
 	}
 	/**
+	* Finds the first selectable minute within a date.
+	* @param {DateTime} date The candidate date.
+	* @returns {DateTime|null} A valid time or null when no time is selectable.
+	*/
+	#findValidTime(date) {
+		let current = date.startOfDay();
+		const end = date.endOfDay();
+		while (this.node && current.isBefore(end)) {
+			if (current.getMinutes() % this.options.minuteStepping === 0 && this.#isValid(current)) return current;
+			current = current.addMinute();
+		}
+		return null;
+	}
+	/**
 	* Format a date.
 	* @param {DateTime} [date] The date to format.
 	* @returns {string} The formatted date.
@@ -1442,7 +1506,7 @@ var DateTimePicker = class extends BaseComponent {
 			case "day": return allowSame && isSameDay(date, this.#minDate) || isAfterDay(date, this.#minDate);
 			case "month": return allowSame && isSameMonth(date, this.#minDate) || isAfterMonth(date, this.#minDate);
 			case "year": return allowSame && isSameYear(date, this.#minDate) || isAfterYear(date, this.#minDate);
-			default: return allowSame && isSameSecond(date, this.#minDate) || isAfterSecond(date, this.#minDate);
+			default: return allowSame && isSameInstant(date, this.#minDate) || isAfterInstant(date, this.#minDate);
 		}
 	}
 	/**
@@ -1459,7 +1523,7 @@ var DateTimePicker = class extends BaseComponent {
 			case "day": return allowSame && isSameDay(date, this.#maxDate) || isBeforeDay(date, this.#maxDate);
 			case "month": return allowSame && isSameMonth(date, this.#maxDate) || isBeforeMonth(date, this.#maxDate);
 			case "year": return allowSame && isSameYear(date, this.#maxDate) || isBeforeYear(date, this.#maxDate);
-			default: return allowSame && isSameSecond(date, this.#maxDate) || isBeforeSecond(date, this.#maxDate);
+			default: return allowSame && isSameInstant(date, this.#maxDate) || isBeforeInstant(date, this.#maxDate);
 		}
 	}
 	/**
@@ -1488,7 +1552,7 @@ var DateTimePicker = class extends BaseComponent {
 	* @returns {boolean} TRUE if the input is editable, otherwise FALSE.
 	*/
 	#isEditable() {
-		return !$.is(this.node, ":disabled") && (this.options.ignoreReadonly || !$.is(this.node, ":read-only"));
+		return !!this.node && !$.is(this.node, ":disabled") && (this.options.ignoreReadonly || !$.is(this.node, ":read-only"));
 	}
 	/**
 	* Determine whether a date is valid.
@@ -1498,7 +1562,7 @@ var DateTimePicker = class extends BaseComponent {
 	* @returns {boolean} TRUE if the date is valid, otherwise FALSE.
 	*/
 	#isValid(date, { granularity = "second" } = {}) {
-		if (!date?.isValid || !Number.isFinite(date.getTimestamp())) return false;
+		if (!this.node || !date?.isValid || !Number.isFinite(date.getTimestamp())) return false;
 		let minMaxGranularity;
 		switch (granularity) {
 			case "year":
@@ -1513,14 +1577,29 @@ var DateTimePicker = class extends BaseComponent {
 			granularity: minMaxGranularity,
 			allowSame: true
 		})) return false;
-		if (this.options.isValidYear && !this.options.isValidYear(date)) return false;
+		if (this.options.isValidYear && !this.options.isValidYear(date) || !this.node) return false;
 		if (granularity === "year") return true;
-		if (this.options.isValidMonth && !this.options.isValidMonth(date)) return false;
+		if (this.options.isValidMonth && !this.options.isValidMonth(date) || !this.node) return false;
 		if (granularity === "month") return true;
-		if (this.options.isValidDay && !this.options.isValidDay(date)) return false;
+		if (this.options.isValidDay && !this.options.isValidDay(date) || !this.node) return false;
 		if (granularity === "day" || !this.#hasHours) return true;
-		if (this.options.isValidTime && !this.options.isValidTime(date)) return false;
+		if (this.options.isValidTime && !this.options.isValidTime(date) || !this.node) return false;
 		return true;
+	}
+	/**
+	* Registers an event handler owned by this instance.
+	* @param {HTMLElement} node The event target.
+	* @param {string} events The event names.
+	* @param {Function} handler The handler.
+	*/
+	#listen(node, events, handler) {
+		const callback = (event) => this.node ? handler(event) : false;
+		this.#listeners.push([
+			node,
+			events,
+			callback
+		]);
+		$.addEvent(node, events, callback);
 	}
 	/**
 	* Create a new DateTime object from format.
@@ -1538,6 +1617,19 @@ var DateTimePicker = class extends BaseComponent {
 			return this.#clampStepping(newDate);
 		} catch {}
 		return null;
+	}
+	/**
+	* Filters, sorts, and deduplicates dates at the displayed calendar precision.
+	* @param {(DateTime|null)[]} dates The input dates.
+	* @returns {DateTime[]} The normalized dates.
+	*/
+	#normalizeDates(dates) {
+		const unique = /* @__PURE__ */ new Map();
+		for (const date of dates) {
+			if (!this.node) break;
+			if (date && this.#isValid(date)) unique.set(this.#dateKey(date), date);
+		}
+		return [...unique.values()].sort((a, b) => a.getTime() - b.getTime());
 	}
 	/**
 	* Create a new DateTime object set to the current date/time.
@@ -1577,41 +1669,102 @@ var DateTimePicker = class extends BaseComponent {
 		return dates.map((date) => this.#parseDate(date)).filter((date) => !!date);
 	}
 	/**
+	* Synchronizes native input changes without emitting another change event.
+	* @param {boolean} normalize Whether to normalize or restore invalid text.
+	*/
+	#readInput(normalize) {
+		const options = this.options;
+		const value = this.node.value;
+		let valid;
+		if (options.multiDate) {
+			const dates = this.#normalizeDates(value.split(options.multiDateSeparator).map((part) => this.#makeDate(part)));
+			valid = dates.length > 0;
+			if (valid || !value || normalize && options.keepInvalid) this.#dates = dates;
+		} else {
+			const date = this.#makeDate(value);
+			valid = date && this.#isValid(date);
+			if (valid || !value || normalize && options.keepInvalid) this.#date = valid ? date : null;
+		}
+		if (!this.node) return;
+		++this.#selectionId;
+		if (normalize && (valid || !options.keepInvalid)) this.#updateValue();
+		if (this.#useModal && this.#open) this.#originalDate = options.multiDate ? this.#dates.slice() : this.#date;
+		this.#resetView();
+		this.#refresh();
+	}
+	/**
 	* Refresh the date and time UI elements.
 	*/
 	#refresh() {
-		if (this.options.showToolbar) {
-			if (this.#date) {
-				if (this.#hasYear) $.setText(this.#toolbarYear, this.#date.format("yyyy"));
-				if (this.#hasDate) $.setText(this.#toolbarDate, this.#date.format("LLL d"));
-				else if (this.#hasMonth) $.setText(this.#toolbarDate, this.#date.format("LLL"));
-				if (this.#hasHours) {
-					const timeFormat = getDefaultTimeFormat(this.#dateOptions.locale, this.#useDayPeriod);
-					$.setText(this.#toolbarTime, this.#date.format(timeFormat));
-				}
-			} else {
-				if (this.#hasYear) $.setText(this.#toolbarYear, "-");
-				if (this.#hasDate) $.setText(this.#toolbarDate, "- -");
-				else if (this.#hasMonth) $.setText(this.#toolbarDate, "-");
-				if (this.#hasHours) {
-					const timeFormat = this.#useDayPeriod ? "-:- -" : "-:-";
-					$.setText(this.#toolbarTime, timeFormat);
+		if (!this.node || this.#refreshing) return;
+		this.#refreshing = true;
+		try {
+			if (this.options.showToolbar) {
+				if (this.#date) {
+					if (this.#hasYear) $.setText(this.#toolbarYear, this.#date.format("yyyy"));
+					if (this.#hasDate) $.setText(this.#toolbarDate, this.#date.format("LLL d"));
+					else if (this.#hasMonth) $.setText(this.#toolbarDate, this.#date.format("LLL"));
+					if (this.#hasHours) {
+						const timeFormat = getDefaultTimeFormat(this.#dateOptions.locale, this.#useDayPeriod);
+						$.setText(this.#toolbarTime, this.#date.format(timeFormat));
+					}
+				} else {
+					if (this.#hasYear) $.setText(this.#toolbarYear, "-");
+					if (this.#hasDate) $.setText(this.#toolbarDate, "- -");
+					else if (this.#hasMonth) $.setText(this.#toolbarDate, "-");
+					if (this.#hasHours) {
+						const timeFormat = this.#useDayPeriod ? "-:- -" : "-:-";
+						$.setText(this.#toolbarTime, timeFormat);
+					}
 				}
 			}
+			if (this.#hasYear && $.isConnected(this.#dateContainer)) {
+				this.#refreshDate();
+				if (!this.node) return;
+			}
+			if (this.#hasHours && $.isConnected(this.#timeContainer)) {
+				this.#refreshTime();
+				if (!this.node) return;
+			}
+			if (this.#hasYear && this.#hasHours && !this.options.sideBySide && this.#isEditable()) {
+				const showDate = $.findOne("[data-ui-action=\"showDate\"]", this.#showDateTable);
+				const showTime = $.findOne("[data-ui-action=\"showTime\"]", this.#showTimeTable);
+				$.setAttribute(showDate, { tabindex: 0 });
+				$.setAttribute(showTime, { tabindex: 0 });
+			}
+		} finally {
+			this.#refreshing = false;
 		}
-		if (this.#hasYear && $.isConnected(this.#dateContainer)) this.#refreshDate();
-		if (this.#hasHours && $.isConnected(this.#timeContainer)) this.#refreshTime();
-		if (this.#hasYear && this.#hasHours && !this.options.sideBySide && this.#isEditable()) {
-			const showDate = $.findOne("[data-ui-action=\"showDate\"]", this.#showDateTable);
-			const showTime = $.findOne("[data-ui-action=\"showTime\"]", this.#showTimeTable);
-			$.setAttribute(showDate, { tabindex: 0 });
-			$.setAttribute(showTime, { tabindex: 0 });
+	}
+	/**
+	* Synchronizes button semantics and roving focus after rendering.
+	* @param {HTMLElement} container The rendered panel.
+	*/
+	#refreshAccessibility(container) {
+		const editable = this.#isEditable();
+		for (const node of container.querySelectorAll("[data-ui-focus], [data-ui-action], .datetimepicker-disabled")) {
+			const disabled = !editable || node.classList.contains(this.constructor.classes.disabled);
+			node.setAttribute("role", "button");
+			node.setAttribute("aria-disabled", `${disabled}`);
+			if (node.hasAttribute("data-ui-focus")) node.setAttribute("aria-pressed", `${node.classList.contains(this.constructor.classes.active)}`);
+			if (disabled) {
+				node.tabIndex = -1;
+				if (node.hasAttribute("data-ui-focus")) node.dataset.uiFocus = "false";
+			}
+		}
+		if (editable && !container.querySelector("[data-ui-focus=\"true\"]")) {
+			const first = container.querySelector("[data-ui-focus][aria-disabled=\"false\"]");
+			if (first) {
+				first.dataset.uiFocus = "true";
+				first.tabIndex = 0;
+			}
 		}
 	}
 	/**
 	* Refresh the date container.
 	*/
 	#refreshDate() {
+		if (!this.node) return;
 		$.empty(this.#dateContainer);
 		switch (this.#viewMode) {
 			case "years":
@@ -1622,6 +1775,7 @@ var DateTimePicker = class extends BaseComponent {
 				break;
 			case "days": this.#renderDays();
 		}
+		if (!this.node) return;
 		if (this.#hasHours && !this.options.sideBySide) {
 			if (this.#useModal) $.prepend(this.#dateContainer, this.#showTimeTable);
 			else $.append(this.#dateContainer, this.#showTimeTable);
@@ -1631,6 +1785,7 @@ var DateTimePicker = class extends BaseComponent {
 			const focusableNodes = $.find("[tabindex]", this.#dateContainer);
 			$.setAttribute(focusableNodes, { tabindex: -1 });
 		}
+		this.#refreshAccessibility(this.#dateContainer);
 		this.update();
 		$.triggerEvent(this.node, "refresh.ui.datetimepicker", { detail: {
 			view: "date",
@@ -1642,13 +1797,15 @@ var DateTimePicker = class extends BaseComponent {
 	* Refresh the toggle disabled.
 	*/
 	#refreshDisabled() {
-		if ($.is(this.node, ":disabled")) $.addClass(this.#menuNode, this.constructor.classes.disabled);
+		if (!this.node) return;
+		if (!this.#isEditable()) $.addClass(this.#menuNode, this.constructor.classes.disabled);
 		else $.removeClass(this.#menuNode, this.constructor.classes.disabled);
 	}
 	/**
 	* Refresh the time container.
 	*/
 	#refreshTime() {
+		if (!this.node) return;
 		$.empty(this.#timeContainer);
 		if (this.#hasDate && !this.options.sideBySide) $.append(this.#timeContainer, this.#showDateTable);
 		switch (this.#timeViewMode) {
@@ -1660,11 +1817,13 @@ var DateTimePicker = class extends BaseComponent {
 				break;
 			default: this.#renderTime();
 		}
+		if (!this.node) return;
 		if (this.options.showClose && !this.#useModal && !this.options.inline) $.append(this.#timeContainer, this.#closeTable);
 		if (!this.#isEditable()) {
 			const focusableNodes = $.find("[tabindex]", this.#timeContainer);
 			$.setAttribute(focusableNodes, { tabindex: -1 });
 		}
+		this.#refreshAccessibility(this.#timeContainer);
 		this.update();
 		$.triggerEvent(this.node, "refresh.ui.datetimepicker", { detail: {
 			view: "time",
@@ -1676,7 +1835,21 @@ var DateTimePicker = class extends BaseComponent {
 	* Render the DateTimePicker.
 	*/
 	#render() {
-		this.#menuNode = $.create("div", { class: this.constructor.classes.menu });
+		this.#menuNode = $.create("div", {
+			class: this.constructor.classes.menu,
+			attributes: {
+				"id": generateId("datetimepicker"),
+				"role": this.options.inline ? "group" : "dialog",
+				"aria-label": this.#hasHours ? this.constructor.lang.selectDateTime : this.constructor.lang.selectDate
+			}
+		});
+		if (!this.options.inline) $.setAttribute(this.node, {
+			"aria-controls": this.#menuNode.id,
+			"aria-expanded": false,
+			"aria-haspopup": "dialog"
+		});
+		const description = this.node.getAttribute("aria-describedby");
+		if (description) this.#menuNode.setAttribute("aria-describedby", description);
 		if (this.options.showToolbar) this.#renderToolbar();
 		this.#container = $.create("div", { class: this.constructor.classes.container });
 		$.append(this.#menuNode, this.#container);
@@ -1755,18 +1928,14 @@ var DateTimePicker = class extends BaseComponent {
 			});
 			$.append(row, td);
 		} });
-		if (this.#useModal) $.addClass(this.#menuNode, "datetimepicker-modal");
-		else if (this.options.inline) {
+		if (this.#useModal) {
+			$.addClass(this.#menuNode, "datetimepicker-modal");
+			$.setAttribute(this.#menuNode, { role: "group" });
+		} else if (this.options.inline) {
 			$.addClass(this.#menuNode, this.constructor.classes.menuInline);
 			$.after(this.node, this.#menuNode);
-			$.hide(this.node);
-		} else {
-			$.addClass(this.#menuNode, this.constructor.classes.menuShadow);
-			$.setAttribute(this.#menuNode, {
-				"role": "dialog",
-				"aria-modal": true
-			});
-		}
+			this.#releaseDisplay = $.setStyleLock(this.node, "display", "none");
+		} else $.addClass(this.#menuNode, this.constructor.classes.menuShadow);
 	}
 	/**
 	* Render the days picker.
@@ -1842,6 +2011,7 @@ var DateTimePicker = class extends BaseComponent {
 					if (this.options.ariaFormat) $.setAttribute(td, { "aria-label": current.format(this.options.ariaFormat) });
 					$.append(tr, td);
 					if (!this.#isValid(current, { granularity: "day" })) {
+						if (!this.node) return;
 						$.addClass(td, this.constructor.classes.disabled);
 						$.setAttribute(td, { "aria-disabled": true });
 					} else {
@@ -1857,15 +2027,18 @@ var DateTimePicker = class extends BaseComponent {
 					}
 					if (this.#isCurrent(current, { granularity: "day" })) {
 						$.addClass(td, this.constructor.classes.active);
-						$.setAttribute(td, { "aria-selected": true });
+						$.setAttribute(td, { "aria-pressed": true });
 					} else if (!this.#viewDate.isSameMonth(current)) $.addClass(td, this.constructor.classes.tertiary);
 					if (now.isSameDay(current)) $.addClass(td, this.constructor.classes.today);
-					if (this.options.renderDay) this.options.renderDay(current, td);
+					if (this.options.renderDay) {
+						this.options.renderDay(current, td);
+						if (!this.node) return;
+					}
 					current = current.addDay();
 				}
 			}
 		});
-		$.append(this.#dateContainer, table);
+		if (this.node) $.append(this.#dateContainer, table);
 	}
 	/**
 	* Render the hours picker.
@@ -1894,14 +2067,16 @@ var DateTimePicker = class extends BaseComponent {
 						attributes: { "aria-label": hourString }
 					});
 					$.append(row, col);
-					if (!this.#isValid(current, { granularity: "hour" })) $.addClass(col, this.constructor.classes.disabled);
-					else {
+					if (!this.#isValid(current, { granularity: "hour" })) {
+						if (!this.node) return;
+						$.addClass(col, this.constructor.classes.disabled);
+					} else {
 						$.addClass(col, this.constructor.classes.action);
 						$.setDataset(col, {
 							uiAction: "setHours",
 							uiHour: current.getHours()
 						});
-						$.setAttribute(col, { role: "button " });
+						$.setAttribute(col, { role: "button" });
 					}
 					if (initialDate.isSameHour(current)) {
 						$.setAttribute(col, { tabindex: 0 });
@@ -1912,13 +2087,13 @@ var DateTimePicker = class extends BaseComponent {
 					}
 					if (this.#date && this.#date.isSameHour(current)) {
 						$.addClass(col, this.constructor.classes.active);
-						$.setAttribute(col, { "aria-selected": true });
+						$.setAttribute(col, { "aria-pressed": true });
 					}
 					current = current.addHour();
 				}
 			}
 		});
-		$.append(this.#timeContainer, table);
+		if (this.node) $.append(this.#timeContainer, table);
 	}
 	/**
 	* Render the minutes picker.
@@ -1947,8 +2122,10 @@ var DateTimePicker = class extends BaseComponent {
 						class: this.constructor.classes.timeColumn
 					});
 					$.append(row, col);
-					if (!this.#isValid(current, { granularity: "minute" })) $.addClass(col, this.constructor.classes.disabled);
-					else {
+					if (!this.#isValid(current, { granularity: "minute" })) {
+						if (!this.node) return;
+						$.addClass(col, this.constructor.classes.disabled);
+					} else {
 						$.addClass(col, this.constructor.classes.action);
 						$.setDataset(col, {
 							uiAction: "setMinutes",
@@ -1968,7 +2145,7 @@ var DateTimePicker = class extends BaseComponent {
 					}
 					if (this.#date && this.#date.isSameMinute(current)) {
 						$.addClass(col, this.constructor.classes.active);
-						$.setAttribute(col, { "aria-selected": true });
+						$.setAttribute(col, { "aria-pressed": true });
 					}
 					current = current.addMinutes(stepping);
 				}
@@ -1979,7 +2156,7 @@ var DateTimePicker = class extends BaseComponent {
 				}
 			}
 		});
-		$.append(this.#timeContainer, table);
+		if (this.node) $.append(this.#timeContainer, table);
 	}
 	/**
 	* Render the Modal.
@@ -2007,6 +2184,10 @@ var DateTimePicker = class extends BaseComponent {
 			class: this.constructor.classes.modalTitle,
 			text: titleText
 		});
+		modalTitle.id = generateId("datetimepicker-title");
+		this.#modal.id = generateId("datetimepicker-modal");
+		this.#modal.setAttribute("aria-labelledby", modalTitle.id);
+		$.setAttribute(this.node, { "aria-controls": this.#modal.id });
 		$.append(modalHeader, modalTitle);
 		const modalBody = $.create("div", { class: this.constructor.classes.modalBody });
 		$.append(modalContent, modalBody);
@@ -2027,8 +2208,7 @@ var DateTimePicker = class extends BaseComponent {
 			text: this.constructor.lang.set,
 			attributes: {
 				"type": "button",
-				"data-ui-dismiss": "modal",
-				"data-ui-set-color": "true"
+				"data-ui-dismiss": "modal"
 			}
 		});
 		$.append(modalFooter, this.#setBtn);
@@ -2092,8 +2272,10 @@ var DateTimePicker = class extends BaseComponent {
 						$.setDataset(col, { uiFocus: false });
 					}
 					if (this.#isCurrent(current, { granularity: "month" })) $.addClass(col, this.constructor.classes.active);
-					if (!this.#isValid(current, { granularity: "month" })) $.addClass(col, this.constructor.classes.disabled);
-					else {
+					if (!this.#isValid(current, { granularity: "month" })) {
+						if (!this.node) return;
+						$.addClass(col, this.constructor.classes.disabled);
+					} else {
 						$.addClass(col, this.constructor.classes.action);
 						if (this.#minView === "months") $.setDataset(col, {
 							uiAction: "setDate",
@@ -2107,12 +2289,15 @@ var DateTimePicker = class extends BaseComponent {
 							uiMonth: current.getMonth()
 						});
 					}
-					if (this.options.renderMonth) this.options.renderMonth(current, col);
+					if (this.options.renderMonth) {
+						this.options.renderMonth(current, col);
+						if (!this.node) return;
+					}
 					current = current.addMonth();
 				}
 			}
 		});
-		$.append(this.#dateContainer, table);
+		if (this.node) $.append(this.#dateContainer, table);
 	}
 	/**
 	* Render the time picker.
@@ -2177,9 +2362,7 @@ var DateTimePicker = class extends BaseComponent {
 				if (this.#hasMinutes) {
 					let increment;
 					let decrement;
-					const initialMinutes = initialDate.getMinutes();
-					const nextMinutes = Math.min(initialMinutes + this.options.minuteStepping, 60);
-					const nextMinute = initialDate.withMinutes(nextMinutes);
+					const nextMinute = this.#clampStepping(initialDate.addMinutes(this.options.minuteStepping));
 					if (this.#isValid(nextMinute, { granularity: "minute" })) increment = {
 						dataset: {
 							uiAction: "next",
@@ -2238,7 +2421,7 @@ var DateTimePicker = class extends BaseComponent {
 				}
 			}
 		});
-		$.append(this.#timeContainer, table);
+		if (this.node) $.append(this.#timeContainer, table);
 	}
 	/**
 	* Render a time column.
@@ -2403,8 +2586,10 @@ var DateTimePicker = class extends BaseComponent {
 					}
 					if (this.#isCurrent(current, { granularity: "year" })) $.addClass(col, this.constructor.classes.active);
 					else if (currentYear < startYear || currentYear > endYear) $.addClass(col, this.constructor.classes.tertiary);
-					if (!this.#isValid(current, { granularity: "year" })) $.addClass(col, this.constructor.classes.disabled);
-					else {
+					if (!this.#isValid(current, { granularity: "year" })) {
+						if (!this.node) return;
+						$.addClass(col, this.constructor.classes.disabled);
+					} else {
 						$.addClass(col, this.constructor.classes.action);
 						if (this.#minView === "years") $.setDataset(col, {
 							uiAction: "setDate",
@@ -2415,19 +2600,25 @@ var DateTimePicker = class extends BaseComponent {
 							uiView: "months",
 							uiYear: currentYear
 						});
-						$.setAttribute(col, { role: "button " });
+						$.setAttribute(col, { role: "button" });
 					}
-					if (this.options.renderYear) this.options.renderYear(current, col);
+					if (this.options.renderYear) {
+						this.options.renderYear(current, col);
+						if (!this.node) return;
+					}
 					current = current.addYear();
 				}
 			}
 		});
-		$.append(this.#dateContainer, table);
+		if (this.node) $.append(this.#dateContainer, table);
 	}
 	/**
 	* Reset the view.
 	*/
 	#resetView() {
+		++this.#viewTransitionId;
+		if (this.#dateContainer) $.stop(this.#dateContainer);
+		if (this.#timeContainer) $.stop(this.#timeContainer);
 		this.#viewMode = this.#minView;
 		this.#timeViewMode = null;
 		if (this.options.multiDate && this.#dates.length) this.#viewDate = this.#dates[0];
@@ -2449,20 +2640,24 @@ var DateTimePicker = class extends BaseComponent {
 	*/
 	#setDate(date, { updateValue = true } = {}) {
 		if (!this.#isEditable()) return;
-		if (date) date = this.#clampStepping(date);
+		date = date ? this.#clampStepping(date) : null;
 		if (date && !this.#isValid(date)) date = null;
-		const oldDate = this.#date;
+		if (!this.node) return;
+		const oldDate = this.getDate();
+		const oldValue = this.node.value;
+		const id = ++this.#selectionId;
 		this.#date = date;
+		if (updateValue) {
+			this.#updateValue();
+			if (this.#useModal && this.#open) this.#originalDate = date;
+		}
 		this.#refresh();
-		const oldValue = $.getValue(this.node);
-		const newValue = this.#formatDate(date);
-		if (!updateValue || oldValue === newValue) return;
-		this.#updateValue();
+		if (!this.node || id !== this.#selectionId || !updateValue || oldValue === this.node.value) return;
 		$.triggerEvent(this.node, "change.ui.datetimepicker", {
 			data: { skipUpdate: true },
 			detail: {
 				old: oldDate,
-				new: this.#date
+				new: date
 			}
 		});
 	}
@@ -2474,21 +2669,45 @@ var DateTimePicker = class extends BaseComponent {
 	*/
 	#setDates(dates, { updateValue = true } = {}) {
 		if (!this.#isEditable()) return;
-		dates = dates.filter((date) => this.#isValid(date)).sort((a, b) => isBeforeSecond(a, b) ? -1 : 1);
-		const oldDates = this.#dates;
+		dates = this.#normalizeDates(dates);
+		if (!this.node) return;
+		const oldDates = this.getDate();
+		const oldValue = this.node.value;
+		const id = ++this.#selectionId;
 		this.#dates = dates;
+		if (updateValue) {
+			this.#updateValue();
+			if (this.#useModal && this.#open) this.#originalDate = dates.slice();
+		}
 		this.#refresh();
-		const oldValue = $.getValue(this.node);
-		const newValue = this.#formatDates(dates);
-		if (!updateValue || oldValue === newValue) return;
-		this.#updateValue();
+		if (!this.node || id !== this.#selectionId || !updateValue || oldValue === this.node.value) return;
 		$.triggerEvent(this.node, "change.ui.datetimepicker", {
 			data: { skipUpdate: true },
 			detail: {
 				old: oldDates,
-				new: this.#dates.slice()
+				new: dates.slice()
 			}
 		});
+	}
+	/**
+	* Switches panels and ignores completions from interrupted transitions.
+	* @param {HTMLElement} target The panel to show.
+	* @param {HTMLElement} source The panel to hide.
+	* @param {Function} focus The focus restoration callback.
+	*/
+	#switchView(target, source, focus) {
+		if (!this.node) return;
+		const id = ++this.#viewTransitionId;
+		$.stop(target);
+		$.stop(source);
+		$.append(this.#container, target);
+		$.setStyle(target, { display: "" });
+		Promise.all([$.squeezeIn(target, { duration: this.#duration() }), $.squeezeOut(source, { duration: this.#duration() })]).then((_) => {
+			if (!this.node || id !== this.#viewTransitionId) return;
+			$.detach(source);
+			this.update();
+			focus();
+		}).catch((_) => {});
 	}
 	/**
 	* Update the input value to the current date.
@@ -2509,7 +2728,8 @@ $.addEvent(document, "mousedown.ui.datetimepicker", (e) => {
 	const nodes = $.find(".datetimepicker:not(.datetimepicker-inline):not(.datetimepicker-modal)");
 	for (const node of nodes) {
 		const input = $.getData(node, "input");
-		const datetimepicker = DateTimePicker.init(input);
+		const datetimepicker = $.getData(input, DateTimePicker.DATA_KEY);
+		if (!datetimepicker) continue;
 		if ($.isSame(datetimepicker.node, target) || $.isSame(node, target) || $.hasDescendent(node, target)) continue;
 		datetimepicker.hide();
 	}
@@ -2520,13 +2740,14 @@ $.addEvent(document, "keydown.ui.datetimepicker", (e) => {
 	const nodes = $.find(".datetimepicker:not(.datetimepicker-inline):not(.datetimepicker-modal)");
 	for (const [i, node] of nodes.entries()) {
 		const input = $.getData(node, "input");
-		const datetimepicker = DateTimePicker.init(input);
+		const datetimepicker = $.getData(input, DateTimePicker.DATA_KEY);
+		if (!datetimepicker) continue;
 		if (!stopped) {
 			stopped = true;
 			e.stopPropagation();
 		}
-		datetimepicker.hide();
 		if (i == 0) $.focus(input);
+		datetimepicker.hide();
 	}
 }, { capture: true });
 var js_default = DateTimePicker;

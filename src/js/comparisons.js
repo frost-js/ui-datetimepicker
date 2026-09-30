@@ -19,13 +19,13 @@ export function isAfterMonth(a, b) {
 };
 
 /**
- * Test if a date is after another date (second).
+ * Test if a date is after another date (instant).
  * @param {DateTime} a The date to test.
  * @param {DateTime} b The date to compare against.
  * @returns {boolean} TRUE if the date is after the other date, otherwise FALSE.
  */
-export function isAfterSecond(a, b) {
-    return a.getTimestamp() > b.getTimestamp();
+export function isAfterInstant(a, b) {
+    return a.getTime() > b.getTime();
 };
 
 /**
@@ -59,13 +59,13 @@ export function isBeforeMonth(a, b) {
 };
 
 /**
- * Test if a date is before another date (second).
+ * Test if a date is before another date (instant).
  * @param {DateTime} a The date to test.
  * @param {DateTime} b The date to compare against.
  * @returns {boolean} TRUE if the date is before the other date, otherwise FALSE.
  */
-export function isBeforeSecond(a, b) {
-    return a.getTimestamp() < b.getTimestamp();
+export function isBeforeInstant(a, b) {
+    return a.getTime() < b.getTime();
 };
 
 /**
@@ -99,13 +99,13 @@ export function isSameMonth(a, b) {
 };
 
 /**
- * Test if a date is equal to another date (second).
+ * Test if a date is equal to another date (instant).
  * @param {DateTime} a The date to test.
  * @param {DateTime} b The date to compare against.
  * @returns {boolean} TRUE if the date is equal to the other date, otherwise FALSE.
  */
-export function isSameSecond(a, b) {
-    return a.getTimestamp() === b.getTimestamp();
+export function isSameInstant(a, b) {
+    return a.getTime() === b.getTime();
 };
 
 /**

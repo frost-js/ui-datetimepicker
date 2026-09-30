@@ -12,7 +12,11 @@ $.addEvent(document, 'mousedown.ui.datetimepicker', (e) => {
 
     for (const node of nodes) {
         const input = $.getData(node, 'input');
-        const datetimepicker = DateTimePicker.init(input);
+        const datetimepicker = $.getData(input, DateTimePicker.DATA_KEY);
+
+        if (!datetimepicker) {
+            continue;
+        }
 
         if (
             $.isSame(datetimepicker.node, target) ||
@@ -36,18 +40,22 @@ $.addEvent(document, 'keydown.ui.datetimepicker', (e) => {
 
     for (const [i, node] of nodes.entries()) {
         const input = $.getData(node, 'input');
-        const datetimepicker = DateTimePicker.init(input);
+        const datetimepicker = $.getData(input, DateTimePicker.DATA_KEY);
+
+        if (!datetimepicker) {
+            continue;
+        }
 
         if (!stopped) {
             stopped = true;
             e.stopPropagation();
         }
 
-        datetimepicker.hide();
-
         if (i == 0) {
             $.focus(input);
         }
+
+        datetimepicker.hide();
     }
 }, { capture: true });
 

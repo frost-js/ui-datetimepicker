@@ -8,17 +8,19 @@ The initial review was proposal-only. The implementation status below records su
 
 ## Implementation status — 1 October 2026
 
-Steps refer to the implementation sequence in section 9.
+Numbers refer to the main sections below. Section 9 summarizes acceptance and does not define a separate numbering scheme.
 
-| Step | Status |
+| Section | Status |
 | --- | --- |
-| 1. Package/build foundation | Complete: 4.0.0 metadata and fresh lockfile; `.npmrc`/`.gitignore`; shared lint configuration; Vite ESM/UMD builds; `browser.js`; local Playwright harness and bundle smoke tests. |
-| 2. Runtime migration | Complete: UI 4 `node`/frozen `options`, derived private configuration, private class members, static customization fields and format methods, option JSDoc, removal of prototype/static composition, DateTime 8 `with*` calls, and parsing/clearing/stepping fixes. |
-| 3. Behavior and integration | Pending: complete form/reset lifecycle, disposal and transition hardening, accessibility, and remaining selection/event fixes. The modal call now uses UI 4's public `show(relatedTarget)` API as required for compatibility. |
-| 4. Styles and coverage | Pending: Sass/style modernization, expanded behavioral suites, Monocart and Codecov configuration. |
-| 5. Documentation and release readiness | Pending: README/demo rewrite, CI/publishing workflows, full release validation and service setup. |
+| 1. Dependencies and package metadata | Committed in `c044075`: 4.0.0 metadata and lockfile, runtime peers, `.npmrc`/`.gitignore`, and shared lint configuration. |
+| 2. Vite and distribution | Committed in `c044075`: Vite ESM/UMD builds, source maps, and `browser.js`. |
+| 3. JavaScript component migration | The initial UI 4/DateTime 8 migration was also included in `c044075`. Uncommitted changes add form reset synchronization, owned-resource cleanup, transition guards, modal draft/focus handling, accessibility states, and selection fixes. Final behavioral validation remains outstanding. |
+| 4. Sass and styling | Uncommitted: Sass modules, UI-prefixed CSS variables, current UI color tokens, logical RTL styles, and the matching 992px wide-layout breakpoint. |
+| 5. Playwright and Codecov | Deferred. The basic harness and 43 tests per browser already exist in `c044075`. The mistakenly added uncommitted test expansion, Monocart dependency, and coverage configuration have been removed. |
+| 6. CI and publishing | Pending. |
+| 7. README and demos | Pending. |
 
-Validation for steps 1–2: build, JavaScript/SCSS lint, Sass-unused audit, and package-content inspection passed. **43 tests passed in each of Chromium, Firefox, and WebKit (129 total)**, including all four JavaScript bundle variants. These are focused migration tests, not the full planned behavioral/coverage suite. Node 20/22 matrix runs remain part of later CI work; local validation used Node 24.
+Validation recorded for commit `c044075`: build, JavaScript/SCSS lint, Sass-unused audit, and package-content inspection passed. **43 tests passed in each of Chromium, Firefox, and WebKit (129 total)**, including all four JavaScript bundle variants. This result predates the uncommitted section 3–4 changes. Node 20/22 matrix runs remain part of later CI work; local validation used Node 24.
 
 Implementation decisions and remaining notes:
 
@@ -26,9 +28,10 @@ Implementation decisions and remaining notes:
 - The shared three-day release-age policy rejected Sass 1.105.1 at installation time. The manifest uses `sass-embedded: ^1.105.0` and `vite: ^8.3.0`; the lockfile resolved Sass 1.105.0 and Vite 8.3.1.
 - Fixed multi-date clearing, numeric epoch zero, constructor string bounds with a derived format, invalid Date/DateTime/numeric inputs, format-cache hour-cycle collisions, explicit 12/24-hour formats, and unsafe stepping. Invalid `minuteStepping` now throws a `RangeError` for values outside integer 1–60; multi-date setters require an array or null and reject scalar input with a `TypeError`.
 - Strings intentionally use the configured format and `altFormats`. The ineffective general-string fallback was removed; ISO strings require a matching configured format or conversion to a Date/DateTime before calling the picker.
-- Invalid stepping and unsupported formats release the base registration when initialization fails. Broader constructor-callback and lifecycle cleanup remains in step 3.
+- Invalid stepping and unsupported formats release the base registration when initialization fails. Broader constructor-callback and lifecycle cleanup is included in the uncommitted section 3 work.
 - The test server defaults to port 3001 and accepts a `PORT` override consistently in the server and Playwright configuration. Port 3001's initial availability check was slow in this environment; the remaining checks used `PORT=34567`.
-- CSS builds still emit the existing Sass `@import` deprecation warning. Sass conversion, CSS token changes, and the other unresolved findings below remain scheduled for later steps.
+- Section 4 replaces Sass `@import` with `@use`/`@forward`, removing that deprecation warning.
+- Additional issues encountered during section 3: returning input focus after hiding could reopen the popup; an opening input click could reach UI 4's modal backdrop handler and immediately close the modal. The uncommitted source corrects focus ordering and stops propagation of modal-opening clicks. The interrupted test expansion did not establish a passing final behavioral suite.
 
 ## Reference projects and precedence
 
@@ -345,11 +348,14 @@ Additional regression targets, without claiming confirmed defects: preserving in
 
 ## 9. Implementation sequence and acceptance
 
-1. **Package/build foundation:** add repository configuration, update/sort metadata and lockfile, introduce Vite, rename the browser entry, and adapt lint configuration. Establish local browser assets and an initialization smoke test.
-2. **Runtime migration:** adopt UI 4 and DateTime 8 APIs, consolidate the class with private state/JSDoc, and fix parsing/clearing/stepping blockers.
-3. **Behavior and integration:** repair form lifecycle, disposal, transitions, modal focus, events, accessibility, and confirmed selection bugs; add corresponding behavioral tests.
-4. **Styles and coverage:** modernize Sass and UI tokens/layout, complete method/event/option/form/modal/style tests, and wire source-mapped coverage.
-5. **Documentation and release readiness:** rewrite README/demos, add CI/publish configuration, regenerate tracked bundles, inspect the package, and record intentional breaking changes.
+Implement the main sections in their numbered order:
+
+- **Sections 1–2:** dependency/package configuration and Vite distribution.
+- **Section 3:** JavaScript migration, behavior, and integration fixes.
+- **Section 4:** Sass, UI tokens, and component layout.
+- **Section 5:** Playwright behavioral suites and source-mapped Codecov reporting.
+- **Section 6:** CI and publishing configuration.
+- **Section 7:** README and demos, followed by final release validation against the criteria below.
 
 The migration is complete when:
 

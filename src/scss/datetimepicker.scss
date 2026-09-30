@@ -1,22 +1,24 @@
-@import "vars";
+@forward "vars";
+@use "vars";
 
 .datetimepicker {
-    --datetimepicker-z-index: #{$datetimepicker-z-index};
-    --datetimepicker-bg: #{$datetimepicker-bg};
-    --datetimepicker-border-width: #{$datetimepicker-border-width};
-    --datetimepicker-border-color: #{$datetimepicker-border-color};
+    --ui-datetimepicker-z-index: #{vars.$datetimepicker-z-index};
+    --ui-datetimepicker-bg: #{vars.$datetimepicker-bg};
+    --ui-datetimepicker-border-width: #{vars.$datetimepicker-border-width};
+    --ui-datetimepicker-border-color: #{vars.$datetimepicker-border-color};
 
-    z-index: var(--datetimepicker-z-index);
+    z-index: var(--ui-datetimepicker-z-index);
     display: block;
-    width: $datetimepicker-width;
+    width: vars.$datetimepicker-width;
+    max-width: 100%;
     padding: 0;
     margin: 0;
-    color: $datetimepicker-color;
-    text-align: left;
+    color: vars.$datetimepicker-color;
+    text-align: start;
     user-select: none;
     list-style: none;
-    background-color: var(--datetimepicker-bg);
-    border: var(--datetimepicker-border-width) var(--ui-border-style) var(--datetimepicker-border-color);
+    background-color: var(--ui-datetimepicker-bg);
+    border: var(--ui-datetimepicker-border-width) var(--ui-border-style) var(--ui-datetimepicker-border-color);
 
     th {
         border-bottom: 0;
@@ -36,16 +38,16 @@
 }
 
 .datetimepicker-inline {
-    --datetimepicker-bg: transparent;
-    --datetimepicker-border-width: 0;
+    --ui-datetimepicker-bg: transparent;
+    --ui-datetimepicker-border-width: 0;
 }
 
 .datetimepicker-action {
     cursor: pointer;
 
     &:hover {
-        color: $datetimepicker-action-hover-color;
-        background-color: $datetimepicker-action-hover-bg;
+        color: vars.$datetimepicker-action-hover-color;
+        background-color: vars.$datetimepicker-action-hover-bg;
     }
 
     &:focus-visible {
@@ -54,19 +56,19 @@
     }
 
     &.datetimepicker-active {
-        color: $datetimepicker-action-active-color;
-        background-color: $datetimepicker-action-active-bg;
+        color: vars.$datetimepicker-action-active-color;
+        background-color: vars.$datetimepicker-action-active-bg;
 
         &:hover,
         &:focus-visible {
-            background-color: $datetimepicker-action-active-hover-bg;
+            background-color: vars.$datetimepicker-action-active-hover-bg;
         }
     }
 }
 
 .datetimepicker-disabled {
-    cursor: $datetimepicker-disabled-cursor;
-    opacity: $datetimepicker-disabled-opacity;
+    cursor: vars.$datetimepicker-disabled-cursor;
+    opacity: vars.$datetimepicker-disabled-opacity;
 
     &:focus-visible {
         outline: 0;
@@ -75,7 +77,7 @@
 }
 
 .datetimepicker-time {
-    font-size: $datetimepicker-time-font-size;
+    font-size: vars.$datetimepicker-time-font-size;
 }
 
 .datetimepicker-today {
@@ -83,29 +85,31 @@
 
     &::before {
         position: absolute;
-        right: $datetimepicker-today-right;
-        bottom: $datetimepicker-today-bottom;
+        inset-inline-end: vars.$datetimepicker-today-right;
+        bottom: vars.$datetimepicker-today-bottom;
         display: inline-block;
         content: "";
         border: solid transparent;
-        border-width: 0 0 $datetimepicker-today-size $datetimepicker-today-size;
-        border-top-color: $datetimepicker-today-border-top-color;
-        border-bottom-color: $datetimepicker-today-border-bottom-color;
+        border-width: 0;
+        border-block-start-color: vars.$datetimepicker-today-border-top-color;
+        border-block-end-color: vars.$datetimepicker-today-border-bottom-color;
+        border-block-end-width: vars.$datetimepicker-today-size;
+        border-inline-start-width: vars.$datetimepicker-today-size;
     }
 
     &.datetimepicker-active::before {
-        border-bottom-color: $datetimepicker-today-active-border-bottom-color;
+        border-block-end-color: vars.$datetimepicker-today-active-border-bottom-color;
     }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 992px) {
     .datetimepicker-wide {
-        width: $datetimepicker-wide-width;
+        width: vars.$datetimepicker-wide-width;
     }
 }
 
 .datetimepicker-modal {
-    --datetimepicker-border-width: 0;
+    --ui-datetimepicker-border-width: 0;
 
     width: 100%;
 }
