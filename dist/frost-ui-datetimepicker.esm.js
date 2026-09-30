@@ -1694,10 +1694,12 @@ var DateTimePicker = class extends BaseComponent {
 	}
 	/**
 	* Refresh the date and time UI elements.
+	* @param {boolean} [notify=true] Whether to emit refresh events.
 	*/
-	#refresh() {
+	#refresh(notify = true) {
 		if (!this.node || this.#refreshing) return;
 		this.#refreshing = true;
+		const selectionId = this.#selectionId;
 		try {
 			if (this.options.showToolbar) {
 				if (this.#date) {
@@ -1719,11 +1721,11 @@ var DateTimePicker = class extends BaseComponent {
 				}
 			}
 			if (this.#hasYear && $.isConnected(this.#dateContainer)) {
-				this.#refreshDate();
+				this.#refreshDate(notify);
 				if (!this.node) return;
 			}
 			if (this.#hasHours && $.isConnected(this.#timeContainer)) {
-				this.#refreshTime();
+				this.#refreshTime(notify);
 				if (!this.node) return;
 			}
 			if (this.#hasYear && this.#hasHours && !this.options.sideBySide && this.#isEditable()) {
@@ -1735,6 +1737,7 @@ var DateTimePicker = class extends BaseComponent {
 		} finally {
 			this.#refreshing = false;
 		}
+		if (this.node && notify && selectionId !== this.#selectionId) this.#refresh(false);
 	}
 	/**
 	* Synchronizes button semantics and roving focus after rendering.
@@ -1762,8 +1765,9 @@ var DateTimePicker = class extends BaseComponent {
 	}
 	/**
 	* Refresh the date container.
+	* @param {boolean} [notify=true] Whether to emit a refresh event.
 	*/
-	#refreshDate() {
+	#refreshDate(notify = true) {
 		if (!this.node) return;
 		$.empty(this.#dateContainer);
 		switch (this.#viewMode) {
@@ -1787,7 +1791,7 @@ var DateTimePicker = class extends BaseComponent {
 		}
 		this.#refreshAccessibility(this.#dateContainer);
 		this.update();
-		$.triggerEvent(this.node, "refresh.ui.datetimepicker", { detail: {
+		if (notify) $.triggerEvent(this.node, "refresh.ui.datetimepicker", { detail: {
 			view: "date",
 			viewMode: this.#viewMode,
 			viewDate: this.#viewDate
@@ -1803,8 +1807,9 @@ var DateTimePicker = class extends BaseComponent {
 	}
 	/**
 	* Refresh the time container.
+	* @param {boolean} [notify=true] Whether to emit a refresh event.
 	*/
-	#refreshTime() {
+	#refreshTime(notify = true) {
 		if (!this.node) return;
 		$.empty(this.#timeContainer);
 		if (this.#hasDate && !this.options.sideBySide) $.append(this.#timeContainer, this.#showDateTable);
@@ -1825,7 +1830,7 @@ var DateTimePicker = class extends BaseComponent {
 		}
 		this.#refreshAccessibility(this.#timeContainer);
 		this.update();
-		$.triggerEvent(this.node, "refresh.ui.datetimepicker", { detail: {
+		if (notify) $.triggerEvent(this.node, "refresh.ui.datetimepicker", { detail: {
 			view: "time",
 			viewMode: this.#timeViewMode,
 			viewDate: this.#viewDate
@@ -2045,7 +2050,7 @@ var DateTimePicker = class extends BaseComponent {
 	*/
 	#renderHours() {
 		const initialDate = this.#date ? this.#date : this.#defaultDate;
-		let current = initialDate.startOfDay();
+		let current = initialDate.withHours(0);
 		const last = initialDate.endOfDay();
 		const table = this.#createTable({
 			borderless: true,
@@ -2100,7 +2105,7 @@ var DateTimePicker = class extends BaseComponent {
 	*/
 	#renderMinutes() {
 		const initialDate = this.#date ? this.#date : this.#defaultDate;
-		let current = initialDate.startOfHour();
+		let current = initialDate.withMinutes(0);
 		const last = initialDate.endOfHour();
 		const table = this.#createTable({
 			borderless: true,

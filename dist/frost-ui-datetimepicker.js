@@ -1726,10 +1726,12 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		}
 		/**
 		* Refresh the date and time UI elements.
+		* @param {boolean} [notify=true] Whether to emit refresh events.
 		*/
-		#refresh() {
+		#refresh(notify = true) {
 			if (!this.node || this.#refreshing) return;
 			this.#refreshing = true;
+			const selectionId = this.#selectionId;
 			try {
 				if (this.options.showToolbar) {
 					if (this.#date) {
@@ -1751,11 +1753,11 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					}
 				}
 				if (this.#hasYear && _fr0st_query.default.isConnected(this.#dateContainer)) {
-					this.#refreshDate();
+					this.#refreshDate(notify);
 					if (!this.node) return;
 				}
 				if (this.#hasHours && _fr0st_query.default.isConnected(this.#timeContainer)) {
-					this.#refreshTime();
+					this.#refreshTime(notify);
 					if (!this.node) return;
 				}
 				if (this.#hasYear && this.#hasHours && !this.options.sideBySide && this.#isEditable()) {
@@ -1767,6 +1769,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			} finally {
 				this.#refreshing = false;
 			}
+			if (this.node && notify && selectionId !== this.#selectionId) this.#refresh(false);
 		}
 		/**
 		* Synchronizes button semantics and roving focus after rendering.
@@ -1794,8 +1797,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		}
 		/**
 		* Refresh the date container.
+		* @param {boolean} [notify=true] Whether to emit a refresh event.
 		*/
-		#refreshDate() {
+		#refreshDate(notify = true) {
 			if (!this.node) return;
 			_fr0st_query.default.empty(this.#dateContainer);
 			switch (this.#viewMode) {
@@ -1819,7 +1823,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 			this.#refreshAccessibility(this.#dateContainer);
 			this.update();
-			_fr0st_query.default.triggerEvent(this.node, "refresh.ui.datetimepicker", { detail: {
+			if (notify) _fr0st_query.default.triggerEvent(this.node, "refresh.ui.datetimepicker", { detail: {
 				view: "date",
 				viewMode: this.#viewMode,
 				viewDate: this.#viewDate
@@ -1835,8 +1839,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		}
 		/**
 		* Refresh the time container.
+		* @param {boolean} [notify=true] Whether to emit a refresh event.
 		*/
-		#refreshTime() {
+		#refreshTime(notify = true) {
 			if (!this.node) return;
 			_fr0st_query.default.empty(this.#timeContainer);
 			if (this.#hasDate && !this.options.sideBySide) _fr0st_query.default.append(this.#timeContainer, this.#showDateTable);
@@ -1857,7 +1862,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 			this.#refreshAccessibility(this.#timeContainer);
 			this.update();
-			_fr0st_query.default.triggerEvent(this.node, "refresh.ui.datetimepicker", { detail: {
+			if (notify) _fr0st_query.default.triggerEvent(this.node, "refresh.ui.datetimepicker", { detail: {
 				view: "time",
 				viewMode: this.#timeViewMode,
 				viewDate: this.#viewDate
@@ -2077,7 +2082,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		*/
 		#renderHours() {
 			const initialDate = this.#date ? this.#date : this.#defaultDate;
-			let current = initialDate.startOfDay();
+			let current = initialDate.withHours(0);
 			const last = initialDate.endOfDay();
 			const table = this.#createTable({
 				borderless: true,
@@ -2132,7 +2137,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		*/
 		#renderMinutes() {
 			const initialDate = this.#date ? this.#date : this.#defaultDate;
-			let current = initialDate.startOfHour();
+			let current = initialDate.withMinutes(0);
 			const last = initialDate.endOfHour();
 			const table = this.#createTable({
 				borderless: true,

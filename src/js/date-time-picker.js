@@ -2147,12 +2147,14 @@ export default class DateTimePicker extends BaseComponent {
 
     /**
      * Refresh the date and time UI elements.
+     * @param {boolean} [notify=true] Whether to emit refresh events.
      */
-    #refresh() {
+    #refresh(notify = true) {
         if (!this.node || this.#refreshing) {
             return;
         }
         this.#refreshing = true;
+        const selectionId = this.#selectionId;
         try {
             if (this.options.showToolbar) {
                 if (this.#date) {
@@ -2189,14 +2191,14 @@ export default class DateTimePicker extends BaseComponent {
             }
 
             if (this.#hasYear && $.isConnected(this.#dateContainer)) {
-                this.#refreshDate();
+                this.#refreshDate(notify);
                 if (!this.node) {
                     return;
                 }
             }
 
             if (this.#hasHours && $.isConnected(this.#timeContainer)) {
-                this.#refreshTime();
+                this.#refreshTime(notify);
                 if (!this.node) {
                     return;
                 }
@@ -2211,6 +2213,11 @@ export default class DateTimePicker extends BaseComponent {
             }
         } finally {
             this.#refreshing = false;
+        }
+        if (this.node && notify && selectionId !== this.#selectionId) {
+            // A callback may replace the selection after its cells were rendered.
+            // Reconcile once without notifying the same refresh listeners again.
+            this.#refresh(false);
         }
     }
 
@@ -2245,8 +2252,9 @@ export default class DateTimePicker extends BaseComponent {
 
     /**
      * Refresh the date container.
+     * @param {boolean} [notify=true] Whether to emit a refresh event.
      */
-    #refreshDate() {
+    #refreshDate(notify = true) {
         if (!this.node) {
             return;
         }
@@ -2288,13 +2296,15 @@ export default class DateTimePicker extends BaseComponent {
         this.#refreshAccessibility(this.#dateContainer);
         this.update();
 
-        $.triggerEvent(this.node, 'refresh.ui.datetimepicker', {
-            detail: {
-                view: 'date',
-                viewMode: this.#viewMode,
-                viewDate: this.#viewDate,
-            },
-        });
+        if (notify) {
+            $.triggerEvent(this.node, 'refresh.ui.datetimepicker', {
+                detail: {
+                    view: 'date',
+                    viewMode: this.#viewMode,
+                    viewDate: this.#viewDate,
+                },
+            });
+        }
     }
 
     /**
@@ -2313,8 +2323,9 @@ export default class DateTimePicker extends BaseComponent {
 
     /**
      * Refresh the time container.
+     * @param {boolean} [notify=true] Whether to emit a refresh event.
      */
-    #refreshTime() {
+    #refreshTime(notify = true) {
         if (!this.node) {
             return;
         }
@@ -2352,13 +2363,15 @@ export default class DateTimePicker extends BaseComponent {
         this.#refreshAccessibility(this.#timeContainer);
         this.update();
 
-        $.triggerEvent(this.node, 'refresh.ui.datetimepicker', {
-            detail: {
-                view: 'time',
-                viewMode: this.#timeViewMode,
-                viewDate: this.#viewDate,
-            },
-        });
+        if (notify) {
+            $.triggerEvent(this.node, 'refresh.ui.datetimepicker', {
+                detail: {
+                    view: 'time',
+                    viewMode: this.#timeViewMode,
+                    viewDate: this.#viewDate,
+                },
+            });
+        }
     }
 
     /**
@@ -2679,7 +2692,8 @@ export default class DateTimePicker extends BaseComponent {
             this.#date :
             this.#defaultDate;
 
-        let current = initialDate.startOfDay();
+        // Hour selection preserves the current minutes, seconds, and milliseconds.
+        let current = initialDate.withHours(0);
         const last = initialDate.endOfDay();
 
         const table = this.#createTable({
@@ -2765,7 +2779,8 @@ export default class DateTimePicker extends BaseComponent {
             this.#date :
             this.#defaultDate;
 
-        let current = initialDate.startOfHour();
+        // Minute selection preserves the current seconds and milliseconds.
+        let current = initialDate.withMinutes(0);
         const last = initialDate.endOfHour();
 
         const table = this.#createTable({

@@ -118,6 +118,29 @@ test.describe('DateTimePicker', () => {
             });
         }
 
+        for (const callback of ['isValidDay', 'renderDay']) {
+            test(`cleans up after ${callback} throws during initialization`, async ({ page }) => {
+                expect(await page.evaluate((name) => {
+                    try {
+                        UI.DateTimePicker.init(document.querySelector('#date'), {
+                            format: 'yyyy-MM-dd', inline: true, useCurrent: true,
+                            [name]: () => {
+                                throw new Error('Callback failed');
+                            },
+                        });
+                    } catch (error) {
+                        return error.message;
+                    }
+                }, callback)).toBe('Callback failed');
+                expect(await page.evaluate((_) => $.hasData('#date', 'datetimepicker'))).toBe(false);
+                await expect(page.locator('.datetimepicker')).toHaveCount(0);
+                await expect(page.getByLabel('Date', { exact: true })).toBeVisible();
+                await expect(page.getByLabel('Date', { exact: true })).not.toHaveAttribute('aria-controls');
+                await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', inline: true }).setDate('2026-09-16'));
+                await expect(page.getByRole('button', { name: 'September 16, 2026', exact: true })).toHaveAttribute('aria-pressed', 'true');
+            });
+        }
+
         test('cleans up registration after an unsupported format', async ({ page }) => {
             expect(await page.evaluate((_) => {
                 try {
@@ -510,6 +533,40 @@ test.describe('DateTimePicker', () => {
                 picker.show();
             });
             await expect(page.getByRole('dialog')).toHaveCount(1);
+        });
+
+        for (const multiDate of [false, true]) {
+            test(`renders a ${multiDate ? 'multi-date' : 'single-date'} selection changed from a refresh callback`, async ({ page }) => {
+                await page.evaluate((multiple) => {
+                    const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', inline: true, multiDate: multiple });
+                    window.refreshes = 0;
+                    $.addEvent('#date', 'refresh.ui.datetimepicker', () => {
+                        window.refreshes++;
+                        picker.setDate(multiple ? ['2026-09-17'] : '2026-09-17');
+                    });
+                    picker.setDate(multiple ? ['2026-09-16'] : '2026-09-16');
+                }, multiDate);
+                await expect(page.locator('#date')).toHaveValue('2026-09-17');
+                await expect(page.getByRole('button', { name: 'September 17, 2026', exact: true })).toHaveAttribute('aria-pressed', 'true');
+                await expect(page.getByRole('button', { name: 'September 16, 2026', exact: true })).toHaveAttribute('aria-pressed', 'false');
+                expect(await page.evaluate((_) => window.refreshes)).toBe(1);
+            });
+        }
+
+        test('renders a time changed from a refresh callback without recursive events', async ({ page }) => {
+            await page.evaluate((_) => {
+                const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'HH:mm', inline: true });
+                window.refreshes = 0;
+                $.addEvent('#date', 'refresh.ui.datetimepicker', () => {
+                    window.refreshes++;
+                    picker.setDate('15:10');
+                });
+                picker.setDate('14:45');
+            });
+            await expect(page.locator('#date')).toHaveValue('15:10');
+            await expect(page.getByRole('button', { name: 'Select Hour', exact: true })).toHaveText('15');
+            await expect(page.getByRole('button', { name: 'Select Minute', exact: true })).toHaveText('10');
+            expect(await page.evaluate((_) => window.refreshes)).toBe(1);
         });
 
         test('reports refresh view details', async ({ page }) => {
