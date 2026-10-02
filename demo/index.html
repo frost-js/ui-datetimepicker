@@ -8,9 +8,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui.min.css">
     <link rel="stylesheet" href="../dist/frost-ui-datetimepicker.css">
     <link rel="stylesheet" href="assets/demo.css">
-    <script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui-bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@fr0st/datetime@8/dist/frost-datetime.min.js"></script>
-    <script src="../dist/frost-ui-datetimepicker.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui-bundle.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fr0st/datetime@8/dist/frost-datetime.min.js" defer></script>
+    <script src="../dist/frost-ui-datetimepicker.js" defer></script>
     <script src="assets/demo.js" defer></script>
 </head>
 
@@ -23,7 +23,7 @@
             </a>
             <div class="d-flex align-items-center gap-2">
                 <label class="small fw-bold mb-0" for="demo-theme">Theme</label>
-                <select class="input-outline input-sm w-auto rounded-pill" id="demo-theme">
+                <select class="input-outline input-sm w-auto rounded-pill" id="demo-theme" data-demo-theme>
                     <option value="system">System</option>
                     <option value="light">Light</option>
                     <option value="dark">Dark</option>
@@ -37,7 +37,7 @@
             <div class="row g-0 align-items-stretch">
                 <div class="col-lg-7 d-flex align-items-center bg-ambient">
                     <div class="p-4 p-md-5">
-                        <span class="badge bg-primary-subtle text-primary-subtle mb-3">DateTimePicker v4 · Frost UI v4</span>
+                        <span class="badge bg-primary-subtle text-primary-subtle mb-3">Frost UI component</span>
                         <h1 class="display-2 mb-4">Make time for <span class="text-gradient">what’s next.</span></h1>
                         <p class="lead text-body-secondary mb-4">Choose a day, plan several dates, or confirm an appointment. Explore calendars, time zones, and native forms.</p>
                         <nav class="d-flex flex-wrap gap-2" aria-label="Demo sections">
@@ -308,13 +308,10 @@
                         <h3 class="h5 mb-0" id="event-title">Event log</h3>
                         <button class="btn btn-outline-secondary btn-sm ripple" id="clear-log" type="button">Clear log</button>
                     </div>
-                    <div class="demo-event-log overflow-auto font-monospace small" id="event-log" role="log" aria-labelledby="event-title" aria-live="polite"></div>
+                    <div class="demo-event-log" id="event-log" role="log" aria-label="DateTimePicker events" aria-live="polite" aria-relevant="additions"></div>
                 </div></div>
             </div>
         </section>
-        <footer class="text-body-secondary small border-top pt-4">
-            <a href="../README.md">Documentation</a> · <a href="https://github.com/elusivecodes/FrostUI-DateTimePicker">Source on GitHub</a> · MIT
-        </footer>
     </main>
 
     <div class="modal" id="booking-modal" tabindex="-1" role="dialog" aria-labelledby="booking-title" aria-hidden="true" data-ui-backdrop="static">
@@ -329,6 +326,13 @@
             <div class="modal-footer"><button class="btn btn-secondary ripple" type="button" data-ui-dismiss="modal">Close editor</button></div>
         </div></div>
     </div>
+
+    <footer class="border-top bg-glass">
+        <div class="container py-4 d-flex flex-wrap justify-content-between gap-2">
+            <span class="text-body-secondary">Frost UI DateTimePicker</span>
+            <a href="https://github.com/elusivecodes/FrostUI-DateTimePicker">View the repository</a>
+        </div>
+    </footer>
 </body>
 
 </html>
