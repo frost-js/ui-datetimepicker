@@ -4,8 +4,8 @@
 [![codecov](https://codecov.io/gh/elusivecodes/FrostUI-DateTimePicker/branch/main/graph/badge.svg)](https://codecov.io/gh/elusivecodes/FrostUI-DateTimePicker)
 [![npm version](https://img.shields.io/npm/v/%40fr0st%2Fui-datetimepicker?style=flat-square)](https://www.npmjs.com/package/@fr0st/ui-datetimepicker)
 [![npm downloads](https://img.shields.io/npm/dm/%40fr0st%2Fui-datetimepicker?style=flat-square)](https://www.npmjs.com/package/@fr0st/ui-datetimepicker)
-[![CSS gzip size](https://img.badgesize.io/elusivecodes/FrostUI-DateTimePicker/main/dist/frost-ui-datetimepicker.min.css?compression=gzip&label=CSS%20gzip%20size&style=flat-square)](./dist/frost-ui-datetimepicker.min.css)
-[![JS gzip size](https://img.badgesize.io/elusivecodes/FrostUI-DateTimePicker/main/dist/frost-ui-datetimepicker.min.js?compression=gzip&label=JS%20gzip%20size&style=flat-square)](./dist/frost-ui-datetimepicker.min.js)
+[![JS gzip size](https://img.badgesize.io/elusivecodes/FrostUI-DateTimePicker/main/dist/frost-ui-datetimepicker.min.js?compression=gzip&label=JS%20gzip%20size&style=flat-square)](https://github.com/elusivecodes/FrostUI-DateTimePicker/blob/main/dist/frost-ui-datetimepicker.min.js)
+[![CSS gzip size](https://img.badgesize.io/elusivecodes/FrostUI-DateTimePicker/main/dist/frost-ui-datetimepicker.min.css?compression=gzip&label=CSS%20gzip%20size&style=flat-square)](https://github.com/elusivecodes/FrostUI-DateTimePicker/blob/main/dist/frost-ui-datetimepicker.min.css)
 [![license](https://img.shields.io/github/license/elusivecodes/FrostUI-DateTimePicker?style=flat-square)](./LICENSE)
 
 Locale-aware date and time selection for Frost UI, with popup calendars, inline layouts, modal drafts, and multiple dates.
@@ -20,96 +20,89 @@ Locale-aware date and time selection for Frost UI, with popup calendars, inline 
 - Keyboard navigation, accessible states, and native form reset synchronization
 - Frost UI v4 theme tokens, RTL styles, and configurable Sass variables
 - Native `DateTimePicker` class and `datetimepicker` fQuery plugin
-- ESM/UMD bundles, minified CSS/JS, source maps, and JSDoc IntelliSense
+- Existing-instance reuse with frozen resolved options
+- Prebuilt ESM and UMD bundles with source maps
+- Expanded and minified component CSS with source maps
+- JSDoc-powered IntelliSense
 
-Try the [demo](./demo/index.html). Serve the repository over HTTP to use it locally.
+Explore [the demo](./demo/index.html) for interactive examples.
 
 ## Installation
 
 ### Browser projects / bundlers
 
-Install the picker with Frost UI 4, fQuery 5, and Frost DateTime 8.1.3 or newer within major 8:
-
 ```bash
-npm i @fr0st/ui-datetimepicker@4 @fr0st/ui@4 @fr0st/query@5 @fr0st/datetime@^8.1.3
+npm i @fr0st/ui-datetimepicker
 ```
+
+Frost UI DateTimePicker's package entry point is ESM-only and requires a browser DOM. Import the default `DateTimePicker` export and the stylesheets in browser projects and bundlers.
 
 ```js
 import '@fr0st/ui/dist/frost-ui.min.css';
 import '@fr0st/ui-datetimepicker/dist/frost-ui-datetimepicker.min.css';
 import DateTimePicker from '@fr0st/ui-datetimepicker';
-
-const picker = DateTimePicker.init(document.querySelector('#appointment'), {
-    format: 'yyyy-MM-dd HH:mm',
-    locale: 'en-GB',
-});
 ```
 
-The package root resolves to compiled ESM. Peers remain external so the component shares the application's UI, fQuery, and DateTime instances. Package exports also expose `dist/*` and `src/*`. A browser DOM is required; load the component on the client in server-rendered applications.
+`@fr0st/ui`, `@fr0st/query`, and `@fr0st/datetime` are peer dependencies so the component shares the application's instances.
 
 ### Browser (ESM)
 
-Map every bare import, including UI/fQuery's transitive `@fr0st/core` dependency. Load UI CSS before picker CSS.
+The ESM bundle imports `@fr0st/ui`, `@fr0st/query`, and `@fr0st/datetime`. fQuery also imports `@fr0st/core`, so map all four dependencies when loading the bundle directly in a browser:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui-datetimepicker@4/dist/frost-ui-datetimepicker.min.css">
-
-<label for="appointment">Appointment</label>
-<input id="appointment" class="input-outline" type="text" autocomplete="off">
-
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui.min.css">
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@fr0st/ui-datetimepicker@latest/dist/frost-ui-datetimepicker.min.css">
 <script type="importmap">
 {
     "imports": {
-        "@fr0st/core": "https://cdn.jsdelivr.net/npm/@fr0st/core@4/dist/frost-core.esm.min.js",
-        "@fr0st/query": "https://cdn.jsdelivr.net/npm/@fr0st/query@5/dist/fquery.esm.min.js",
-        "@fr0st/ui": "https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui.esm.min.js",
-        "@fr0st/datetime": "https://cdn.jsdelivr.net/npm/@fr0st/datetime@8/dist/frost-datetime.esm.min.js"
+        "@fr0st/core": "https://cdn.jsdelivr.net/npm/@fr0st/core@latest/dist/frost-core.esm.min.js",
+        "@fr0st/query": "https://cdn.jsdelivr.net/npm/@fr0st/query@latest/dist/fquery.esm.min.js",
+        "@fr0st/ui": "https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui.esm.min.js",
+        "@fr0st/datetime": "https://cdn.jsdelivr.net/npm/@fr0st/datetime@latest/dist/frost-datetime.esm.min.js"
     }
 }
 </script>
 <script type="module">
-    import DateTimePicker from 'https://cdn.jsdelivr.net/npm/@fr0st/ui-datetimepicker@4/dist/frost-ui-datetimepicker.esm.min.js';
-    DateTimePicker.init(document.querySelector('#appointment'), { format: 'yyyy-MM-dd HH:mm' });
+    import DateTimePicker from 'https://cdn.jsdelivr.net/npm/@fr0st/ui-datetimepicker@latest/dist/frost-ui-datetimepicker.esm.min.js';
 </script>
 ```
 
 ### Browser (UMD)
 
-Load the UI bundle, DateTime, and picker in that order:
+Load the bundles from your own copy or a CDN:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui-datetimepicker@4/dist/frost-ui-datetimepicker.min.css">
-
-<label for="appointment">Appointment</label>
-<input id="appointment" class="input-filled" type="text" autocomplete="off">
-
-<script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui-bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fr0st/datetime@8/dist/frost-datetime.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fr0st/ui-datetimepicker@4/dist/frost-ui-datetimepicker.min.js"></script>
+<link
+    rel="stylesheet"
+    href="/path/to/dist/frost-ui.min.css">
+<link
+    rel="stylesheet"
+    href="/path/to/dist/frost-ui-datetimepicker.min.css">
+<script src="/path/to/dist/frost-ui-bundle.min.js"></script>
+<script src="/path/to/dist/frost-datetime.min.js"></script>
+<script src="/path/to/dist/frost-ui-datetimepicker.min.js"></script>
+<!-- or -->
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui.min.css">
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@fr0st/ui-datetimepicker@latest/dist/frost-ui-datetimepicker.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui-bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fr0st/datetime@latest/dist/frost-datetime.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fr0st/ui-datetimepicker@latest/dist/frost-ui-datetimepicker.min.js"></script>
 <script>
-    UI.DateTimePicker.init(document.querySelector('#appointment'), { format: 'yyyy-MM-dd HH:mm' });
+    const { DateTimePicker } = globalThis.UI;
 </script>
 ```
 
-The picker adds `DateTimePicker` to `globalThis.UI`. UI's bundle supplies `UI` and `fQuery`; do not load a second fQuery copy. With UI's non-bundled build, load core, fQuery, UI, DateTime, then the picker.
+The UMD bundle adds `DateTimePicker` to the existing `globalThis.UI` object. Load Frost UI's all-in-one bundle first; it supplies the `UI` and `fQuery` globals. Load Frost DateTime before DateTimePicker as shown above.
 
-### Custom Sass builds
-
-```scss
-@use '@fr0st/ui-datetimepicker/src/scss/datetimepicker' with (
-    $datetimepicker-width: 320px,
-    $datetimepicker-wide-width: 640px
-);
-```
-
-```bash
-npm i -D sass
-npx sass --load-path=node_modules src/styles.scss dist/styles.css
-```
-
-The module forwards the [Sass variables](./src/scss/_vars.scss), all declared with `!default`. Include UI CSS separately. Build tools that resolve npm Sass modules do not need the explicit load path.
+The package root resolves to the prebuilt ESM bundle. Published files under `dist/` and `src/` are also available through matching package subpaths.
 
 ## Usage
 
@@ -137,7 +130,7 @@ const selected = picker.getDate(); // DateTime, or null when empty.
 picker.clear();
 ```
 
-Calling `init()` again returns the existing instance. Options are frozen; dispose and reinitialize to change configuration or the input's associated form. `defaultDate` sets an empty picker's starting view; `useCurrent` selects the current time for an empty single-date input.
+Dispose and reinitialize after changing the input's form association. `defaultDate` sets an empty picker's starting view; `useCurrent` selects the current time for an empty single-date input.
 
 ### Formats and date inputs
 
@@ -217,51 +210,59 @@ Rendering callbacks receive `(date, node)` and return nothing. Preserve generate
 
 ## Options
 
-Explicit options override `data-ui-*` attributes, which override `DateTimePicker.defaults`.
+Options are resolved in this order:
 
-| Option | Default | Description |
-| --- | --- | --- |
-| `format` | `null` | DateTime pattern; derive from locale when null. |
-| `altFormats` | `[]` | Additional accepted patterns; output uses `format`. |
-| `ariaFormat` | `'LLLL d, yyyy'` | Accessible day-cell label pattern. |
-| `locale` | `null` | Locale; null uses DateTime's current default. |
-| `timeZone` | `null` | IANA/fixed-offset zone; null uses DateTime's default. |
-| `defaultDate` | `null` | Starting view when empty; null uses now. |
-| `defaultView` | `null` | `'days'`, `'months'`, or `'years'`; defaults to the smallest supported view. |
-| `minDate` | `null` | Inclusive lower bound, using a date input. |
-| `maxDate` | `null` | Inclusive upper bound, using a date input. |
-| `isValidYear` | `null` | `(date) => boolean` year validator. |
-| `isValidMonth` | `null` | `(date) => boolean` month validator. |
-| `isValidDay` | `null` | `(date) => boolean` day validator. |
-| `isValidTime` | `null` | `(date) => boolean` time validator. |
-| `renderYear` | `null` | `(date, node) => void` year-cell customization. |
-| `renderMonth` | `null` | `(date, node) => void` month-cell customization. |
-| `renderDay` | `null` | `(date, node) => void` day-cell customization. |
-| `multiDate` | `false` | Multiple date/month/year values; excludes time controls. |
-| `multiDateSeparator` | `','` | Input/output separator for multiple dates. |
-| `minuteStepping` | `1` | Integer 1–60. Round to the nearest interval, including hour rollover; invalid steps throw. Step 1 uses five-minute grid shortcuts and one-minute arrow adjustments. |
-| `useCurrent` | `false` | Select now when a single-date input starts empty. |
-| `keepOpen` | `false` | Keep a date-only popup open after selection. |
-| `inline` | `false` | Render in place and hide the input; takes precedence over modal settings. |
-| `sideBySide` | `false` | Display date/time panels together. |
-| `vertical` | `false` | Keep side-by-side panels stacked. |
-| `showToolbar` | `false` | Display the selected date/time above the controls. |
-| `showClose` | `false` | Show Close in a non-inline, nonmodal popup. |
-| `keepInvalid` | `false` | Keep invalid typed text on change; otherwise restore the last valid value. Entirely invalid text has no selection when true. This is not native validity enforcement. |
-| `ignoreReadonly` | `false` | Allow picker selection on readonly inputs; disabled inputs remain disabled. |
-| `modal` | `false` | Use a UI modal with Set/Cancel. |
-| `mobileModal` | `true` | Use a modal for supported mobile user agents, independently of viewport width. |
-| `duration` | `100` | Popup/panel animation milliseconds; respects reduced motion. Modal transitions use UI styling. |
-| `appendTo` | `null` | Selector/element for popup or modal attachment; otherwise insert beside the input or its containing modal. |
-| `placement` | `'bottom'` | UI Popper placement: `'top'`, `'bottom'`, `'start'`, `'end'`, or `'auto'`; logical sides follow RTL. |
-| `position` | `'start'` | Alignment along the popup edge: `'start'`, `'center'`, or `'end'`. |
-| `fixed` | `false` | Preserve the preferred placement; this is not CSS fixed positioning. |
-| `spacing` | `0` | Popup distance from the input in pixels. |
-| `minContact` | `false` | Minimum overlap while repositioning: pixel number, false for zero, or null for UI's automatic value. |
+1. Component defaults
+2. The element's `data-ui-*` attributes
+3. Options passed to `DateTimePicker.init()`
+
+Resolved `instance.options` are shallow-frozen.
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `altFormats` | `string[]` | `[]` | Additional accepted patterns; output uses `format`. |
+| `appendTo` | `string \| HTMLElement \| null` | `null` | Selector/element for popup or modal attachment; otherwise insert beside the input or its containing modal. |
+| `ariaFormat` | `string \| null` | `'LLLL d, yyyy'` | Accessible day-cell label pattern. |
+| `defaultDate` | `DateInput` | `null` | Starting view when empty; null uses now. |
+| `defaultView` | `'days' \| 'months' \| 'years' \| null` | `null` | `'days'`, `'months'`, or `'years'`; defaults to the smallest supported view. |
+| `duration` | `number` | `100` | Popup/panel animation milliseconds; respects reduced motion. Modal transitions use UI styling. |
+| `fixed` | `boolean` | `false` | Preserve the preferred placement; this is not CSS fixed positioning. |
+| `format` | `string \| null` | `null` | DateTime pattern; derive from locale when null. |
+| `ignoreReadonly` | `boolean` | `false` | Allow picker selection on readonly inputs; disabled inputs remain disabled. |
+| `inline` | `boolean` | `false` | Render in place and hide the input; takes precedence over modal settings. |
+| `isValidDay` | `((date: DateTime) => boolean) \| null` | `null` | `(date) => boolean` day validator. |
+| `isValidMonth` | `((date: DateTime) => boolean) \| null` | `null` | `(date) => boolean` month validator. |
+| `isValidTime` | `((date: DateTime) => boolean) \| null` | `null` | `(date) => boolean` time validator. |
+| `isValidYear` | `((date: DateTime) => boolean) \| null` | `null` | `(date) => boolean` year validator. |
+| `keepInvalid` | `boolean` | `false` | Keep invalid typed text on change; otherwise restore the last valid value. Entirely invalid text has no selection when true. This is not native validity enforcement. |
+| `keepOpen` | `boolean` | `false` | Keep a date-only popup open after selection. |
+| `locale` | `string \| null` | `null` | Locale; null uses DateTime's current default. |
+| `maxDate` | `DateInput` | `null` | Inclusive upper bound, using a date input. |
+| `minContact` | `number \| false \| null` | `false` | Minimum overlap while repositioning: pixel number, false for zero, or null for UI's automatic value. |
+| `minDate` | `DateInput` | `null` | Inclusive lower bound, using a date input. |
+| `minuteStepping` | `number` | `1` | Integer 1–60. Round to the nearest interval, including hour rollover; invalid steps throw. Step 1 uses five-minute grid shortcuts and one-minute arrow adjustments. |
+| `mobileModal` | `boolean` | `true` | Use a modal for supported mobile user agents, independently of viewport width. |
+| `modal` | `boolean` | `false` | Use a UI modal with Set/Cancel. |
+| `multiDate` | `boolean` | `false` | Multiple date/month/year values; excludes time controls. |
+| `multiDateSeparator` | `string` | `','` | Input/output separator for multiple dates. |
+| `placement` | `'auto' \| 'top' \| 'bottom' \| 'start' \| 'end'` | `'bottom'` | UI Popper placement: `'top'`, `'bottom'`, `'start'`, `'end'`, or `'auto'`; logical sides follow RTL. |
+| `position` | `'start' \| 'center' \| 'end'` | `'start'` | Alignment along the popup edge: `'start'`, `'center'`, or `'end'`. |
+| `renderDay` | `((date: DateTime, node: HTMLElement) => void) \| null` | `null` | `(date, node) => void` day-cell customization. |
+| `renderMonth` | `((date: DateTime, node: HTMLElement) => void) \| null` | `null` | `(date, node) => void` month-cell customization. |
+| `renderYear` | `((date: DateTime, node: HTMLElement) => void) \| null` | `null` | `(date, node) => void` year-cell customization. |
+| `showClose` | `boolean` | `false` | Show Close in a non-inline, nonmodal popup. |
+| `showToolbar` | `boolean` | `false` | Display the selected date/time above the controls. |
+| `sideBySide` | `boolean` | `false` | Display date/time panels together. |
+| `spacing` | `number` | `0` | Popup distance from the input in pixels. |
+| `timeZone` | `string \| null` | `null` | IANA/fixed-offset zone; null uses DateTime's default. |
+| `useCurrent` | `boolean` | `false` | Select now when a single-date input starts empty. |
+| `vertical` | `boolean` | `false` | Keep side-by-side panels stacked. |
+
+`DateInput` accepts the date inputs described in [Formats and date inputs](#formats-and-date-inputs), including `null` for an unset date.
 
 ## Data attributes
 
-Serializable options use kebab-case `data-ui-*` attributes. Arrays accept JSON. Supply callbacks and DOM elements through JavaScript.
+Use kebab-case `data-ui-*` attributes for serializable options. Arrays and objects use JSON. Supply callbacks and DOM nodes through JavaScript.
 
 ```html
 <label for="days">Available days</label>
@@ -271,61 +272,63 @@ Serializable options use kebab-case `data-ui-*` attributes. Arrays accept JSON. 
     data-ui-alt-formats='["dd/MM/yyyy"]'
     data-ui-multi-date="true"
     data-ui-mobile-modal="false">
-<script>
-    $('[data-ui-toggle="datetimepicker"]').datetimepicker();
-</script>
 ```
 
-`data-ui-toggle="datetimepicker"` is an initialization selector; it does **not** initialize the component by itself.
+```js
+import $ from '@fr0st/query';
+import '@fr0st/ui-datetimepicker';
+
+$('[data-ui-toggle="datetimepicker"]').datetimepicker();
+```
+
+Data attributes configure options; they do not initialize DateTimePicker by themselves. Initialize the component through the class or fQuery plugin. Changing an option's data attribute after initialization does not reconfigure the existing instance.
 
 ## Methods
 
-| Method | Returns | Behavior |
+| Method | Returns | Description |
 | --- | --- | --- |
-| `DateTimePicker.init(input, options?)` | `DateTimePicker` | Create or retrieve an instance for an input element. |
-| `dispose()` | `void` | Remove owned events, calendars, modal resources, and registration; restore owned input styles/attributes. Safe to call twice. |
+| `DateTimePicker.init(node, options?)` | `DateTimePicker` | Return the existing instance for an element or create one. |
 | `clear()` | `void` | Clear the selection and input value. |
-| `disable()` / `enable()` | `void` | Change the native disabled attribute and picker state. Disabled ancestor fieldsets still apply. |
-| `getDate()` | `DateTime`, `null`, or `DateTime[]` | Committed selection; returns a copied array for multi-date mode. |
-| `getMinDate()` / `getMaxDate()` | `DateTime` or `null` | Current parsed bounds. |
-| `getViewDate()` | `DateTime` | Current calendar navigation date. |
-| `setDate(value)` | `void` | Parse, validate, normalize, and commit a selection. |
-| `setMinDate(value)` / `setMaxDate(value)` | `void` | Change/remove a bound and revalidate. |
+| `disable()` | `void` | Disable the native input and picker. Disabled ancestor fieldsets still apply. |
+| `dispose()` | `void` | Remove owned events, calendars, modal resources, and registered state, then restore the input's styles and attributes. |
+| `enable()` | `void` | Enable the native input and picker. Disabled ancestor fieldsets still apply. |
+| `getDate()` | `DateTime \| DateTime[] \| null` | Return the committed selection, or a copied array in multi-date mode. |
+| `getMaxDate()` | `DateTime \| null` | Return the parsed upper bound. |
+| `getMinDate()` | `DateTime \| null` | Return the parsed lower bound. |
+| `getViewDate()` | `DateTime` | Return the current calendar navigation date. |
+| `hide()` | `void` | Hide the popup or modal; inline pickers remain visible. |
 | `refresh()` | `void` | Revalidate stored selections and redraw, including changed disabled/readonly state. |
-| `show()` / `hide()` / `toggle()` | `void` | Control popup/modal visibility; inline pickers remain visible. |
+| `setDate(value)` | `void` | Parse, validate, normalize, and commit a selection. |
+| `setMaxDate(value)` | `void` | Change or remove the upper bound and revalidate. |
+| `setMinDate(value)` | `void` | Change or remove the lower bound and revalidate. |
+| `show()` | `void` | Show the popup or modal; inline pickers remain visible. |
+| `toggle()` | `void` | Toggle popup or modal visibility; inline pickers remain visible. |
 | `update()` | `void` | Reposition an open popup. |
 
 Mutators do not return the instance for chaining. `setDate()` and `clear()` do not edit disabled inputs, or readonly inputs unless `ignoreReadonly` applies. Bound setters still update bounds. `refresh()` revalidates stored dates; dispatch native input/change events to synchronize an externally changed input value.
 
-The instance exposes `node` and frozen `options` getters, both null after disposal. Initialize a new instance before further use. Returned DateTime values are immutable: `date.withHours(10)` returns a new value to pass to `setDate()`.
+Returned DateTime values are immutable: `date.withHours(10)` returns a new value to pass to `setDate()`.
 
-### Static customization
+## Lifecycle
 
-Set `DateTimePicker.defaults`, `DateTimePicker.classes`, `DateTimePicker.icons`, and `DateTimePicker.lang` before initialization. Their keys are listed in the [class source](./src/js/date-time-picker.js). Preserve structural classes and accessible labels. Locale formats calendar text; translate `lang` separately for controls such as Set, Cancel, and Next Month.
+Calling `DateTimePicker.init()` again for the same element returns its existing instance. Dispose the current instance before reinitializing with different options.
 
-```js
-DateTimePicker.defaults.locale = 'en-GB';
-DateTimePicker.lang.set = 'Apply';
+An instance exposes its original element as `instance.node` and its shallow-frozen resolved configuration as `instance.options`. Both become `null` after disposal.
 
-DateTimePicker.getDefaultDateFormat('en-GB'); // dd/MM/yyyy
-DateTimePicker.getDefaultTimeFormat('en-US', false); // HH:mm
-DateTimePicker.getDefaultFormat('en-US', true); // Date and 12-hour time.
-```
-
-All three helpers return strings. The optional boolean on time/combined helpers selects a 12-hour clock; omitted, it follows the locale.
+`dispose()` releases resources owned by the component and removes its registered instance. Repeated disposal is safe and does not affect a new instance initialized on the same element. Use a new instance before calling other methods after disposal.
 
 ## Events
 
 Events fire on the original input. Use fQuery for namespaced listeners:
 
-| Event | Detail | Behavior |
-| --- | --- | --- |
-| `show.ui.datetimepicker` | None | Before opening; cancelable. |
-| `shown.ui.datetimepicker` | None | After opening completes. |
-| `hide.ui.datetimepicker` | None | Before closing; cancelable. |
-| `hidden.ui.datetimepicker` | None | After closing completes. |
-| `change.ui.datetimepicker` | `{ old, new }` | A changed formatted value is committed; each value is DateTime/null or an array. |
-| `refresh.ui.datetimepicker` | `{ view, viewMode, viewDate }` | Panel redraw. `view` is `'date'`/`'time'`; modes are `'days'`, `'months'`, `'years'`, `'hours'`, `'minutes'`, or null for main time controls. |
+| Event | Description |
+| --- | --- |
+| `show.ui.datetimepicker` | Before opening; cancelable. |
+| `shown.ui.datetimepicker` | After opening completes. |
+| `hide.ui.datetimepicker` | Before closing; cancelable. |
+| `hidden.ui.datetimepicker` | After closing completes. |
+| `change.ui.datetimepicker` | A changed formatted value is committed; each value is DateTime/null or an array. `event.detail` contains `{ old, new }`. |
+| `refresh.ui.datetimepicker` | Panel redraw. `view` is `'date'`/`'time'`; modes are `'days'`, `'months'`, `'years'`, `'hours'`, `'minutes'`, or null for main time controls. `event.detail` contains `{ view, viewMode, viewDate }`. |
 
 ```js
 import $ from '@fr0st/query';
@@ -348,6 +351,8 @@ Returning false from an fQuery show/hide handler also cancels it. Programmatic s
 
 ## fQuery API
 
+Importing DateTimePicker registers `datetimepicker` on `fQuery.QuerySet`:
+
 ```js
 import $ from '@fr0st/query';
 import '@fr0st/ui-datetimepicker';
@@ -358,7 +363,9 @@ const date = $('#appointment').datetimepicker('getDate');
 $('#appointment').datetimepicker('clear');
 ```
 
-Initialization and method calls apply to every matched element and return the first element's result: an instance, getter value, or undefined for mutators. The registration key is `datetimepicker`; in UMD, `$.getData(input, UI.DateTimePicker.DATA_KEY)` retrieves an existing instance without creating one.
+Pass an options object to initialize every matched element, or pass a public method name followed by its arguments. The first component or method result is returned.
+
+The registration key is `datetimepicker`; in UMD, `$.getData(input, UI.DateTimePicker.DATA_KEY)` retrieves an existing instance without creating one.
 
 ## Accessibility
 
@@ -391,9 +398,51 @@ input.value = '2026-09-16 10:30';
 input.dispatchEvent(new Event('change', { bubbles: true }));
 ```
 
+## Customization
+
+Set `DateTimePicker.defaults`, `DateTimePicker.classes`, `DateTimePicker.icons`, and `DateTimePicker.lang` before initialization. Their keys are listed in the [class source](./src/js/date-time-picker.js). Preserve structural classes and accessible labels. Locale formats calendar text; translate `lang` separately for controls such as Set, Cancel, and Next Month.
+
+```js
+DateTimePicker.defaults.locale = 'en-GB';
+DateTimePicker.lang.set = 'Apply';
+
+DateTimePicker.getDefaultDateFormat('en-GB'); // dd/MM/yyyy
+DateTimePicker.getDefaultTimeFormat('en-US', false); // HH:mm
+DateTimePicker.getDefaultFormat('en-US', true); // Date and 12-hour time.
+```
+
+All three helpers return strings. The optional boolean on time/combined helpers selects a 12-hour clock; omitted, it follows the locale.
+
+### Custom Sass builds
+
+Install Sass and create an application stylesheet to customize the component:
+
+```bash
+npm i -D sass
+```
+
+`src/styles.scss`
+
+```scss
+@use "@fr0st/ui-datetimepicker/src/scss/datetimepicker" with (
+    $datetimepicker-width: 320px,
+    $datetimepicker-wide-width: 640px
+);
+```
+
+Compile the entry point with npm package resolution enabled:
+
+```bash
+npx sass --load-path=node_modules src/styles.scss dist/styles.css
+```
+
+The `datetimepicker` module forwards the [component variables](./src/scss/_vars.scss), all of which have `!default` values. Include Frost UI CSS separately. Build tools that already resolve Sass modules from npm packages do not need the explicit load path.
+
 ## Themes and RTL
 
-Load UI CSS first. Set `data-ui-theme="light"`/`"dark"` on the document root, or omit it to follow the system. Set `dir="rtl"` on the document or a containing region for RTL alignment and the mirrored today marker. Use logical Popper placements (`start`/`end`) for horizontal attachment.
+Frost UI follows the user's preferred color scheme by default. Set `data-ui-theme="light"` or `data-ui-theme="dark"` on the document or an ancestor to select a theme explicitly.
+
+Set `dir="rtl"` on the document or a containing region for RTL alignment and the mirrored today marker. Use logical Popper placements (`start`/`end`) for horizontal attachment.
 
 Component CSS variables are `--ui-datetimepicker-z-index`, `--ui-datetimepicker-bg`, `--ui-datetimepicker-border-width`, and `--ui-datetimepicker-border-color`. Override them on the rendered `.datetimepicker`, not only the input:
 
@@ -419,28 +468,22 @@ Use Sass for widths, today-marker dimensions, and action styling. Inline/modal v
 
 ## Development
 
-Use Node `^20.19.0`, `^22.13.0`, or `>=24`, matching Frost UI's toolchain.
+Install dependencies with `npm ci`, then install Playwright browsers with `npx playwright install --with-deps`.
 
 ```bash
-npm ci
-npx playwright install --with-deps
+npm test
 npm run lint
-npm run lint:sass:unused
-npm run test                 # Build, then Chromium/Firefox/WebKit.
-npm run test:coverage        # Chromium; uses the existing build.
-npm pack --dry-run
+npm run build
 ```
 
-`npm run build` generates ESM/UMD JS, expanded/minified CSS, and maps. Commit generated `dist/` files with source changes. `test:browser`, `test:headed`, and `test:ui` use existing builds. `PORT` overrides the test server's default 3001. Coverage writes HTML and LCOV to `coverage/`; generated reports are ignored by Git.
+`npm test` rebuilds the bundles, then runs the Playwright suite in Chromium, Firefox, and WebKit. `npm run test:browser` runs the suite against the existing bundles, so rebuild after changing source files.
 
-Serve the repository with any static HTTP server and open `/demo/`. For example, with Python installed:
+After building, `npm run test:coverage` runs Chromium tests and writes coverage reports to `coverage/`.
 
-```bash
-python3 -m http.server 8080
-```
+`npm run test:headed` and `npm run test:ui` also use the existing bundles and open headed browsers or the Playwright UI.
 
-The demo uses npm CDN URLs for UI 4/DateTime 8 and local picker bundles. Its theme selector persists a preference when browser storage is available. CI covers Chromium on Node 20/22/24 and Firefox/WebKit on Node 24. The release workflow validates and publishes with provenance; configure npm trusted publishing and Codecov activation before release.
+To view the demo, open `demo/index.html` in your browser after building.
 
 ## License
 
-MIT. See [LICENSE](./LICENSE).
+Frost UI DateTimePicker is released under the [MIT License](./LICENSE).
