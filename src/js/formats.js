@@ -14,8 +14,10 @@ export function checkDayPeriod(locale) {
             hour: '2-digit',
         });
 
-        dayPeriods[locale] = !!formatter.formatToParts(new Date())
-            .find((part) => part.type === 'dayPeriod');
+        dayPeriods[locale] = Boolean(
+            formatter.formatToParts(new Date())
+                .find((part) => part.type === 'dayPeriod'),
+        );
     }
 
     return dayPeriods[locale];

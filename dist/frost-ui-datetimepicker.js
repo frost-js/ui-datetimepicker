@@ -158,7 +158,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 	function checkDayPeriod(locale) {
 		if (!(locale in dayPeriods)) {
 			const formatter = new Intl.DateTimeFormat(locale, { hour: "2-digit" });
-			dayPeriods[locale] = !!formatter.formatToParts(/* @__PURE__ */ new Date()).find((part) => part.type === "dayPeriod");
+			dayPeriods[locale] = Boolean(formatter.formatToParts(/* @__PURE__ */ new Date()).find((part) => part.type === "dayPeriod"));
 		}
 		return dayPeriods[locale];
 	}
@@ -771,7 +771,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (!this.node || this.#lifecycleEvent) return false;
 			this.#lifecycleEvent = true;
 			try {
-				return _fr0st_query.default.triggerOne(this.node, `${name}.ui.datetimepicker`) && !!this.node;
+				return _fr0st_query.default.triggerOne(this.node, `${name}.ui.datetimepicker`) && Boolean(this.node);
 			} finally {
 				this.#lifecycleEvent = false;
 			}
@@ -924,7 +924,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		* @returns {string} The selection key.
 		*/
 		#dateKey(date) {
-			if (this.#minView === "years") return `${date.getYear()}`;
+			if (this.#minView === "years") return String(date.getYear());
 			if (this.#minView === "months") return `${date.getYear()}-${date.getMonth()}`;
 			return `${date.getYear()}-${date.getMonth()}-${date.getDate()}`;
 		}
@@ -1574,7 +1574,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					break;
 				default: callback = isSameDay;
 			}
-			if (this.options.multiDate) return !!this.#dates.find((currentDate) => callback(date, currentDate));
+			if (this.options.multiDate) return Boolean(this.#dates.find((currentDate) => callback(date, currentDate)));
 			return this.#date && callback(date, this.#date);
 		}
 		/**
@@ -1582,7 +1582,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		* @returns {boolean} Whether the input is editable.
 		*/
 		#isEditable() {
-			return !!this.node && !_fr0st_query.default.is(this.node, ":disabled") && (this.options.ignoreReadonly || !_fr0st_query.default.is(this.node, ":read-only"));
+			return Boolean(this.node) && !_fr0st_query.default.is(this.node, ":disabled") && (this.options.ignoreReadonly || !_fr0st_query.default.is(this.node, ":read-only"));
 		}
 		/**
 		* Determines whether a date is valid.
@@ -1696,7 +1696,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#parseDates(dates) {
 			if (dates === null || dates === void 0) return [];
 			if (!Array.isArray(dates)) throw new TypeError("multiDate requires an array of dates or null.");
-			return dates.map((date) => this.#parseDate(date)).filter((date) => !!date);
+			return dates.map((date) => this.#parseDate(date)).filter((date) => Boolean(date));
 		}
 		/**
 		* Synchronizes native input changes without emitting another change event.
@@ -1778,8 +1778,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			for (const node of _fr0st_query.default.find("[data-ui-focus], [data-ui-action], .datetimepicker-disabled", container)) {
 				const disabled = !editable || _fr0st_query.default.hasClass(node, this.constructor.classes.disabled);
 				_fr0st_query.default.setAttribute(node, { "role": "button" });
-				_fr0st_query.default.setAttribute(node, { "aria-disabled": `${disabled}` });
-				if (_fr0st_query.default.hasAttribute(node, "data-ui-focus")) _fr0st_query.default.setAttribute(node, { "aria-pressed": `${_fr0st_query.default.hasClass(node, this.constructor.classes.active)}` });
+				_fr0st_query.default.setAttribute(node, { "aria-disabled": String(disabled) });
+				if (_fr0st_query.default.hasAttribute(node, "data-ui-focus")) _fr0st_query.default.setAttribute(node, { "aria-pressed": String(_fr0st_query.default.hasClass(node, this.constructor.classes.active)) });
 				if (disabled) {
 					node.tabIndex = -1;
 					if (_fr0st_query.default.hasAttribute(node, "data-ui-focus")) _fr0st_query.default.setDataset(node, { uiFocus: "false" });

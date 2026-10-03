@@ -673,7 +673,7 @@ export default class DateTimePicker extends BaseComponent {
         }
         this.#lifecycleEvent = true;
         try {
-            return $.triggerOne(this.node, `${name}.ui.datetimepicker`) && !!this.node;
+            return $.triggerOne(this.node, `${name}.ui.datetimepicker`) && Boolean(this.node);
         } finally {
             this.#lifecycleEvent = false;
         }
@@ -904,7 +904,7 @@ export default class DateTimePicker extends BaseComponent {
      */
     #dateKey(date) {
         if (this.#minView === 'years') {
-            return `${date.getYear()}`;
+            return String(date.getYear());
         }
         if (this.#minView === 'months') {
             return `${date.getYear()}-${date.getMonth()}`;
@@ -1912,7 +1912,7 @@ export default class DateTimePicker extends BaseComponent {
         }
 
         if (this.options.multiDate) {
-            return !!this.#dates.find((currentDate) => callback(date, currentDate));
+            return Boolean(this.#dates.find((currentDate) => callback(date, currentDate)));
         }
 
         return this.#date && callback(date, this.#date);
@@ -1923,7 +1923,7 @@ export default class DateTimePicker extends BaseComponent {
      * @returns {boolean} Whether the input is editable.
      */
     #isEditable() {
-        return !!this.node && !$.is(this.node, ':disabled') && (this.options.ignoreReadonly || !$.is(this.node, ':read-only'));
+        return Boolean(this.node) && !$.is(this.node, ':disabled') && (this.options.ignoreReadonly || !$.is(this.node, ':read-only'));
     }
 
     /**
@@ -2117,7 +2117,7 @@ export default class DateTimePicker extends BaseComponent {
 
         return dates
             .map((date) => this.#parseDate(date))
-            .filter((date) => !!date);
+            .filter((date) => Boolean(date));
     }
 
     /**
@@ -2240,9 +2240,9 @@ export default class DateTimePicker extends BaseComponent {
         for (const node of $.find('[data-ui-focus], [data-ui-action], .datetimepicker-disabled', container)) {
             const disabled = !editable || $.hasClass(node, this.constructor.classes.disabled);
             $.setAttribute(node, { 'role': 'button' });
-            $.setAttribute(node, { 'aria-disabled': `${disabled}` });
+            $.setAttribute(node, { 'aria-disabled': String(disabled) });
             if ($.hasAttribute(node, 'data-ui-focus')) {
-                $.setAttribute(node, { 'aria-pressed': `${$.hasClass(node, this.constructor.classes.active)}` });
+                $.setAttribute(node, { 'aria-pressed': String($.hasClass(node, this.constructor.classes.active)) });
             }
             if (disabled) {
                 node.tabIndex = -1;
