@@ -252,7 +252,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * New DateTimePicker constructor.
+     * Creates a DateTimePicker.
      * @param {HTMLElement} node The input node.
      * @param {DateTimePickerOptions} [options] The component options.
      */
@@ -262,7 +262,7 @@ export default class DateTimePicker extends BaseComponent {
         }
         super(node, options);
         this.#attributes = new Map(['aria-controls', 'aria-expanded', 'aria-haspopup']
-            .map((name) => [name, node.getAttribute(name)]));
+            .map((name) => [name, $.getAttribute(node, name)]));
         this.#form = node.form;
 
         try {
@@ -271,8 +271,11 @@ export default class DateTimePicker extends BaseComponent {
                 timeZone: this.options.timeZone || DateTime.getDefaultTimeZone(),
             };
 
-            if (!Number.isInteger(this.options.minuteStepping) ||
-            this.options.minuteStepping < 1 || this.options.minuteStepping > 60) {
+            if (
+                !Number.isInteger(this.options.minuteStepping) ||
+                this.options.minuteStepping < 1 ||
+                this.options.minuteStepping > 60
+            ) {
                 throw new RangeError('minuteStepping must be an integer between 1 and 60.');
             }
 
@@ -290,8 +293,10 @@ export default class DateTimePicker extends BaseComponent {
             const value = $.getValue(this.node);
 
             if (this.options.multiDate) {
-                this.#dates = this.#normalizeDates(value.split(this.options.multiDateSeparator)
-                .map((val) => this.#makeDate(val)));
+                this.#dates = this.#normalizeDates(
+                    value.split(this.options.multiDateSeparator)
+                        .map((value) => this.#makeDate(value)),
+                );
             } else {
                 this.#date = this.#makeDate(value);
 
@@ -322,8 +327,8 @@ export default class DateTimePicker extends BaseComponent {
             }
             if (
                 this.#date ||
-            (this.options.multiDate && this.#dates.length) ||
-            (value && !this.options.keepInvalid)
+                (this.options.multiDate && this.#dates.length) ||
+                (value && !this.options.keepInvalid)
             ) {
                 this.#updateValue();
             }
@@ -349,14 +354,14 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Clear the current value.
+     * Clears the current value.
      */
     clear() {
         this.setDate(null);
     }
 
     /**
-     * Disable the DateTimePicker.
+     * Disables the DateTimePicker.
      */
     disable() {
         $.setAttribute(this.node, { disabled: true });
@@ -365,9 +370,7 @@ export default class DateTimePicker extends BaseComponent {
         this.#refresh();
     }
 
-    /**
-     * Dispose the DateTimePicker.
-     */
+    /** @inheritdoc */
     dispose() {
         if (!this.node) {
             return;
@@ -396,9 +399,9 @@ export default class DateTimePicker extends BaseComponent {
         this.#releaseDisplay?.();
         for (const [name, value] of this.#attributes) {
             if (value === null) {
-                this.node.removeAttribute(name);
+                $.removeAttribute(this.node, name);
             } else {
-                this.node.setAttribute(name, value);
+                $.setAttribute(this.node, { [name]: value });
             }
         }
         this.#open = false;
@@ -429,7 +432,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Enable the DateTimePicker.
+     * Enables the DateTimePicker.
      */
     enable() {
         $.removeAttribute(this.node, 'disabled');
@@ -438,7 +441,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Get the current date(s).
+     * Gets the current date(s).
      * @returns {DateTime|null|DateTime[]} The current date(s).
      */
     getDate() {
@@ -448,7 +451,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Get the maximum date.
+     * Gets the maximum date.
      * @returns {DateTime|null} The maximum date.
      */
     getMaxDate() {
@@ -460,7 +463,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Get the minimum date.
+     * Gets the minimum date.
      * @returns {DateTime|null} The minimum date.
      */
     getMinDate() {
@@ -472,7 +475,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Get the view date.
+     * Gets the view date.
      * @returns {DateTime} The view date.
      */
     getViewDate() {
@@ -480,7 +483,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Hide the DateTimePicker.
+     * Hides the DateTimePicker.
      */
     hide() {
         if (!this.node || this.options.inline || !this.#open) {
@@ -500,7 +503,7 @@ export default class DateTimePicker extends BaseComponent {
         const id = ++this.#transitionId;
         $.stop(menu);
         $.setDataset(menu, { uiAnimating: 'out' });
-        $.fadeOut(menu, { duration: this.#duration() }).then((_) => {
+        $.fadeOut(menu, { duration: this.#duration() }).then(() => {
             if (!this.node || id !== this.#transitionId) {
                 return;
             }
@@ -509,13 +512,13 @@ export default class DateTimePicker extends BaseComponent {
             $.detach(menu);
             $.removeDataset(menu, 'uiAnimating');
             $.triggerEvent(this.node, 'hidden.ui.datetimepicker');
-        }).catch((_) => {
+        }).catch(() => {
             // Interrupted animations are superseded by the next show/hide or disposal.
         });
     }
 
     /**
-     * Refresh the DateTimePicker.
+     * Refreshes the DateTimePicker.
      */
     refresh() {
         if (!this.node) {
@@ -540,7 +543,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Set the current date(s).
+     * Sets the current date(s).
      * @param {DateInput|DateInput[]} date The input date, or an array of dates in multi-date mode.
      */
     setDate(date) {
@@ -560,7 +563,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Set the maximum date.
+     * Sets the maximum date.
      * @param {DateInput} maxDate The input date(s).
      */
     setMaxDate(maxDate) {
@@ -570,7 +573,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Set the minimum date.
+     * Sets the minimum date.
      * @param {DateInput} minDate The input date(s).
      */
     setMinDate(minDate) {
@@ -580,7 +583,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Show the DateTimePicker.
+     * Shows the DateTimePicker.
      */
     show() {
         if (!this.node || this.options.inline || this.#open || !this.#isEditable()) {
@@ -628,19 +631,19 @@ export default class DateTimePicker extends BaseComponent {
             spacing: this.options.spacing,
             minContact: this.options.minContact,
         });
-        $.fadeIn(menu, { duration: this.#duration() }).then((_) => {
+        $.fadeIn(menu, { duration: this.#duration() }).then(() => {
             if (!this.node || id !== this.#transitionId) {
                 return;
             }
             $.removeDataset(menu, 'uiAnimating');
             $.triggerEvent(this.node, 'shown.ui.datetimepicker');
-        }).catch((_) => {
+        }).catch(() => {
             // Interrupted animations are superseded by the next show/hide or disposal.
         });
     }
 
     /**
-     * Toggle the DateTimePicker.
+     * Toggles the DateTimePicker.
      */
     toggle() {
         if (this.#open) {
@@ -651,7 +654,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Update the DateTimePicker position.
+     * Updates the DateTimePicker position.
      */
     update() {
         if (this.#popper) {
@@ -677,7 +680,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Check the format for date and time components.
+     * Checks the format for date and time components.
      */
     #checkFormat() {
         this.#hasYear = false;
@@ -763,7 +766,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Clamp a date between min and max dates.
+     * Clamps a date between min and max dates.
      * @param {DateTime} date The input date.
      * @returns {DateTime} The clamped date.
      */
@@ -780,12 +783,12 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Clamp a date to the nearest stepping interval.
+     * Clamps a date to the nearest stepping interval.
      * @param {DateTime} date The input date.
      * @returns {DateTime} The clamped date.
      */
     #clampStepping(date) {
-        if (!this.#hasMinutes || this.options.minuteStepping == 1) {
+        if (!this.#hasMinutes || this.options.minuteStepping === 1) {
             return date;
         }
 
@@ -803,7 +806,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Create a table.
+     * Creates a table.
      * @param {object} options Options for rendering the table.
      * @returns {HTMLElement} The new table.
      */
@@ -918,7 +921,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Attach events for the DateTimePicker.
+     * Attaches events for the DateTimePicker.
      */
     #events() {
         this.#listen(this.node, 'change.ui.datetimepicker', (event) => {
@@ -926,11 +929,11 @@ export default class DateTimePicker extends BaseComponent {
                 this.#readInput(true);
             }
         });
-        this.#listen(this.node, 'input.ui.datetimepicker', (_) => this.#readInput(false));
+        this.#listen(this.node, 'input.ui.datetimepicker', () => this.#readInput(false));
         if (this.#form) {
             this.#listen(this.#form, 'reset.ui.datetimepicker', (event) => {
                 clearTimeout(this.#resetTimer);
-                this.#resetTimer = setTimeout((_) => {
+                this.#resetTimer = setTimeout(() => {
                     if (!this.node || event.defaultPrevented) {
                         return;
                     }
@@ -951,9 +954,9 @@ export default class DateTimePicker extends BaseComponent {
             this.#eventsTime();
         }
 
-        this.#listen(this.#menuNode, 'click.ui.datetimepicker', (e) => {
+        this.#listen(this.#menuNode, 'click.ui.datetimepicker', (event) => {
             // prevent menu node from closing modal
-            e.stopPropagation();
+            event.stopPropagation();
         });
 
         if (this.options.inline) {
@@ -969,7 +972,7 @@ export default class DateTimePicker extends BaseComponent {
         });
 
         if (!this.#useModal) {
-            this.#listen(this.node, 'focus.ui.datetimepicker', (_) => {
+            this.#listen(this.node, 'focus.ui.datetimepicker', () => {
                 if (!$.isSame(this.node, document.activeElement)) {
                     return;
                 }
@@ -977,19 +980,19 @@ export default class DateTimePicker extends BaseComponent {
                 this.show();
             });
 
-            this.#listen(this.#menuNode, 'keydown.ui.datetimepicker', (e) => {
-                if (e.code !== 'Tab') {
+            this.#listen(this.#menuNode, 'keydown.ui.datetimepicker', (event) => {
+                if (event.code !== 'Tab') {
                     return;
                 }
 
                 const focusableNodes = $.find('[tabindex="0"]', this.#menuNode);
-                const focusIndex = $.indexOf(focusableNodes, e.target);
+                const focusIndex = $.indexOf(focusableNodes, event.target);
 
-                if (e.shiftKey && focusIndex === 0) {
-                    e.preventDefault();
+                if (event.shiftKey && focusIndex === 0) {
+                    event.preventDefault();
 
                     $.focus(this.node);
-                } else if (!e.shiftKey && focusIndex === focusableNodes.length - 1) {
+                } else if (!event.shiftKey && focusIndex === focusableNodes.length - 1) {
                     $.focus(this.node);
 
                     this.hide();
@@ -997,36 +1000,36 @@ export default class DateTimePicker extends BaseComponent {
             });
         }
 
-        this.#listen(this.node, 'keydown.ui.datetimepicker', (e) => {
-            switch (e.code) {
+        this.#listen(this.node, 'keydown.ui.datetimepicker', (event) => {
+            switch (event.code) {
                 case 'Enter':
                 case 'NumpadEnter':
-                    e.preventDefault();
+                    event.preventDefault();
 
                     this.toggle();
                     break;
                 case 'Escape':
                     if ($.isConnected(this.#menuNode)) {
                         // prevent node from closing modal
-                        e.stopPropagation();
+                        event.stopPropagation();
 
                         this.hide();
                     }
                     break;
                 case 'Tab':
                     if (
-                        e.shiftKey &&
+                        event.shiftKey &&
                         !this.#useModal &&
                         $.isConnected(this.#menuNode)
                     ) {
                         this.hide();
                     } else if (
-                        !e.shiftKey &&
+                        !event.shiftKey &&
                         !this.#useModal &&
                         $.isConnected(this.#menuNode) &&
                         !$.getDataset(this.#menuNode, 'uiAnimating')
                     ) {
-                        e.preventDefault();
+                        event.preventDefault();
 
                         const focusNode = $.findOne('[tabindex="0"]', this.#menuNode);
                         $.focus(focusNode);
@@ -1037,12 +1040,12 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Attach date events for the DateTimePicker.
+     * Attaches date events for the DateTimePicker.
      */
     #eventsDate() {
         const updateValue = !this.#useModal;
 
-        const focusTime = (_) => {
+        const focusTime = () => {
             let focusSelector;
             if (this.#hasHours) {
                 focusSelector = '[data-ui-action="changeView"][data-ui-time-view="hours"]';
@@ -1058,7 +1061,7 @@ export default class DateTimePicker extends BaseComponent {
             }
         };
 
-        const showTime = (_) => {
+        const showTime = () => {
             this.#timeViewMode = null;
             this.#refreshTime();
             if (!this.node) {
@@ -1068,13 +1071,13 @@ export default class DateTimePicker extends BaseComponent {
             this.#switchView(this.#timeContainer, this.#dateContainer, focusTime);
         };
 
-        const handleAction = (e) => {
+        const handleAction = (event) => {
             if (!this.#isEditable()) {
                 return;
             }
-            e.preventDefault();
+            event.preventDefault();
 
-            const element = e.currentTarget;
+            const element = event.currentTarget;
             const action = $.getDataset(element, 'uiAction');
             let tempDate = this.#date ?
                 this.#date :
@@ -1249,31 +1252,31 @@ export default class DateTimePicker extends BaseComponent {
             $.focus(focusNode);
         };
 
-        $.addEventDelegate(this.#dateContainer, 'click.ui.datetimepicker', '[data-ui-action]', (e) => {
-            if (e.button) {
+        $.addEventDelegate(this.#dateContainer, 'click.ui.datetimepicker', '[data-ui-action]', (event) => {
+            if (event.button) {
                 return;
             }
 
-            handleAction(e);
+            handleAction(event);
         });
 
-        $.addEventDelegate(this.#dateContainer, 'keydown.ui.datetimepicker', '[data-ui-action]', (e) => {
-            switch (e.code) {
+        $.addEventDelegate(this.#dateContainer, 'keydown.ui.datetimepicker', '[data-ui-action]', (event) => {
+            switch (event.code) {
                 case 'Enter':
                 case 'NumpadEnter':
                 case 'Space':
-                    handleAction(e);
+                    handleAction(event);
                     return;
             }
         });
 
-        $.addEventDelegate(this.#dateContainer, 'mousedown.ui.datetimepicker', '[data-ui-focus="false"][aria-disabled="false"]', (e) => {
+        $.addEventDelegate(this.#dateContainer, 'mousedown.ui.datetimepicker', '[data-ui-focus="false"][aria-disabled="false"]', (event) => {
             let tempView = this.#viewDate;
 
             tempView = tempView.withYear(
-                $.getDataset(e.currentTarget, 'uiYear'),
-                $.getDataset(e.currentTarget, 'uiMonth'),
-                $.getDataset(e.currentTarget, 'uiDate'),
+                $.getDataset(event.currentTarget, 'uiYear'),
+                $.getDataset(event.currentTarget, 'uiMonth'),
+                $.getDataset(event.currentTarget, 'uiDate'),
             );
 
             if (tempView.isSame(this.#viewDate)) {
@@ -1285,17 +1288,17 @@ export default class DateTimePicker extends BaseComponent {
             refreshDate();
         });
 
-        this.#listen(this.#dateContainer, 'keydown.ui.datetimepicker', (e) => {
+        this.#listen(this.#dateContainer, 'keydown.ui.datetimepicker', (event) => {
             if (!this.#isEditable()) {
                 return;
             }
             let tempView = this.#viewDate;
 
-            switch (e.code) {
+            switch (event.code) {
                 case 'ArrowUp':
                     switch (this.#viewMode) {
                         case 'days':
-                            if (e.ctrlKey) {
+                            if (event.ctrlKey) {
                                 tempView = tempView.subYear();
                             } else {
                                 tempView = tempView.subWeek();
@@ -1312,7 +1315,7 @@ export default class DateTimePicker extends BaseComponent {
                 case 'ArrowRight':
                     switch (this.#viewMode) {
                         case 'days':
-                            if (e.ctrlKey) {
+                            if (event.ctrlKey) {
                                 tempView = tempView.addMonth();
                             } else {
                                 tempView = tempView.addDay();
@@ -1329,7 +1332,7 @@ export default class DateTimePicker extends BaseComponent {
                 case 'ArrowDown':
                     switch (this.#viewMode) {
                         case 'days':
-                            if (e.ctrlKey) {
+                            if (event.ctrlKey) {
                                 tempView = tempView.addYear();
                             } else {
                                 tempView = tempView.addWeek();
@@ -1346,7 +1349,7 @@ export default class DateTimePicker extends BaseComponent {
                 case 'ArrowLeft':
                     switch (this.#viewMode) {
                         case 'days':
-                            if (e.ctrlKey) {
+                            if (event.ctrlKey) {
                                 tempView = tempView.subMonth();
                             } else {
                                 tempView = tempView.subDay();
@@ -1392,13 +1395,16 @@ export default class DateTimePicker extends BaseComponent {
                     return;
             }
 
-            e.preventDefault();
+            event.preventDefault();
 
             if (tempView.isSame(this.#viewDate)) {
                 return;
             }
 
-            if (!this.#isBeforeMax(tempView, { allowSame: true }) || !this.#isAfterMin(tempView, { allowSame: true })) {
+            if (
+                !this.#isBeforeMax(tempView, { allowSame: true }) ||
+                !this.#isAfterMin(tempView, { allowSame: true })
+            ) {
                 return;
             }
 
@@ -1409,10 +1415,10 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Attach events for the Modal.
+     * Attaches events for the Modal.
      */
     #eventsModal() {
-        this.#listen(this.#modal, 'show.ui.modal', (_) => {
+        this.#listen(this.#modal, 'show.ui.modal', () => {
             if (!this.#allowEvent('show')) {
                 if (this.node) {
                     $.detach(this.#modal);
@@ -1424,10 +1430,10 @@ export default class DateTimePicker extends BaseComponent {
             this.#open = true;
             $.setAttribute(this.node, { 'aria-expanded': true });
         });
-        this.#listen(this.#modal, 'shown.ui.modal', (_) => {
+        this.#listen(this.#modal, 'shown.ui.modal', () => {
             $.triggerEvent(this.node, 'shown.ui.datetimepicker');
         });
-        this.#listen(this.#modal, 'hide.ui.modal', (_) => {
+        this.#listen(this.#modal, 'hide.ui.modal', () => {
             if (!this.#allowEvent('hide')) {
                 this.#keepDate = false;
                 return false;
@@ -1455,20 +1461,20 @@ export default class DateTimePicker extends BaseComponent {
             this.#open = false;
             $.setAttribute(this.node, { 'aria-expanded': false });
         });
-        this.#listen(this.#modal, 'hidden.ui.modal', (_) => {
+        this.#listen(this.#modal, 'hidden.ui.modal', () => {
             this.#keepDate = false;
             this.#originalDate = null;
             $.detach(this.#modal);
             $.triggerEvent(this.node, 'hidden.ui.datetimepicker');
         });
-        this.#listen(this.#setBtn, 'click.ui.datetimepicker', (_) => {
+        this.#listen(this.#setBtn, 'click.ui.datetimepicker', () => {
             this.#keepDate = true;
             this.hide();
         });
     }
 
     /**
-     * Attach time events for the DateTimePicker.
+     * Attaches time events for the DateTimePicker.
      */
     #eventsTime() {
         const updateValue = !this.#useModal;
@@ -1480,13 +1486,13 @@ export default class DateTimePicker extends BaseComponent {
             );
         };
 
-        const handleAction = (e) => {
+        const handleAction = (event) => {
             if (!this.#isEditable()) {
                 return;
             }
-            e.preventDefault();
+            event.preventDefault();
 
-            const element = e.currentTarget;
+            const element = event.currentTarget;
             const action = $.getDataset(element, 'uiAction');
             let tempDate = this.#date ?
                 this.#date :
@@ -1608,27 +1614,27 @@ export default class DateTimePicker extends BaseComponent {
             }
         };
 
-        $.addEventDelegate(this.#timeContainer, 'click.ui.datetimepicker', '[data-ui-action]', (e) => {
-            if (e.button) {
+        $.addEventDelegate(this.#timeContainer, 'click.ui.datetimepicker', '[data-ui-action]', (event) => {
+            if (event.button) {
                 return;
             }
 
-            handleAction(e);
+            handleAction(event);
         });
 
-        $.addEventDelegate(this.#timeContainer, 'keydown.ui.datetimepicker', '[data-ui-action]', (e) => {
+        $.addEventDelegate(this.#timeContainer, 'keydown.ui.datetimepicker', '[data-ui-action]', (event) => {
             if (!this.#isEditable()) {
                 return;
             }
-            switch (e.code) {
+            switch (event.code) {
                 case 'Enter':
                 case 'NumpadEnter':
                 case 'Space':
-                    handleAction(e);
+                    handleAction(event);
                     return;
             }
 
-            const action = $.getDataset(e.currentTarget, 'uiAction');
+            const action = $.getDataset(event.currentTarget, 'uiAction');
 
             let tempDate = this.#date ?
                 this.#date :
@@ -1639,7 +1645,7 @@ export default class DateTimePicker extends BaseComponent {
                 case 'setHours':
                     break;
                 case 'togglePeriod':
-                    switch (e.code) {
+                    switch (event.code) {
                         case 'ArrowUp':
                         case 'ArrowDown':
                             tempDate = switchPeriod(tempDate);
@@ -1654,11 +1660,11 @@ export default class DateTimePicker extends BaseComponent {
                     let timeView;
                     switch (action) {
                         case 'changeView':
-                            timeView = $.getDataset(e.currentTarget, 'uiTimeView');
+                            timeView = $.getDataset(event.currentTarget, 'uiTimeView');
                             break;
                         case 'prev':
                         case 'next': {
-                            const unit = $.getDataset(e.currentTarget, 'uiUnit');
+                            const unit = $.getDataset(event.currentTarget, 'uiUnit');
                             switch (unit) {
                                 case 'hour':
                                     timeView = 'hours';
@@ -1678,7 +1684,7 @@ export default class DateTimePicker extends BaseComponent {
                             break;
                     }
 
-                    switch (e.code) {
+                    switch (event.code) {
                         case 'ArrowUp':
                             switch (timeView) {
                                 case 'hours':
@@ -1713,7 +1719,7 @@ export default class DateTimePicker extends BaseComponent {
             const newDate = !this.#date || !tempDate.isSame(this.#date);
 
             if (newDate || focusSelector) {
-                e.preventDefault();
+                event.preventDefault();
             }
 
             if (newDate) {
@@ -1729,8 +1735,8 @@ export default class DateTimePicker extends BaseComponent {
             }
         });
 
-        $.addEventDelegate(this.#timeContainer, 'mousedown.ui.datetimepicker', '[data-ui-focus="false"][aria-disabled="false"]', (e) => {
-            const focusNode = e.currentTarget;
+        $.addEventDelegate(this.#timeContainer, 'mousedown.ui.datetimepicker', '[data-ui-focus="false"][aria-disabled="false"]', (event) => {
+            const focusNode = event.currentTarget;
             const oldFocusNode = $.findOne('[data-ui-focus="true"]', this.#timeContainer);
 
             if (!$.isSame(focusNode, oldFocusNode)) {
@@ -1743,7 +1749,7 @@ export default class DateTimePicker extends BaseComponent {
             $.focus(focusNode);
         });
 
-        this.#listen(this.#timeContainer, 'keydown.ui.datetimepicker', (e) => {
+        this.#listen(this.#timeContainer, 'keydown.ui.datetimepicker', (event) => {
             let focusNode;
 
             switch (this.#timeViewMode) {
@@ -1751,7 +1757,7 @@ export default class DateTimePicker extends BaseComponent {
                 case 'minutes': {
                     const nodes = $.find('[data-ui-focus][aria-disabled="false"]', this.#timeContainer);
                     const focusedIndex = $.indexOf(nodes, '[data-ui-focus="true"]') || 0;
-                    switch (e.code) {
+                    switch (event.code) {
                         case 'ArrowUp':
                             focusNode = nodes[focusedIndex - 4];
                             break;
@@ -1774,7 +1780,7 @@ export default class DateTimePicker extends BaseComponent {
                     return;
             }
 
-            e.preventDefault();
+            event.preventDefault();
 
             if (!focusNode) {
                 return;
@@ -1811,7 +1817,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Format a date.
+     * Formats a date.
      * @param {DateTime} [date] The date to format.
      * @returns {string} The formatted date.
      */
@@ -1824,7 +1830,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Format multiple dates.
+     * Formats multiple dates.
      * @param {DateTime[]} [dates] The dates to format.
      * @returns {string} The formatted dates.
      */
@@ -1835,12 +1841,12 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Determine whether a date is between min/max dates.
+     * Determines whether a date is between min/max dates.
      * @param {DateTime} date The date to test.
      * @param {object} [options] The options for how to compare the dates.
      * @param {string} [options.granularity] The level of granularity to use for comparison.
      * @param {boolean} [options.allowSame=false] Whether to also allow same check.
-     * @returns {boolean} TRUE if the date is between min/max, otherwise FALSE.
+     * @returns {boolean} Whether the date is between min/max.
      */
     #isAfterMin(date, { granularity = null, allowSame = false } = {}) {
         if (!this.#minDate) {
@@ -1860,12 +1866,12 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Determine whether a date is between min/max dates.
+     * Determines whether a date is between min/max dates.
      * @param {DateTime} date The date to test.
      * @param {object} [options] The options for how to compare the dates.
      * @param {string} [options.granularity] The level of granularity to use for comparison.
      * @param {boolean} [options.allowSame=false] Whether to also allow same check.
-     * @returns {boolean} TRUE if the date is between min/max, otherwise FALSE.
+     * @returns {boolean} Whether the date is between min/max.
      */
     #isBeforeMax(date, { granularity = null, allowSame = false } = {}) {
         if (!this.#maxDate) {
@@ -1885,11 +1891,11 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Determine whether a date is a "current" date.
+     * Determines whether a date is a "current" date.
      * @param {DateTime} date The date to test.
      * @param {object} [options] The options for how to compare the dates.
      * @param {string} [options.granularity] The level of granularity to use for comparison.
-     * @returns {boolean} TRUE if the date is a "current" date, otherwise FALSE.
+     * @returns {boolean} Whether the date is a "current" date.
      */
     #isCurrent(date, { granularity = null } = {}) {
         let callback;
@@ -1913,19 +1919,19 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Determine whether the input is editable.
-     * @returns {boolean} TRUE if the input is editable, otherwise FALSE.
+     * Determines whether the input is editable.
+     * @returns {boolean} Whether the input is editable.
      */
     #isEditable() {
         return !!this.node && !$.is(this.node, ':disabled') && (this.options.ignoreReadonly || !$.is(this.node, ':read-only'));
     }
 
     /**
-     * Determine whether a date is valid.
+     * Determines whether a date is valid.
      * @param {DateTime} date The date to test.
      * @param {object} [options] The options for how to compare the dates.
      * @param {string} [options.granularity=second] The level of granularity to use for comparison.
-     * @returns {boolean} TRUE if the date is valid, otherwise FALSE.
+     * @returns {boolean} Whether the date is valid.
      */
     #isValid(date, { granularity = 'second' } = {}) {
         if (!this.node || !date?.isValid || !Number.isFinite(date.getTimestamp())) {
@@ -1993,7 +1999,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Create a new DateTime object from format.
+     * Creates a new DateTime object from format.
      * @param {string} date The date string.
      * @returns {DateTime|null} The new DateTime.
      */
@@ -2046,7 +2052,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Create a new DateTime object set to the current date/time.
+     * Creates a new DateTime object set to the current date/time.
      * @returns {DateTime} The new DateTime.
      */
     #now() {
@@ -2079,8 +2085,12 @@ export default class DateTimePicker extends BaseComponent {
                 parsed = DateTime.fromDate(date, this.#dateOptions);
             } else if (typeof date === 'number' && Number.isFinite(date)) {
                 parsed = DateTime.fromTimestamp(date, this.#dateOptions);
-            } else if (Array.isArray(date) && date.length && date.length <= 7 &&
-                date.every((value) => Number.isFinite(value))) {
+            } else if (
+                Array.isArray(date) &&
+                date.length &&
+                date.length <= 7 &&
+                date.every((value) => Number.isFinite(value))
+            ) {
                 parsed = DateTime.fromArray(date, this.#dateOptions);
             }
         } catch {
@@ -2091,7 +2101,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Parse DateTime objects from an array of values.
+     * Parses DateTime objects from an array of values.
      * @param {DateInput[]|null} dates The dates to parse, or null to clear the selection.
      * @returns {DateTime[]} An array of parsed DateTime objects.
      * @throws {TypeError} When a non-array selection is supplied.
@@ -2116,7 +2126,7 @@ export default class DateTimePicker extends BaseComponent {
      */
     #readInput(normalize) {
         const options = this.options;
-        const value = this.node.value;
+        const value = $.getValue(this.node);
         let valid;
         if (options.multiDate) {
             const dates = this.#normalizeDates(value.split(options.multiDateSeparator).map((part) => this.#makeDate(part)));
@@ -2146,7 +2156,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Refresh the date and time UI elements.
+     * Refreshes the date and time UI elements.
      * @param {boolean} [notify=true] Whether to emit refresh events.
      */
     #refresh(notify = true) {
@@ -2227,31 +2237,31 @@ export default class DateTimePicker extends BaseComponent {
      */
     #refreshAccessibility(container) {
         const editable = this.#isEditable();
-        for (const node of container.querySelectorAll('[data-ui-focus], [data-ui-action], .datetimepicker-disabled')) {
-            const disabled = !editable || node.classList.contains(this.constructor.classes.disabled);
-            node.setAttribute('role', 'button');
-            node.setAttribute('aria-disabled', `${disabled}`);
-            if (node.hasAttribute('data-ui-focus')) {
-                node.setAttribute('aria-pressed', `${node.classList.contains(this.constructor.classes.active)}`);
+        for (const node of $.find('[data-ui-focus], [data-ui-action], .datetimepicker-disabled', container)) {
+            const disabled = !editable || $.hasClass(node, this.constructor.classes.disabled);
+            $.setAttribute(node, { 'role': 'button' });
+            $.setAttribute(node, { 'aria-disabled': `${disabled}` });
+            if ($.hasAttribute(node, 'data-ui-focus')) {
+                $.setAttribute(node, { 'aria-pressed': `${$.hasClass(node, this.constructor.classes.active)}` });
             }
             if (disabled) {
                 node.tabIndex = -1;
-                if (node.hasAttribute('data-ui-focus')) {
-                    node.dataset.uiFocus = 'false';
+                if ($.hasAttribute(node, 'data-ui-focus')) {
+                    $.setDataset(node, { uiFocus: 'false' });
                 }
             }
         }
-        if (editable && !container.querySelector('[data-ui-focus="true"]')) {
-            const first = container.querySelector('[data-ui-focus][aria-disabled="false"]');
+        if (editable && !$.findOne('[data-ui-focus="true"]', container)) {
+            const first = $.findOne('[data-ui-focus][aria-disabled="false"]', container);
             if (first) {
-                first.dataset.uiFocus = 'true';
+                $.setDataset(first, { uiFocus: 'true' });
                 first.tabIndex = 0;
             }
         }
     }
 
     /**
-     * Refresh the date container.
+     * Refreshes the date container.
      * @param {boolean} [notify=true] Whether to emit a refresh event.
      */
     #refreshDate(notify = true) {
@@ -2308,7 +2318,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Refresh the toggle disabled.
+     * Refreshes the toggle disabled.
      */
     #refreshDisabled() {
         if (!this.node) {
@@ -2322,7 +2332,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Refresh the time container.
+     * Refreshes the time container.
      * @param {boolean} [notify=true] Whether to emit a refresh event.
      */
     #refreshTime(notify = true) {
@@ -2375,7 +2385,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Render the DateTimePicker.
+     * Renders the DateTimePicker.
      */
     #render() {
         this.#menuNode = $.create('div', {
@@ -2393,9 +2403,9 @@ export default class DateTimePicker extends BaseComponent {
                 'aria-haspopup': 'dialog',
             });
         }
-        const description = this.node.getAttribute('aria-describedby');
+        const description = $.getAttribute(this.node, 'aria-describedby');
         if (description) {
-            this.#menuNode.setAttribute('aria-describedby', description);
+            $.setAttribute(this.#menuNode, { 'aria-describedby': description });
         }
 
         if (this.options.showToolbar) {
@@ -2531,7 +2541,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Render the days picker.
+     * Renders the days picker.
      */
     #renderDays() {
         const start = this.#viewDate.startOfMonth();
@@ -2685,7 +2695,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Render the hours picker.
+     * Renders the hours picker.
      */
     #renderHours() {
         const initialDate = this.#date ?
@@ -2772,7 +2782,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Render the minutes picker.
+     * Renders the minutes picker.
      */
     #renderMinutes() {
         const initialDate = this.#date ?
@@ -2802,7 +2812,7 @@ export default class DateTimePicker extends BaseComponent {
                 });
                 $.append(td, row);
 
-                const stepping = this.options.minuteStepping == 1 ?
+                const stepping = this.options.minuteStepping === 1 ?
                     5 :
                     this.options.minuteStepping;
 
@@ -2873,7 +2883,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Render the Modal.
+     * Renders the Modal.
      */
     #renderModal() {
         this.#modal = $.create('div', {
@@ -2919,7 +2929,7 @@ export default class DateTimePicker extends BaseComponent {
 
         modalTitle.id = generateId('datetimepicker-title');
         this.#modal.id = generateId('datetimepicker-modal');
-        this.#modal.setAttribute('aria-labelledby', modalTitle.id);
+        $.setAttribute(this.#modal, { 'aria-labelledby': modalTitle.id });
         $.setAttribute(this.node, { 'aria-controls': this.#modal.id });
         $.append(modalHeader, modalTitle);
 
@@ -2960,7 +2970,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Render the months picker.
+     * Renders the months picker.
      */
     #renderMonths() {
         const start = this.#viewDate.startOfYear();
@@ -3093,7 +3103,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Render the time picker.
+     * Renders the time picker.
      */
     #renderTime() {
         const initialDate = this.#date ?
@@ -3269,7 +3279,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Render a time column.
+     * Renders a time column.
      * @param {object} options Options for rendering the column.
      */
     #renderTimeColumn(options) {
@@ -3340,7 +3350,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Render a time separator column.
+     * Renders a time separator column.
      * @param {object} options Options for rendering the separator column.
      */
     #renderTimeSeparator(options) {
@@ -3365,7 +3375,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Render the toolbar.
+     * Renders the toolbar.
      */
     #renderToolbar() {
         const toolbarRow = $.create('div', {
@@ -3412,7 +3422,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Render the years picker.
+     * Renders the years picker.
      */
     #renderYears() {
         const viewYear = this.#viewDate.getYear();
@@ -3552,7 +3562,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Reset the view.
+     * Resets the view.
      */
     #resetView() {
         ++this.#viewTransitionId;
@@ -3581,7 +3591,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Set the current date.
+     * Sets the current date.
      * @param {DateTime|null} [date] The input date.
      * @param {object} options The options for setting the date.
      * @param {boolean} [options.updateValue=true] Whether to update the value.
@@ -3598,7 +3608,7 @@ export default class DateTimePicker extends BaseComponent {
             return;
         }
         const oldDate = this.getDate();
-        const oldValue = this.node.value;
+        const oldValue = $.getValue(this.node);
         const id = ++this.#selectionId;
         this.#date = date;
         if (updateValue) {
@@ -3608,7 +3618,7 @@ export default class DateTimePicker extends BaseComponent {
             }
         }
         this.#refresh();
-        if (!this.node || id !== this.#selectionId || !updateValue || oldValue === this.node.value) {
+        if (!this.node || id !== this.#selectionId || !updateValue || oldValue === $.getValue(this.node)) {
             return;
         }
         $.triggerEvent(this.node, 'change.ui.datetimepicker', {
@@ -3618,7 +3628,7 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
-     * Set the current dates.
+     * Sets the current dates.
      * @param {DateTime[]} dates The input dates.
      * @param {object} options The options for setting the date.
      * @param {boolean} [options.updateValue=true] Whether to update the value.
@@ -3632,7 +3642,7 @@ export default class DateTimePicker extends BaseComponent {
             return;
         }
         const oldDates = this.getDate();
-        const oldValue = this.node.value;
+        const oldValue = $.getValue(this.node);
         const id = ++this.#selectionId;
         this.#dates = dates;
         if (updateValue) {
@@ -3642,7 +3652,7 @@ export default class DateTimePicker extends BaseComponent {
             }
         }
         this.#refresh();
-        if (!this.node || id !== this.#selectionId || !updateValue || oldValue === this.node.value) {
+        if (!this.node || id !== this.#selectionId || !updateValue || oldValue === $.getValue(this.node)) {
             return;
         }
         $.triggerEvent(this.node, 'change.ui.datetimepicker', {
@@ -3669,20 +3679,20 @@ export default class DateTimePicker extends BaseComponent {
         Promise.all([
             $.squeezeIn(target, { duration: this.#duration() }),
             $.squeezeOut(source, { duration: this.#duration() }),
-        ]).then((_) => {
+        ]).then(() => {
             if (!this.node || id !== this.#viewTransitionId) {
                 return;
             }
             $.detach(source);
             this.update();
             focus();
-        }).catch((_) => {
+        }).catch(() => {
             // Another view change or disposal owns the panels now.
         });
     }
 
     /**
-     * Update the input value to the current date.
+     * Updates the input value to the current date.
      */
     #updateValue() {
         let value;

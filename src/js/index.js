@@ -6,8 +6,8 @@ import DateTimePicker from './date-time-picker.js';
 initComponent('datetimepicker', DateTimePicker);
 
 // DateTimePicker events
-$.addEvent(document, 'mousedown.ui.datetimepicker', (e) => {
-    const target = getClickTarget(e);
+$.addEvent(document, 'mousedown.ui.datetimepicker', (event) => {
+    const target = getClickTarget(event);
     const nodes = $.find('.datetimepicker:not(.datetimepicker-inline):not(.datetimepicker-modal)');
 
     for (const node of nodes) {
@@ -30,8 +30,8 @@ $.addEvent(document, 'mousedown.ui.datetimepicker', (e) => {
     }
 }, { capture: true });
 
-$.addEvent(document, 'keydown.ui.datetimepicker', (e) => {
-    if (e.code !== 'Escape') {
+$.addEvent(document, 'keydown.ui.datetimepicker', (event) => {
+    if (event.code !== 'Escape') {
         return;
     }
 
@@ -48,10 +48,10 @@ $.addEvent(document, 'keydown.ui.datetimepicker', (e) => {
 
         if (!stopped) {
             stopped = true;
-            e.stopPropagation();
+            event.stopPropagation();
         }
 
-        if (i == 0) {
+        if (i === 0) {
             $.focus(input);
         }
 

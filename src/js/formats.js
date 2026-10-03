@@ -4,7 +4,7 @@ const defaultDateFormats = {};
 const defaultTimeFormats = {};
 
 /**
- * Check a locale for day period component (and cache).
+ * Checks a locale for day period component (and cache).
  * @param {string} locale The locale to check.
  * @returns {boolean} Whether the locale uses a day period component.
  */
@@ -14,15 +14,15 @@ export function checkDayPeriod(locale) {
             hour: '2-digit',
         });
 
-        dayPeriods[locale] = !!formatter.formatToParts(new Date)
+        dayPeriods[locale] = !!formatter.formatToParts(new Date())
             .find((part) => part.type === 'dayPeriod');
     }
 
     return dayPeriods[locale];
-};
+}
 
 /**
- * Get the default date format for a locale.
+ * Gets the default date format for a locale.
  * @param {string} locale The input locale.
  * @returns {string} The default date format.
  */
@@ -36,10 +36,10 @@ export function getDefaultDateFormat(locale) {
     }
 
     return defaultDateFormats[locale];
-};
+}
 
 /**
- * Get the default format for a locale.
+ * Gets the default format for a locale.
  * @param {string} locale The input locale.
  * @param {boolean} [hasDayPeriod] Whether to use a 12-hour clock; defaults to the locale.
  * @returns {string} The default format.
@@ -57,10 +57,10 @@ export function getDefaultFormat(locale, hasDayPeriod = checkDayPeriod(locale)) 
     }
 
     return defaultFormats[key];
-};
+}
 
 /**
- * Get the default time format for a locale.
+ * Gets the default time format for a locale.
  * @param {string} locale The input locale.
  * @param {boolean} [hasDayPeriod] Whether to use a 12-hour clock; defaults to the locale.
  * @returns {string} The default time format.
@@ -75,10 +75,10 @@ export function getDefaultTimeFormat(locale, hasDayPeriod = checkDayPeriod(local
     }
 
     return defaultTimeFormats[key];
-};
+}
 
 /**
- * Create a date format from a locale and options.
+ * Creates a date format from a locale and options.
  * @param {string} locale The input locale.
  * @param {Intl.DateTimeFormatOptions} options Options for the formatter.
  * @param {boolean} [hasDayPeriod] Whether to use a 12-hour clock.
@@ -90,7 +90,7 @@ function formatFromParts(locale, options, hasDayPeriod) {
         hour12: hasDayPeriod,
     });
 
-    return formatter.formatToParts(new Date)
+    return formatter.formatToParts(new Date())
         .map(
             (part) => {
                 switch (part.type) {
@@ -121,4 +121,4 @@ function formatFromParts(locale, options, hasDayPeriod) {
                 return `'${part.value}'`;
             },
         ).join('');
-};
+}

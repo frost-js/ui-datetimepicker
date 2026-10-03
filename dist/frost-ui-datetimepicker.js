@@ -36,109 +36,109 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 
 //#region src/js/comparisons.js
 /**
-	* Test if a date is after another date (day).
+	* Checks whether a date is after another date (day).
 	* @param {DateTime} a The date to test.
 	* @param {DateTime} b The date to compare against.
-	* @returns {boolean} TRUE if the date is after the other date, otherwise FALSE.
+	* @returns {boolean} Whether the date is after the other date.
 	*/
 	function isAfterDay(a, b) {
 		return isAfterMonth(a, b) || isSameMonth(a, b) && a.getDate() > b.getDate();
 	}
 	/**
-	* Test if a date is after another date (month).
+	* Checks whether a date is after another date (month).
 	* @param {DateTime} a The date to test.
 	* @param {DateTime} b The date to compare against.
-	* @returns {boolean} TRUE if the date is after the other date, otherwise FALSE.
+	* @returns {boolean} Whether the date is after the other date.
 	*/
 	function isAfterMonth(a, b) {
 		return isAfterYear(a, b) || isSameYear(a, b) && a.getMonth() > b.getMonth();
 	}
 	/**
-	* Test if a date is after another date (instant).
+	* Checks whether a date is after another date (instant).
 	* @param {DateTime} a The date to test.
 	* @param {DateTime} b The date to compare against.
-	* @returns {boolean} TRUE if the date is after the other date, otherwise FALSE.
+	* @returns {boolean} Whether the date is after the other date.
 	*/
 	function isAfterInstant(a, b) {
 		return a.getTime() > b.getTime();
 	}
 	/**
-	* Test if a date is after another date (year).
+	* Checks whether a date is after another date (year).
 	* @param {DateTime} a The date to test.
 	* @param {DateTime} b The date to compare against.
-	* @returns {boolean} TRUE if the date is after the other date, otherwise FALSE.
+	* @returns {boolean} Whether the date is after the other date.
 	*/
 	function isAfterYear(a, b) {
 		return a.getYear() > b.getYear();
 	}
 	/**
-	* Test if a date is before another date (day).
+	* Checks whether a date is before another date (day).
 	* @param {DateTime} a The date to test.
 	* @param {DateTime} b The date to compare against.
-	* @returns {boolean} TRUE if the date is before the other date, otherwise FALSE.
+	* @returns {boolean} Whether the date is before the other date.
 	*/
 	function isBeforeDay(a, b) {
 		return isBeforeMonth(a, b) || isSameMonth(a, b) && a.getDate() < b.getDate();
 	}
 	/**
-	* Test if a date is before another date (month).
+	* Checks whether a date is before another date (month).
 	* @param {DateTime} a The date to test.
 	* @param {DateTime} b The date to compare against.
-	* @returns {boolean} TRUE if the date is before the other date, otherwise FALSE.
+	* @returns {boolean} Whether the date is before the other date.
 	*/
 	function isBeforeMonth(a, b) {
 		return isBeforeYear(a, b) || isSameYear(a, b) && a.getMonth() < b.getMonth();
 	}
 	/**
-	* Test if a date is before another date (instant).
+	* Checks whether a date is before another date (instant).
 	* @param {DateTime} a The date to test.
 	* @param {DateTime} b The date to compare against.
-	* @returns {boolean} TRUE if the date is before the other date, otherwise FALSE.
+	* @returns {boolean} Whether the date is before the other date.
 	*/
 	function isBeforeInstant(a, b) {
 		return a.getTime() < b.getTime();
 	}
 	/**
-	* Test if a date is before another date (year).
+	* Checks whether a date is before another date (year).
 	* @param {DateTime} a The date to test.
 	* @param {DateTime} b The date to compare against.
-	* @returns {boolean} TRUE if the date is before the other date, otherwise FALSE.
+	* @returns {boolean} Whether the date is before the other date.
 	*/
 	function isBeforeYear(a, b) {
 		return a.getYear() < b.getYear();
 	}
 	/**
-	* Test if a date is equal to another date (day).
+	* Checks whether a date is equal to another date (day).
 	* @param {DateTime} a The date to test.
 	* @param {DateTime} b The date to compare against.
-	* @returns {boolean} TRUE if the date is equal to the other date, otherwise FALSE.
+	* @returns {boolean} Whether the date is equal to the other date.
 	*/
 	function isSameDay(a, b) {
 		return isSameMonth(a, b) && a.getDate() === b.getDate();
 	}
 	/**
-	* Test if a date is equal to another date (month).
+	* Checks whether a date is equal to another date (month).
 	* @param {DateTime} a The date to test.
 	* @param {DateTime} b The date to compare against.
-	* @returns {boolean} TRUE if the date is equal to the other date, otherwise FALSE.
+	* @returns {boolean} Whether the date is equal to the other date.
 	*/
 	function isSameMonth(a, b) {
 		return isSameYear(a, b) && a.getMonth() === b.getMonth();
 	}
 	/**
-	* Test if a date is equal to another date (instant).
+	* Checks whether a date is equal to another date (instant).
 	* @param {DateTime} a The date to test.
 	* @param {DateTime} b The date to compare against.
-	* @returns {boolean} TRUE if the date is equal to the other date, otherwise FALSE.
+	* @returns {boolean} Whether the date is equal to the other date.
 	*/
 	function isSameInstant(a, b) {
 		return a.getTime() === b.getTime();
 	}
 	/**
-	* Test if a date is equal to another date (year).
+	* Checks whether a date is equal to another date (year).
 	* @param {DateTime} a The date to test.
 	* @param {DateTime} b The date to compare against.
-	* @returns {boolean} TRUE if the date is equal to the other date, otherwise FALSE.
+	* @returns {boolean} Whether the date is equal to the other date.
 	*/
 	function isSameYear(a, b) {
 		return a.getYear() === b.getYear();
@@ -151,7 +151,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 	var defaultDateFormats = {};
 	var defaultTimeFormats = {};
 	/**
-	* Check a locale for day period component (and cache).
+	* Checks a locale for day period component (and cache).
 	* @param {string} locale The locale to check.
 	* @returns {boolean} Whether the locale uses a day period component.
 	*/
@@ -163,7 +163,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		return dayPeriods[locale];
 	}
 	/**
-	* Get the default date format for a locale.
+	* Gets the default date format for a locale.
 	* @param {string} locale The input locale.
 	* @returns {string} The default date format.
 	*/
@@ -176,7 +176,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		return defaultDateFormats[locale];
 	}
 	/**
-	* Get the default format for a locale.
+	* Gets the default format for a locale.
 	* @param {string} locale The input locale.
 	* @param {boolean} [hasDayPeriod] Whether to use a 12-hour clock; defaults to the locale.
 	* @returns {string} The default format.
@@ -193,7 +193,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		return defaultFormats[key];
 	}
 	/**
-	* Get the default time format for a locale.
+	* Gets the default time format for a locale.
 	* @param {string} locale The input locale.
 	* @param {boolean} [hasDayPeriod] Whether to use a 12-hour clock; defaults to the locale.
 	* @returns {string} The default time format.
@@ -207,7 +207,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		return defaultTimeFormats[key];
 	}
 	/**
-	* Create a date format from a locale and options.
+	* Creates a date format from a locale and options.
 	* @param {string} locale The input locale.
 	* @param {Intl.DateTimeFormatOptions} options Options for the formatter.
 	* @param {boolean} [hasDayPeriod] Whether to use a 12-hour clock.
@@ -475,7 +475,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return getDefaultTimeFormat(locale, hasDayPeriod);
 		}
 		/**
-		* New DateTimePicker constructor.
+		* Creates a DateTimePicker.
 		* @param {HTMLElement} node The input node.
 		* @param {DateTimePickerOptions} [options] The component options.
 		*/
@@ -486,7 +486,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				"aria-controls",
 				"aria-expanded",
 				"aria-haspopup"
-			].map((name) => [name, node.getAttribute(name)]));
+			].map((name) => [name, _fr0st_query.default.getAttribute(node, name)]));
 			this.#form = node.form;
 			try {
 				this.#dateOptions = {
@@ -501,7 +501,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				this.#minDate = this.#parseDate(this.options.minDate);
 				this.#maxDate = this.#parseDate(this.options.maxDate);
 				const value = _fr0st_query.default.getValue(this.node);
-				if (this.options.multiDate) this.#dates = this.#normalizeDates(value.split(this.options.multiDateSeparator).map((val) => this.#makeDate(val)));
+				if (this.options.multiDate) this.#dates = this.#normalizeDates(value.split(this.options.multiDateSeparator).map((value) => this.#makeDate(value)));
 				else {
 					this.#date = this.#makeDate(value);
 					if (!this.#date && this.options.useCurrent) this.#date = this.#now();
@@ -528,13 +528,13 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 		}
 		/**
-		* Clear the current value.
+		* Clears the current value.
 		*/
 		clear() {
 			this.setDate(null);
 		}
 		/**
-		* Disable the DateTimePicker.
+		* Disables the DateTimePicker.
 		*/
 		disable() {
 			_fr0st_query.default.setAttribute(this.node, { disabled: true });
@@ -542,9 +542,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.#refreshDisabled();
 			this.#refresh();
 		}
-		/**
-		* Dispose the DateTimePicker.
-		*/
+		/** @inheritdoc */
 		dispose() {
 			if (!this.node) return;
 			++this.#transitionId;
@@ -565,8 +563,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 			if (this.#menuNode) _fr0st_query.default.remove(this.#menuNode);
 			this.#releaseDisplay?.();
-			for (const [name, value] of this.#attributes) if (value === null) this.node.removeAttribute(name);
-			else this.node.setAttribute(name, value);
+			for (const [name, value] of this.#attributes) if (value === null) _fr0st_query.default.removeAttribute(this.node, name);
+			else _fr0st_query.default.setAttribute(this.node, { [name]: value });
 			this.#open = false;
 			this.#date = null;
 			this.#dates = null;
@@ -594,7 +592,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			super.dispose();
 		}
 		/**
-		* Enable the DateTimePicker.
+		* Enables the DateTimePicker.
 		*/
 		enable() {
 			_fr0st_query.default.removeAttribute(this.node, "disabled");
@@ -602,7 +600,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.#refresh();
 		}
 		/**
-		* Get the current date(s).
+		* Gets the current date(s).
 		* @returns {DateTime|null|DateTime[]} The current date(s).
 		*/
 		getDate() {
@@ -611,7 +609,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return Array.isArray(date) ? date.slice() : date;
 		}
 		/**
-		* Get the maximum date.
+		* Gets the maximum date.
 		* @returns {DateTime|null} The maximum date.
 		*/
 		getMaxDate() {
@@ -619,7 +617,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return this.#maxDate;
 		}
 		/**
-		* Get the minimum date.
+		* Gets the minimum date.
 		* @returns {DateTime|null} The minimum date.
 		*/
 		getMinDate() {
@@ -627,14 +625,14 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return this.#minDate;
 		}
 		/**
-		* Get the view date.
+		* Gets the view date.
 		* @returns {DateTime} The view date.
 		*/
 		getViewDate() {
 			return this.#viewDate;
 		}
 		/**
-		* Hide the DateTimePicker.
+		* Hides the DateTimePicker.
 		*/
 		hide() {
 			if (!this.node || this.options.inline || !this.#open) return;
@@ -650,17 +648,17 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			const id = ++this.#transitionId;
 			_fr0st_query.default.stop(menu);
 			_fr0st_query.default.setDataset(menu, { uiAnimating: "out" });
-			_fr0st_query.default.fadeOut(menu, { duration: this.#duration() }).then((_) => {
+			_fr0st_query.default.fadeOut(menu, { duration: this.#duration() }).then(() => {
 				if (!this.node || id !== this.#transitionId) return;
 				this.#popper?.dispose();
 				this.#popper = null;
 				_fr0st_query.default.detach(menu);
 				_fr0st_query.default.removeDataset(menu, "uiAnimating");
 				_fr0st_query.default.triggerEvent(this.node, "hidden.ui.datetimepicker");
-			}).catch((_) => {});
+			}).catch(() => {});
 		}
 		/**
-		* Refresh the DateTimePicker.
+		* Refreshes the DateTimePicker.
 		*/
 		refresh() {
 			if (!this.node) return;
@@ -678,7 +676,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 		}
 		/**
-		* Set the current date(s).
+		* Sets the current date(s).
 		* @param {DateInput|DateInput[]} date The input date, or an array of dates in multi-date mode.
 		*/
 		setDate(date) {
@@ -693,7 +691,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 		}
 		/**
-		* Set the maximum date.
+		* Sets the maximum date.
 		* @param {DateInput} maxDate The input date(s).
 		*/
 		setMaxDate(maxDate) {
@@ -701,7 +699,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.refresh();
 		}
 		/**
-		* Set the minimum date.
+		* Sets the minimum date.
 		* @param {DateInput} minDate The input date(s).
 		*/
 		setMinDate(minDate) {
@@ -709,7 +707,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.refresh();
 		}
 		/**
-		* Show the DateTimePicker.
+		* Shows the DateTimePicker.
 		*/
 		show() {
 			if (!this.node || this.options.inline || this.#open || !this.#isEditable()) return;
@@ -745,21 +743,21 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				spacing: this.options.spacing,
 				minContact: this.options.minContact
 			});
-			_fr0st_query.default.fadeIn(menu, { duration: this.#duration() }).then((_) => {
+			_fr0st_query.default.fadeIn(menu, { duration: this.#duration() }).then(() => {
 				if (!this.node || id !== this.#transitionId) return;
 				_fr0st_query.default.removeDataset(menu, "uiAnimating");
 				_fr0st_query.default.triggerEvent(this.node, "shown.ui.datetimepicker");
-			}).catch((_) => {});
+			}).catch(() => {});
 		}
 		/**
-		* Toggle the DateTimePicker.
+		* Toggles the DateTimePicker.
 		*/
 		toggle() {
 			if (this.#open) this.hide();
 			else this.show();
 		}
 		/**
-		* Update the DateTimePicker position.
+		* Updates the DateTimePicker position.
 		*/
 		update() {
 			if (this.#popper) this.#popper.update();
@@ -779,7 +777,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 		}
 		/**
-		* Check the format for date and time components.
+		* Checks the format for date and time components.
 		*/
 		#checkFormat() {
 			this.#hasYear = false;
@@ -832,7 +830,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			].includes(this.#defaultView)) this.#defaultView = this.#minView;
 		}
 		/**
-		* Clamp a date between min and max dates.
+		* Clamps a date between min and max dates.
 		* @param {DateTime} date The input date.
 		* @returns {DateTime} The clamped date.
 		*/
@@ -842,19 +840,19 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return date;
 		}
 		/**
-		* Clamp a date to the nearest stepping interval.
+		* Clamps a date to the nearest stepping interval.
 		* @param {DateTime} date The input date.
 		* @returns {DateTime} The clamped date.
 		*/
 		#clampStepping(date) {
-			if (!this.#hasMinutes || this.options.minuteStepping == 1) return date;
+			if (!this.#hasMinutes || this.options.minuteStepping === 1) return date;
 			const minutes = date.getMinutes();
 			const stepMinutes = Math.min(_fr0st_query.default._toStep(minutes, this.options.minuteStepping), 60);
 			if (minutes !== stepMinutes) return date.withMinutes(stepMinutes);
 			return date;
 		}
 		/**
-		* Create a table.
+		* Creates a table.
 		* @param {object} options Options for rendering the table.
 		* @returns {HTMLElement} The new table.
 		*/
@@ -938,16 +936,16 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : this.options.duration;
 		}
 		/**
-		* Attach events for the DateTimePicker.
+		* Attaches events for the DateTimePicker.
 		*/
 		#events() {
 			this.#listen(this.node, "change.ui.datetimepicker", (event) => {
 				if (!event.skipUpdate) this.#readInput(true);
 			});
-			this.#listen(this.node, "input.ui.datetimepicker", (_) => this.#readInput(false));
+			this.#listen(this.node, "input.ui.datetimepicker", () => this.#readInput(false));
 			if (this.#form) this.#listen(this.#form, "reset.ui.datetimepicker", (event) => {
 				clearTimeout(this.#resetTimer);
-				this.#resetTimer = setTimeout((_) => {
+				this.#resetTimer = setTimeout(() => {
 					if (!this.node || event.defaultPrevented) return;
 					this.#date = null;
 					this.#dates = [];
@@ -958,8 +956,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			});
 			if (this.#hasYear) this.#eventsDate();
 			if (this.#hasHours) this.#eventsTime();
-			this.#listen(this.#menuNode, "click.ui.datetimepicker", (e) => {
-				e.stopPropagation();
+			this.#listen(this.#menuNode, "click.ui.datetimepicker", (event) => {
+				event.stopPropagation();
 			});
 			if (this.options.inline) return;
 			this.#listen(this.node, "click.ui.datetimepicker", (event) => {
@@ -967,39 +965,39 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				this.show();
 			});
 			if (!this.#useModal) {
-				this.#listen(this.node, "focus.ui.datetimepicker", (_) => {
+				this.#listen(this.node, "focus.ui.datetimepicker", () => {
 					if (!_fr0st_query.default.isSame(this.node, document.activeElement)) return;
 					this.show();
 				});
-				this.#listen(this.#menuNode, "keydown.ui.datetimepicker", (e) => {
-					if (e.code !== "Tab") return;
+				this.#listen(this.#menuNode, "keydown.ui.datetimepicker", (event) => {
+					if (event.code !== "Tab") return;
 					const focusableNodes = _fr0st_query.default.find("[tabindex=\"0\"]", this.#menuNode);
-					const focusIndex = _fr0st_query.default.indexOf(focusableNodes, e.target);
-					if (e.shiftKey && focusIndex === 0) {
-						e.preventDefault();
+					const focusIndex = _fr0st_query.default.indexOf(focusableNodes, event.target);
+					if (event.shiftKey && focusIndex === 0) {
+						event.preventDefault();
 						_fr0st_query.default.focus(this.node);
-					} else if (!e.shiftKey && focusIndex === focusableNodes.length - 1) {
+					} else if (!event.shiftKey && focusIndex === focusableNodes.length - 1) {
 						_fr0st_query.default.focus(this.node);
 						this.hide();
 					}
 				});
 			}
-			this.#listen(this.node, "keydown.ui.datetimepicker", (e) => {
-				switch (e.code) {
+			this.#listen(this.node, "keydown.ui.datetimepicker", (event) => {
+				switch (event.code) {
 					case "Enter":
 					case "NumpadEnter":
-						e.preventDefault();
+						event.preventDefault();
 						this.toggle();
 						break;
 					case "Escape":
 						if (_fr0st_query.default.isConnected(this.#menuNode)) {
-							e.stopPropagation();
+							event.stopPropagation();
 							this.hide();
 						}
 						break;
-					case "Tab": if (e.shiftKey && !this.#useModal && _fr0st_query.default.isConnected(this.#menuNode)) this.hide();
-					else if (!e.shiftKey && !this.#useModal && _fr0st_query.default.isConnected(this.#menuNode) && !_fr0st_query.default.getDataset(this.#menuNode, "uiAnimating")) {
-						e.preventDefault();
+					case "Tab": if (event.shiftKey && !this.#useModal && _fr0st_query.default.isConnected(this.#menuNode)) this.hide();
+					else if (!event.shiftKey && !this.#useModal && _fr0st_query.default.isConnected(this.#menuNode) && !_fr0st_query.default.getDataset(this.#menuNode, "uiAnimating")) {
+						event.preventDefault();
 						const focusNode = _fr0st_query.default.findOne("[tabindex=\"0\"]", this.#menuNode);
 						_fr0st_query.default.focus(focusNode);
 					}
@@ -1007,11 +1005,11 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			});
 		}
 		/**
-		* Attach date events for the DateTimePicker.
+		* Attaches date events for the DateTimePicker.
 		*/
 		#eventsDate() {
 			const updateValue = !this.#useModal;
-			const focusTime = (_) => {
+			const focusTime = () => {
 				let focusSelector;
 				if (this.#hasHours) focusSelector = "[data-ui-action=\"changeView\"][data-ui-time-view=\"hours\"]";
 				else if (this.#hasMinutes) focusSelector = "[data-ui-action=\"changeView\"][data-ui-time-view=\"minutes\"]";
@@ -1021,16 +1019,16 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					_fr0st_query.default.focus(focusNode);
 				}
 			};
-			const showTime = (_) => {
+			const showTime = () => {
 				this.#timeViewMode = null;
 				this.#refreshTime();
 				if (!this.node) return;
 				this.#switchView(this.#timeContainer, this.#dateContainer, focusTime);
 			};
-			const handleAction = (e) => {
+			const handleAction = (event) => {
 				if (!this.#isEditable()) return;
-				e.preventDefault();
-				const element = e.currentTarget;
+				event.preventDefault();
+				const element = event.currentTarget;
 				const action = _fr0st_query.default.getDataset(element, "uiAction");
 				let tempDate = this.#date ? this.#date : this.#defaultDate;
 				switch (action) {
@@ -1136,34 +1134,34 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				}
 				_fr0st_query.default.focus(focusNode);
 			};
-			_fr0st_query.default.addEventDelegate(this.#dateContainer, "click.ui.datetimepicker", "[data-ui-action]", (e) => {
-				if (e.button) return;
-				handleAction(e);
+			_fr0st_query.default.addEventDelegate(this.#dateContainer, "click.ui.datetimepicker", "[data-ui-action]", (event) => {
+				if (event.button) return;
+				handleAction(event);
 			});
-			_fr0st_query.default.addEventDelegate(this.#dateContainer, "keydown.ui.datetimepicker", "[data-ui-action]", (e) => {
-				switch (e.code) {
+			_fr0st_query.default.addEventDelegate(this.#dateContainer, "keydown.ui.datetimepicker", "[data-ui-action]", (event) => {
+				switch (event.code) {
 					case "Enter":
 					case "NumpadEnter":
 					case "Space":
-						handleAction(e);
+						handleAction(event);
 						return;
 				}
 			});
-			_fr0st_query.default.addEventDelegate(this.#dateContainer, "mousedown.ui.datetimepicker", "[data-ui-focus=\"false\"][aria-disabled=\"false\"]", (e) => {
+			_fr0st_query.default.addEventDelegate(this.#dateContainer, "mousedown.ui.datetimepicker", "[data-ui-focus=\"false\"][aria-disabled=\"false\"]", (event) => {
 				let tempView = this.#viewDate;
-				tempView = tempView.withYear(_fr0st_query.default.getDataset(e.currentTarget, "uiYear"), _fr0st_query.default.getDataset(e.currentTarget, "uiMonth"), _fr0st_query.default.getDataset(e.currentTarget, "uiDate"));
+				tempView = tempView.withYear(_fr0st_query.default.getDataset(event.currentTarget, "uiYear"), _fr0st_query.default.getDataset(event.currentTarget, "uiMonth"), _fr0st_query.default.getDataset(event.currentTarget, "uiDate"));
 				if (tempView.isSame(this.#viewDate)) return;
 				this.#viewDate = tempView;
 				refreshDate();
 			});
-			this.#listen(this.#dateContainer, "keydown.ui.datetimepicker", (e) => {
+			this.#listen(this.#dateContainer, "keydown.ui.datetimepicker", (event) => {
 				if (!this.#isEditable()) return;
 				let tempView = this.#viewDate;
-				switch (e.code) {
+				switch (event.code) {
 					case "ArrowUp":
 						switch (this.#viewMode) {
 							case "days":
-								if (e.ctrlKey) tempView = tempView.subYear();
+								if (event.ctrlKey) tempView = tempView.subYear();
 								else tempView = tempView.subWeek();
 								break;
 							case "months":
@@ -1175,7 +1173,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					case "ArrowRight":
 						switch (this.#viewMode) {
 							case "days":
-								if (e.ctrlKey) tempView = tempView.addMonth();
+								if (event.ctrlKey) tempView = tempView.addMonth();
 								else tempView = tempView.addDay();
 								break;
 							case "months":
@@ -1187,7 +1185,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					case "ArrowDown":
 						switch (this.#viewMode) {
 							case "days":
-								if (e.ctrlKey) tempView = tempView.addYear();
+								if (event.ctrlKey) tempView = tempView.addYear();
 								else tempView = tempView.addWeek();
 								break;
 							case "months":
@@ -1199,7 +1197,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					case "ArrowLeft":
 						switch (this.#viewMode) {
 							case "days":
-								if (e.ctrlKey) tempView = tempView.subMonth();
+								if (event.ctrlKey) tempView = tempView.subMonth();
 								else tempView = tempView.subDay();
 								break;
 							case "months":
@@ -1230,7 +1228,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 						break;
 					default: return;
 				}
-				e.preventDefault();
+				event.preventDefault();
 				if (tempView.isSame(this.#viewDate)) return;
 				if (!this.#isBeforeMax(tempView, { allowSame: true }) || !this.#isAfterMin(tempView, { allowSame: true })) return;
 				this.#viewDate = tempView;
@@ -1238,10 +1236,10 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			});
 		}
 		/**
-		* Attach events for the Modal.
+		* Attaches events for the Modal.
 		*/
 		#eventsModal() {
-			this.#listen(this.#modal, "show.ui.modal", (_) => {
+			this.#listen(this.#modal, "show.ui.modal", () => {
 				if (!this.#allowEvent("show")) {
 					if (this.node) _fr0st_query.default.detach(this.#modal);
 					return false;
@@ -1251,10 +1249,10 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				this.#open = true;
 				_fr0st_query.default.setAttribute(this.node, { "aria-expanded": true });
 			});
-			this.#listen(this.#modal, "shown.ui.modal", (_) => {
+			this.#listen(this.#modal, "shown.ui.modal", () => {
 				_fr0st_query.default.triggerEvent(this.node, "shown.ui.datetimepicker");
 			});
-			this.#listen(this.#modal, "hide.ui.modal", (_) => {
+			this.#listen(this.#modal, "hide.ui.modal", () => {
 				if (!this.#allowEvent("hide")) {
 					this.#keepDate = false;
 					return false;
@@ -1273,19 +1271,19 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				this.#open = false;
 				_fr0st_query.default.setAttribute(this.node, { "aria-expanded": false });
 			});
-			this.#listen(this.#modal, "hidden.ui.modal", (_) => {
+			this.#listen(this.#modal, "hidden.ui.modal", () => {
 				this.#keepDate = false;
 				this.#originalDate = null;
 				_fr0st_query.default.detach(this.#modal);
 				_fr0st_query.default.triggerEvent(this.node, "hidden.ui.datetimepicker");
 			});
-			this.#listen(this.#setBtn, "click.ui.datetimepicker", (_) => {
+			this.#listen(this.#setBtn, "click.ui.datetimepicker", () => {
 				this.#keepDate = true;
 				this.hide();
 			});
 		}
 		/**
-		* Attach time events for the DateTimePicker.
+		* Attaches time events for the DateTimePicker.
 		*/
 		#eventsTime() {
 			const updateValue = !this.#useModal;
@@ -1293,10 +1291,10 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				const currentHours = date.getHours();
 				return date.withHours(currentHours + (currentHours < 12 ? 12 : -12));
 			};
-			const handleAction = (e) => {
+			const handleAction = (event) => {
 				if (!this.#isEditable()) return;
-				e.preventDefault();
-				const element = e.currentTarget;
+				event.preventDefault();
+				const element = event.currentTarget;
 				const action = _fr0st_query.default.getDataset(element, "uiAction");
 				let tempDate = this.#date ? this.#date : this.#defaultDate;
 				let focusSelector;
@@ -1363,26 +1361,26 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					_fr0st_query.default.focus(focusNode);
 				}
 			};
-			_fr0st_query.default.addEventDelegate(this.#timeContainer, "click.ui.datetimepicker", "[data-ui-action]", (e) => {
-				if (e.button) return;
-				handleAction(e);
+			_fr0st_query.default.addEventDelegate(this.#timeContainer, "click.ui.datetimepicker", "[data-ui-action]", (event) => {
+				if (event.button) return;
+				handleAction(event);
 			});
-			_fr0st_query.default.addEventDelegate(this.#timeContainer, "keydown.ui.datetimepicker", "[data-ui-action]", (e) => {
+			_fr0st_query.default.addEventDelegate(this.#timeContainer, "keydown.ui.datetimepicker", "[data-ui-action]", (event) => {
 				if (!this.#isEditable()) return;
-				switch (e.code) {
+				switch (event.code) {
 					case "Enter":
 					case "NumpadEnter":
 					case "Space":
-						handleAction(e);
+						handleAction(event);
 						return;
 				}
-				const action = _fr0st_query.default.getDataset(e.currentTarget, "uiAction");
+				const action = _fr0st_query.default.getDataset(event.currentTarget, "uiAction");
 				let tempDate = this.#date ? this.#date : this.#defaultDate;
 				let focusSelector;
 				switch (action) {
 					case "setHours": break;
 					case "togglePeriod":
-						switch (e.code) {
+						switch (event.code) {
 							case "ArrowUp":
 							case "ArrowDown":
 								tempDate = switchPeriod(tempDate);
@@ -1395,11 +1393,11 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 						let timeView;
 						switch (action) {
 							case "changeView":
-								timeView = _fr0st_query.default.getDataset(e.currentTarget, "uiTimeView");
+								timeView = _fr0st_query.default.getDataset(event.currentTarget, "uiTimeView");
 								break;
 							case "prev":
 							case "next":
-								switch (_fr0st_query.default.getDataset(e.currentTarget, "uiUnit")) {
+								switch (_fr0st_query.default.getDataset(event.currentTarget, "uiUnit")) {
 									case "hour":
 										timeView = "hours";
 										break;
@@ -1410,7 +1408,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 								if (this.#timeViewMode) return;
 								timeView = "hours";
 						}
-						switch (e.code) {
+						switch (event.code) {
 							case "ArrowUp":
 								switch (timeView) {
 									case "hours":
@@ -1434,7 +1432,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					}
 				}
 				const newDate = !this.#date || !tempDate.isSame(this.#date);
-				if (newDate || focusSelector) e.preventDefault();
+				if (newDate || focusSelector) event.preventDefault();
 				if (newDate) {
 					this.#setDate(tempDate, { updateValue });
 					if (!this.node) return;
@@ -1444,8 +1442,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					_fr0st_query.default.focus(focusNode);
 				}
 			});
-			_fr0st_query.default.addEventDelegate(this.#timeContainer, "mousedown.ui.datetimepicker", "[data-ui-focus=\"false\"][aria-disabled=\"false\"]", (e) => {
-				const focusNode = e.currentTarget;
+			_fr0st_query.default.addEventDelegate(this.#timeContainer, "mousedown.ui.datetimepicker", "[data-ui-focus=\"false\"][aria-disabled=\"false\"]", (event) => {
+				const focusNode = event.currentTarget;
 				const oldFocusNode = _fr0st_query.default.findOne("[data-ui-focus=\"true\"]", this.#timeContainer);
 				if (!_fr0st_query.default.isSame(focusNode, oldFocusNode)) {
 					_fr0st_query.default.setAttribute(oldFocusNode, { tabindex: -1 });
@@ -1455,14 +1453,14 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				}
 				_fr0st_query.default.focus(focusNode);
 			});
-			this.#listen(this.#timeContainer, "keydown.ui.datetimepicker", (e) => {
+			this.#listen(this.#timeContainer, "keydown.ui.datetimepicker", (event) => {
 				let focusNode;
 				switch (this.#timeViewMode) {
 					case "hours":
 					case "minutes": {
 						const nodes = _fr0st_query.default.find("[data-ui-focus][aria-disabled=\"false\"]", this.#timeContainer);
 						const focusedIndex = _fr0st_query.default.indexOf(nodes, "[data-ui-focus=\"true\"]") || 0;
-						switch (e.code) {
+						switch (event.code) {
 							case "ArrowUp":
 								focusNode = nodes[focusedIndex - 4];
 								break;
@@ -1481,7 +1479,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					}
 					default: return;
 				}
-				e.preventDefault();
+				event.preventDefault();
 				if (!focusNode) return;
 				const oldFocusNode = _fr0st_query.default.findOne("[data-ui-focus=\"true\"]", this.#timeContainer);
 				if (!_fr0st_query.default.isSame(focusNode, oldFocusNode)) {
@@ -1508,7 +1506,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return null;
 		}
 		/**
-		* Format a date.
+		* Formats a date.
 		* @param {DateTime} [date] The date to format.
 		* @returns {string} The formatted date.
 		*/
@@ -1517,7 +1515,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return date.format(this.#format);
 		}
 		/**
-		* Format multiple dates.
+		* Formats multiple dates.
 		* @param {DateTime[]} [dates] The dates to format.
 		* @returns {string} The formatted dates.
 		*/
@@ -1525,12 +1523,12 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return dates.map((date) => date.format(this.#format)).join(this.options.multiDateSeparator);
 		}
 		/**
-		* Determine whether a date is between min/max dates.
+		* Determines whether a date is between min/max dates.
 		* @param {DateTime} date The date to test.
 		* @param {object} [options] The options for how to compare the dates.
 		* @param {string} [options.granularity] The level of granularity to use for comparison.
 		* @param {boolean} [options.allowSame=false] Whether to also allow same check.
-		* @returns {boolean} TRUE if the date is between min/max, otherwise FALSE.
+		* @returns {boolean} Whether the date is between min/max.
 		*/
 		#isAfterMin(date, { granularity = null, allowSame = false } = {}) {
 			if (!this.#minDate) return true;
@@ -1542,12 +1540,12 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 		}
 		/**
-		* Determine whether a date is between min/max dates.
+		* Determines whether a date is between min/max dates.
 		* @param {DateTime} date The date to test.
 		* @param {object} [options] The options for how to compare the dates.
 		* @param {string} [options.granularity] The level of granularity to use for comparison.
 		* @param {boolean} [options.allowSame=false] Whether to also allow same check.
-		* @returns {boolean} TRUE if the date is between min/max, otherwise FALSE.
+		* @returns {boolean} Whether the date is between min/max.
 		*/
 		#isBeforeMax(date, { granularity = null, allowSame = false } = {}) {
 			if (!this.#maxDate) return true;
@@ -1559,11 +1557,11 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 		}
 		/**
-		* Determine whether a date is a "current" date.
+		* Determines whether a date is a "current" date.
 		* @param {DateTime} date The date to test.
 		* @param {object} [options] The options for how to compare the dates.
 		* @param {string} [options.granularity] The level of granularity to use for comparison.
-		* @returns {boolean} TRUE if the date is a "current" date, otherwise FALSE.
+		* @returns {boolean} Whether the date is a "current" date.
 		*/
 		#isCurrent(date, { granularity = null } = {}) {
 			let callback;
@@ -1580,18 +1578,18 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return this.#date && callback(date, this.#date);
 		}
 		/**
-		* Determine whether the input is editable.
-		* @returns {boolean} TRUE if the input is editable, otherwise FALSE.
+		* Determines whether the input is editable.
+		* @returns {boolean} Whether the input is editable.
 		*/
 		#isEditable() {
 			return !!this.node && !_fr0st_query.default.is(this.node, ":disabled") && (this.options.ignoreReadonly || !_fr0st_query.default.is(this.node, ":read-only"));
 		}
 		/**
-		* Determine whether a date is valid.
+		* Determines whether a date is valid.
 		* @param {DateTime} date The date to test.
 		* @param {object} [options] The options for how to compare the dates.
 		* @param {string} [options.granularity=second] The level of granularity to use for comparison.
-		* @returns {boolean} TRUE if the date is valid, otherwise FALSE.
+		* @returns {boolean} Whether the date is valid.
 		*/
 		#isValid(date, { granularity = "second" } = {}) {
 			if (!this.node || !date?.isValid || !Number.isFinite(date.getTimestamp())) return false;
@@ -1634,7 +1632,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			_fr0st_query.default.addEvent(node, events, callback);
 		}
 		/**
-		* Create a new DateTime object from format.
+		* Creates a new DateTime object from format.
 		* @param {string} date The date string.
 		* @returns {DateTime|null} The new DateTime.
 		*/
@@ -1664,7 +1662,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return [...unique.values()].sort((a, b) => a.getTime() - b.getTime());
 		}
 		/**
-		* Create a new DateTime object set to the current date/time.
+		* Creates a new DateTime object set to the current date/time.
 		* @returns {DateTime} The new DateTime.
 		*/
 		#now() {
@@ -1690,7 +1688,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return parsed?.isValid && Number.isFinite(parsed.getTimestamp()) ? parsed : null;
 		}
 		/**
-		* Parse DateTime objects from an array of values.
+		* Parses DateTime objects from an array of values.
 		* @param {DateInput[]|null} dates The dates to parse, or null to clear the selection.
 		* @returns {DateTime[]} An array of parsed DateTime objects.
 		* @throws {TypeError} When a non-array selection is supplied.
@@ -1706,7 +1704,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		*/
 		#readInput(normalize) {
 			const options = this.options;
-			const value = this.node.value;
+			const value = _fr0st_query.default.getValue(this.node);
 			let valid;
 			if (options.multiDate) {
 				const dates = this.#normalizeDates(value.split(options.multiDateSeparator).map((part) => this.#makeDate(part)));
@@ -1725,7 +1723,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.#refresh();
 		}
 		/**
-		* Refresh the date and time UI elements.
+		* Refreshes the date and time UI elements.
 		* @param {boolean} [notify=true] Whether to emit refresh events.
 		*/
 		#refresh(notify = true) {
@@ -1777,26 +1775,26 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		*/
 		#refreshAccessibility(container) {
 			const editable = this.#isEditable();
-			for (const node of container.querySelectorAll("[data-ui-focus], [data-ui-action], .datetimepicker-disabled")) {
-				const disabled = !editable || node.classList.contains(this.constructor.classes.disabled);
-				node.setAttribute("role", "button");
-				node.setAttribute("aria-disabled", `${disabled}`);
-				if (node.hasAttribute("data-ui-focus")) node.setAttribute("aria-pressed", `${node.classList.contains(this.constructor.classes.active)}`);
+			for (const node of _fr0st_query.default.find("[data-ui-focus], [data-ui-action], .datetimepicker-disabled", container)) {
+				const disabled = !editable || _fr0st_query.default.hasClass(node, this.constructor.classes.disabled);
+				_fr0st_query.default.setAttribute(node, { "role": "button" });
+				_fr0st_query.default.setAttribute(node, { "aria-disabled": `${disabled}` });
+				if (_fr0st_query.default.hasAttribute(node, "data-ui-focus")) _fr0st_query.default.setAttribute(node, { "aria-pressed": `${_fr0st_query.default.hasClass(node, this.constructor.classes.active)}` });
 				if (disabled) {
 					node.tabIndex = -1;
-					if (node.hasAttribute("data-ui-focus")) node.dataset.uiFocus = "false";
+					if (_fr0st_query.default.hasAttribute(node, "data-ui-focus")) _fr0st_query.default.setDataset(node, { uiFocus: "false" });
 				}
 			}
-			if (editable && !container.querySelector("[data-ui-focus=\"true\"]")) {
-				const first = container.querySelector("[data-ui-focus][aria-disabled=\"false\"]");
+			if (editable && !_fr0st_query.default.findOne("[data-ui-focus=\"true\"]", container)) {
+				const first = _fr0st_query.default.findOne("[data-ui-focus][aria-disabled=\"false\"]", container);
 				if (first) {
-					first.dataset.uiFocus = "true";
+					_fr0st_query.default.setDataset(first, { uiFocus: "true" });
 					first.tabIndex = 0;
 				}
 			}
 		}
 		/**
-		* Refresh the date container.
+		* Refreshes the date container.
 		* @param {boolean} [notify=true] Whether to emit a refresh event.
 		*/
 		#refreshDate(notify = true) {
@@ -1830,7 +1828,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			} });
 		}
 		/**
-		* Refresh the toggle disabled.
+		* Refreshes the toggle disabled.
 		*/
 		#refreshDisabled() {
 			if (!this.node) return;
@@ -1838,7 +1836,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			else _fr0st_query.default.removeClass(this.#menuNode, this.constructor.classes.disabled);
 		}
 		/**
-		* Refresh the time container.
+		* Refreshes the time container.
 		* @param {boolean} [notify=true] Whether to emit a refresh event.
 		*/
 		#refreshTime(notify = true) {
@@ -1869,7 +1867,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			} });
 		}
 		/**
-		* Render the DateTimePicker.
+		* Renders the DateTimePicker.
 		*/
 		#render() {
 			this.#menuNode = _fr0st_query.default.create("div", {
@@ -1885,8 +1883,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				"aria-expanded": false,
 				"aria-haspopup": "dialog"
 			});
-			const description = this.node.getAttribute("aria-describedby");
-			if (description) this.#menuNode.setAttribute("aria-describedby", description);
+			const description = _fr0st_query.default.getAttribute(this.node, "aria-describedby");
+			if (description) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-describedby": description });
 			if (this.options.showToolbar) this.#renderToolbar();
 			this.#container = _fr0st_query.default.create("div", { class: this.constructor.classes.container });
 			_fr0st_query.default.append(this.#menuNode, this.#container);
@@ -1975,7 +1973,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			} else _fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.menuShadow);
 		}
 		/**
-		* Render the days picker.
+		* Renders the days picker.
 		*/
 		#renderDays() {
 			const start = this.#viewDate.startOfMonth();
@@ -2078,7 +2076,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (this.node) _fr0st_query.default.append(this.#dateContainer, table);
 		}
 		/**
-		* Render the hours picker.
+		* Renders the hours picker.
 		*/
 		#renderHours() {
 			const initialDate = this.#date ? this.#date : this.#defaultDate;
@@ -2133,7 +2131,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (this.node) _fr0st_query.default.append(this.#timeContainer, table);
 		}
 		/**
-		* Render the minutes picker.
+		* Renders the minutes picker.
 		*/
 		#renderMinutes() {
 			const initialDate = this.#date ? this.#date : this.#defaultDate;
@@ -2151,7 +2149,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					_fr0st_query.default.append(tr, td);
 					const row = _fr0st_query.default.create("div", { class: this.constructor.classes.row });
 					_fr0st_query.default.append(td, row);
-					const stepping = this.options.minuteStepping == 1 ? 5 : this.options.minuteStepping;
+					const stepping = this.options.minuteStepping === 1 ? 5 : this.options.minuteStepping;
 					while (current.isSameOrBeforeMinute(last)) {
 						const minuteString = current.format("mm");
 						const col = _fr0st_query.default.create("span", {
@@ -2196,7 +2194,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (this.node) _fr0st_query.default.append(this.#timeContainer, table);
 		}
 		/**
-		* Render the Modal.
+		* Renders the Modal.
 		*/
 		#renderModal() {
 			this.#modal = _fr0st_query.default.create("div", {
@@ -2223,7 +2221,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			});
 			modalTitle.id = (0, _fr0st_ui.generateId)("datetimepicker-title");
 			this.#modal.id = (0, _fr0st_ui.generateId)("datetimepicker-modal");
-			this.#modal.setAttribute("aria-labelledby", modalTitle.id);
+			_fr0st_query.default.setAttribute(this.#modal, { "aria-labelledby": modalTitle.id });
 			_fr0st_query.default.setAttribute(this.node, { "aria-controls": this.#modal.id });
 			_fr0st_query.default.append(modalHeader, modalTitle);
 			const modalBody = _fr0st_query.default.create("div", { class: this.constructor.classes.modalBody });
@@ -2248,7 +2246,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			_fr0st_query.default.append(modalFooter, this.#setBtn);
 		}
 		/**
-		* Render the months picker.
+		* Renders the months picker.
 		*/
 		#renderMonths() {
 			const start = this.#viewDate.startOfYear();
@@ -2334,7 +2332,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (this.node) _fr0st_query.default.append(this.#dateContainer, table);
 		}
 		/**
-		* Render the time picker.
+		* Renders the time picker.
 		*/
 		#renderTime() {
 			const initialDate = this.#date ? this.#date : this.#defaultDate;
@@ -2458,7 +2456,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (this.node) _fr0st_query.default.append(this.#timeContainer, table);
 		}
 		/**
-		* Render a time column.
+		* Renders a time column.
 		* @param {object} options Options for rendering the column.
 		*/
 		#renderTimeColumn(options) {
@@ -2518,7 +2516,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			_fr0st_query.default.append(options.downTr, downTd);
 		}
 		/**
-		* Render a time separator column.
+		* Renders a time separator column.
 		* @param {object} options Options for rendering the separator column.
 		*/
 		#renderTimeSeparator(options) {
@@ -2533,7 +2531,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			_fr0st_query.default.append(options.downTr, separatorDownTd);
 		}
 		/**
-		* Render the toolbar.
+		* Renders the toolbar.
 		*/
 		#renderToolbar() {
 			const toolbarRow = _fr0st_query.default.create("div", { class: this.constructor.classes.toolbarRow });
@@ -2557,7 +2555,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 		}
 		/**
-		* Render the years picker.
+		* Renders the years picker.
 		*/
 		#renderYears() {
 			const viewYear = this.#viewDate.getYear();
@@ -2647,7 +2645,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (this.node) _fr0st_query.default.append(this.#dateContainer, table);
 		}
 		/**
-		* Reset the view.
+		* Resets the view.
 		*/
 		#resetView() {
 			++this.#viewTransitionId;
@@ -2667,7 +2665,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 		}
 		/**
-		* Set the current date.
+		* Sets the current date.
 		* @param {DateTime|null} [date] The input date.
 		* @param {object} options The options for setting the date.
 		* @param {boolean} [options.updateValue=true] Whether to update the value.
@@ -2678,7 +2676,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (date && !this.#isValid(date)) date = null;
 			if (!this.node) return;
 			const oldDate = this.getDate();
-			const oldValue = this.node.value;
+			const oldValue = _fr0st_query.default.getValue(this.node);
 			const id = ++this.#selectionId;
 			this.#date = date;
 			if (updateValue) {
@@ -2686,7 +2684,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				if (this.#useModal && this.#open) this.#originalDate = date;
 			}
 			this.#refresh();
-			if (!this.node || id !== this.#selectionId || !updateValue || oldValue === this.node.value) return;
+			if (!this.node || id !== this.#selectionId || !updateValue || oldValue === _fr0st_query.default.getValue(this.node)) return;
 			_fr0st_query.default.triggerEvent(this.node, "change.ui.datetimepicker", {
 				data: { skipUpdate: true },
 				detail: {
@@ -2696,7 +2694,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			});
 		}
 		/**
-		* Set the current dates.
+		* Sets the current dates.
 		* @param {DateTime[]} dates The input dates.
 		* @param {object} options The options for setting the date.
 		* @param {boolean} [options.updateValue=true] Whether to update the value.
@@ -2706,7 +2704,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			dates = this.#normalizeDates(dates);
 			if (!this.node) return;
 			const oldDates = this.getDate();
-			const oldValue = this.node.value;
+			const oldValue = _fr0st_query.default.getValue(this.node);
 			const id = ++this.#selectionId;
 			this.#dates = dates;
 			if (updateValue) {
@@ -2714,7 +2712,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				if (this.#useModal && this.#open) this.#originalDate = dates.slice();
 			}
 			this.#refresh();
-			if (!this.node || id !== this.#selectionId || !updateValue || oldValue === this.node.value) return;
+			if (!this.node || id !== this.#selectionId || !updateValue || oldValue === _fr0st_query.default.getValue(this.node)) return;
 			_fr0st_query.default.triggerEvent(this.node, "change.ui.datetimepicker", {
 				data: { skipUpdate: true },
 				detail: {
@@ -2736,15 +2734,15 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			_fr0st_query.default.stop(source);
 			_fr0st_query.default.append(this.#container, target);
 			_fr0st_query.default.setStyle(target, { display: "" });
-			Promise.all([_fr0st_query.default.squeezeIn(target, { duration: this.#duration() }), _fr0st_query.default.squeezeOut(source, { duration: this.#duration() })]).then((_) => {
+			Promise.all([_fr0st_query.default.squeezeIn(target, { duration: this.#duration() }), _fr0st_query.default.squeezeOut(source, { duration: this.#duration() })]).then(() => {
 				if (!this.node || id !== this.#viewTransitionId) return;
 				_fr0st_query.default.detach(source);
 				this.update();
 				focus();
-			}).catch((_) => {});
+			}).catch(() => {});
 		}
 		/**
-		* Update the input value to the current date.
+		* Updates the input value to the current date.
 		*/
 		#updateValue() {
 			let value;
@@ -2757,8 +2755,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 //#endregion
 //#region src/js/index.js
 	(0, _fr0st_ui.initComponent)("datetimepicker", DateTimePicker);
-	_fr0st_query.default.addEvent(document, "mousedown.ui.datetimepicker", (e) => {
-		const target = (0, _fr0st_ui.getClickTarget)(e);
+	_fr0st_query.default.addEvent(document, "mousedown.ui.datetimepicker", (event) => {
+		const target = (0, _fr0st_ui.getClickTarget)(event);
 		const nodes = _fr0st_query.default.find(".datetimepicker:not(.datetimepicker-inline):not(.datetimepicker-modal)");
 		for (const node of nodes) {
 			const input = _fr0st_query.default.getData(node, "input");
@@ -2768,8 +2766,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			datetimepicker.hide();
 		}
 	}, { capture: true });
-	_fr0st_query.default.addEvent(document, "keydown.ui.datetimepicker", (e) => {
-		if (e.code !== "Escape") return;
+	_fr0st_query.default.addEvent(document, "keydown.ui.datetimepicker", (event) => {
+		if (event.code !== "Escape") return;
 		let stopped = false;
 		const nodes = _fr0st_query.default.find(".datetimepicker:not(.datetimepicker-inline):not(.datetimepicker-modal)");
 		for (const [i, node] of nodes.entries()) {
@@ -2778,9 +2776,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (!datetimepicker) continue;
 			if (!stopped) {
 				stopped = true;
-				e.stopPropagation();
+				event.stopPropagation();
 			}
-			if (i == 0) _fr0st_query.default.focus(input);
+			if (i === 0) _fr0st_query.default.focus(input);
 			datetimepicker.hide();
 		}
 	}, { capture: true });
