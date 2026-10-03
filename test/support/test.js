@@ -25,9 +25,9 @@ const test = base.extend({
                 waitUntil: 'load',
             });
 
-            await page.waitForFunction((_) => window.UI?.DateTimePicker);
+            await page.waitForFunction(() => window.UI?.DateTimePicker);
 
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 if (
                     !window.fQuery ||
                     !window.DateTime ||
@@ -40,7 +40,7 @@ const test = base.extend({
                 document.body.replaceChildren();
             });
 
-            await page.waitForFunction((_) => {
+            await page.waitForFunction(() => {
                 const node = document.createElement('div');
                 node.className = 'datetimepicker text-center';
                 document.body.append(node);

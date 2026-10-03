@@ -2,8 +2,12 @@ import { expect, test } from '#test';
 
 test.describe('DateTimePicker', () => {
     test.beforeEach(async ({ page }) => {
-        await page.evaluate((_) => {
-            document.body.innerHTML = '<label for="date">Date</label><input id="date" class="input-outline"><button id="outside" style="position:absolute;right:0;top:0">Outside</button>';
+        await page.evaluate(() => {
+            $.setHtml(document.body,
+                '<label for="date">Date</label>' +
+                '<input id="date" class="input-outline">' +
+                '<button id="outside" style="position:absolute;right:0;top:0">Outside</button>',
+            );
             Object.assign(UI.DateTimePicker.defaults, {
                 duration: 0,
                 locale: 'en-GB',
@@ -15,37 +19,37 @@ test.describe('DateTimePicker', () => {
 
     test.describe('#init', () => {
         test('rejects a non-input element', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            expect(await page.evaluate(() => {
                 try {
-                    UI.DateTimePicker.init(document.querySelector('#outside'));
+                    UI.DateTimePicker.init($.findOne('#outside'));
                 } catch (error) {
                     return error.message;
                 }
             })).toBe('DateTimePicker must be created on an input element.');
         });
         test('initializes every matched node and returns the first instance (QuerySet)', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                document.querySelector('#date').insertAdjacentHTML('afterend', '<input id="second">');
+            expect(await page.evaluate(() => {
+                $.after($.findOne('#date'), '<input id="second">');
                 const first = $('input').datetimepicker({ format: 'yyyy-MM-dd' });
                 return first === $.getData('#date', 'datetimepicker');
             })).toBe(true);
-            expect(await page.evaluate((_) => $.getData('#second', 'datetimepicker') instanceof UI.DateTimePicker)).toBe(true);
-            await page.evaluate((_) => $('input').datetimepicker('setDate', '2026-09-16'));
+            expect(await page.evaluate(() => $.getData('#second', 'datetimepicker') instanceof UI.DateTimePicker)).toBe(true);
+            await page.evaluate(() => $('input').datetimepicker('setDate', '2026-09-16'));
             await expect(page.locator('#date')).toHaveValue('2026-09-16');
             await expect(page.locator('#second')).toHaveValue('2026-09-16');
-            expect(await page.evaluate((_) => $('input').datetimepicker('getDate').format('yyyy-MM-dd'))).toBe('2026-09-16');
+            expect(await page.evaluate(() => $('input').datetimepicker('getDate').format('yyyy-MM-dd'))).toBe('2026-09-16');
         });
 
         for (const { name, init } of [
-            { name: 'class', init: () => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' }) },
+            { name: 'class', init: () => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }) },
             { name: 'QuerySet', init: () => $('#date').datetimepicker({ format: 'yyyy-MM-dd' }) },
         ]) {
-            test(`creates and registers an instance (${name})`, async ({ page }) => {
+            test(`creates and registers a DateTimePicker (${name})`, async ({ page }) => {
                 await page.getByLabel('Date', { exact: true }).fill('2026-09-15');
                 const instance = await page.evaluateHandle(init);
                 expect(await instance.evaluate((value) => value instanceof UI.DateTimePicker)).toBe(true);
                 expect(await instance.evaluate((value) => $.getData('#date', 'datetimepicker') === value)).toBe(true);
-                expect(await instance.evaluate((value) => value.node === document.querySelector('#date'))).toBe(true);
+                expect(await instance.evaluate((value) => value.node === $.findOne('#date'))).toBe(true);
                 expect(await instance.evaluate((value) => Object.isFrozen(value.options))).toBe(true);
                 expect(await instance.evaluate((value) => value.getDate().format('yyyy-MM-dd'))).toBe('2026-09-15');
                 await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-15');
@@ -53,9 +57,9 @@ test.describe('DateTimePicker', () => {
         }
 
         test('reuses the instance and gives explicit options precedence over data attributes', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                const node = document.querySelector('#date');
-                node.dataset.uiFormat = 'MM/yyyy';
+            expect(await page.evaluate(() => {
+                const node = $.findOne('#date');
+                $.setDataset(node, 'uiFormat', 'MM/yyyy');
                 const first = UI.DateTimePicker.init(node, { format: 'yyyy-MM-dd' });
                 first.setDate([2026, 9, 15]);
                 return first === UI.DateTimePicker.init(node, { format: 'yyyy' });
@@ -64,9 +68,9 @@ test.describe('DateTimePicker', () => {
         });
 
         test('derives format and inline mode without mutating frozen options', async ({ page }) => {
-            const instance = await page.evaluateHandle((_) => {
-                const node = document.querySelector('#date');
-                node.dataset.uiInline = 'true';
+            const instance = await page.evaluateHandle(() => {
+                const node = $.findOne('#date');
+                $.setDataset(node, 'uiInline', true);
                 return UI.DateTimePicker.init(node, { modal: true, multiDate: true });
             });
             expect(await instance.evaluate((value) => value.options.format)).toBeNull();
@@ -76,7 +80,7 @@ test.describe('DateTimePicker', () => {
         });
 
         test('parses string bounds after resolving the default format', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
                 inline: true,
                 multiDate: true,
                 minDate: '14/09/2026',
@@ -89,7 +93,7 @@ test.describe('DateTimePicker', () => {
         });
 
         test('accepts epoch zero as a bound and default view', async ({ page }) => {
-            const instance = await page.evaluateHandle((_) => UI.DateTimePicker.init(document.querySelector('#date'), {
+            const instance = await page.evaluateHandle(() => UI.DateTimePicker.init($.findOne('#date'), {
                 format: 'yyyy-MM-dd', defaultDate: 0, minDate: 0, maxDate: 0,
             }));
             expect(await instance.evaluate((value) => value.getMinDate().getTimestamp())).toBe(0);
@@ -98,7 +102,7 @@ test.describe('DateTimePicker', () => {
         });
 
         test('uses the current date deterministically', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
                 format: 'yyyy-MM-dd HH:mm', useCurrent: true,
             }));
             await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-15 12:30');
@@ -108,12 +112,12 @@ test.describe('DateTimePicker', () => {
             test(`rejects invalid minuteStepping ${step} without registering an instance`, async ({ page }) => {
                 expect(await page.evaluate((minuteStepping) => {
                     try {
-                        UI.DateTimePicker.init(document.querySelector('#date'), { minuteStepping });
+                        UI.DateTimePicker.init($.findOne('#date'), { minuteStepping });
                     } catch (error) {
                         return error.message;
                     }
                 }, step)).toBe('minuteStepping must be an integer between 1 and 60.');
-                expect(await page.evaluate((_) => $.hasData('#date', 'datetimepicker'))).toBe(false);
+                expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
                 await expect(page.locator('.datetimepicker')).toHaveCount(0);
             });
         }
@@ -122,7 +126,7 @@ test.describe('DateTimePicker', () => {
             test(`cleans up after ${callback} throws during initialization`, async ({ page }) => {
                 expect(await page.evaluate((name) => {
                     try {
-                        UI.DateTimePicker.init(document.querySelector('#date'), {
+                        UI.DateTimePicker.init($.findOne('#date'), {
                             format: 'yyyy-MM-dd', inline: true, useCurrent: true,
                             [name]: () => {
                                 throw new Error('Callback failed');
@@ -132,24 +136,24 @@ test.describe('DateTimePicker', () => {
                         return error.message;
                     }
                 }, callback)).toBe('Callback failed');
-                expect(await page.evaluate((_) => $.hasData('#date', 'datetimepicker'))).toBe(false);
+                expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
                 await expect(page.locator('.datetimepicker')).toHaveCount(0);
                 await expect(page.getByLabel('Date', { exact: true })).toBeVisible();
                 await expect(page.getByLabel('Date', { exact: true })).not.toHaveAttribute('aria-controls');
-                await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', inline: true }).setDate('2026-09-16'));
+                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true }).setDate('2026-09-16'));
                 await expect(page.getByRole('button', { name: 'September 16, 2026', exact: true })).toHaveAttribute('aria-pressed', 'true');
             });
         }
 
         test('cleans up registration after an unsupported format', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            expect(await page.evaluate(() => {
                 try {
-                    UI.DateTimePicker.init(document.querySelector('#date'), { format: 'dd' });
+                    UI.DateTimePicker.init($.findOne('#date'), { format: 'dd' });
                 } catch (error) {
                     return error.message;
                 }
             })).toBe('Date selector requires a month.');
-            expect(await page.evaluate((_) => $.hasData('#date', 'datetimepicker'))).toBe(false);
+            expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
         });
     });
 
@@ -164,7 +168,7 @@ test.describe('DateTimePicker', () => {
             { callback: 'renderYear', format: 'yyyy' },
         ]) {
             test(`permits disposal from ${callback} during initialization`, async ({ page }) => {
-                await page.evaluate(({ name, pattern }) => UI.DateTimePicker.init(document.querySelector('#date'), {
+                await page.evaluate(({ name, pattern }) => UI.DateTimePicker.init($.findOne('#date'), {
                     format: pattern, inline: true, useCurrent: true,
                     [name]: () => {
                         $.getData('#date', 'datetimepicker').dispose();
@@ -173,21 +177,21 @@ test.describe('DateTimePicker', () => {
                 }), { name: callback, pattern: format });
                 await expect(page.locator('.datetimepicker')).toHaveCount(0);
                 await expect(page.getByLabel('Date', { exact: true })).toBeVisible();
-                expect(await page.evaluate((_) => $.hasData('#date', 'datetimepicker'))).toBe(false);
+                expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
             });
         }
         for (const { name, dispose } of [
-            { name: 'class', dispose: () => UI.DateTimePicker.init(document.querySelector('#date')).dispose() },
+            { name: 'class', dispose: () => UI.DateTimePicker.init($.findOne('#date')).dispose() },
             { name: 'QuerySet', dispose: () => $('#date').datetimepicker('dispose') },
         ]) {
             test(`unregisters and permits reinitialization (${name})`, async ({ page }) => {
-                const instance = await page.evaluateHandle((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' }));
+                const instance = await page.evaluateHandle(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }));
                 await page.evaluate(dispose);
                 expect(await instance.evaluate((value) => value.node)).toBeNull();
                 expect(await instance.evaluate((value) => value.options)).toBeNull();
-                expect(await page.evaluate((_) => $.hasData('#date', 'datetimepicker'))).toBe(false);
+                expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
                 await expect(page.getByLabel('Date', { exact: true })).toBeVisible();
-                await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' }).setDate([2026, 9, 16]));
+                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).setDate([2026, 9, 16]));
                 await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-16');
             });
         }
@@ -197,7 +201,7 @@ test.describe('DateTimePicker', () => {
         for (const multiDate of [false, true]) {
             test(`clears a ${multiDate ? 'multi' : 'single'}-date selection`, async ({ page }) => {
                 const instance = await page.evaluateHandle((multiple) => {
-                    const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', multiDate: multiple });
+                    const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', multiDate: multiple });
                     picker.setDate(multiple ? ['2026-09-15', '2026-09-16'] : '2026-09-15');
                     return picker;
                 }, multiDate);
@@ -217,7 +221,7 @@ test.describe('DateTimePicker', () => {
         test.describe(`#${method}`, () => {
             test('updates the input and inline calendar', async ({ page }) => {
                 await page.evaluate((name) => {
-                    const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', inline: true });
+                    const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true });
                     picker.disable();
                     picker[name]();
                 }, method);
@@ -234,8 +238,8 @@ test.describe('DateTimePicker', () => {
 
     test.describe('#getDate', () => {
         test('returns a copy of the multi-date selection', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', multiDate: true });
+            expect(await page.evaluate(() => {
+                const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', multiDate: true });
                 picker.setDate(['2026-09-15']);
                 picker.getDate().pop();
                 return picker.getDate().length;
@@ -246,9 +250,9 @@ test.describe('DateTimePicker', () => {
 
     test.describe('#getViewDate', () => {
         test('returns the date reached by calendar navigation', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', inline: true }));
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true }));
             await page.getByRole('button', { name: 'Next Month', exact: true }).click();
-            expect(await page.evaluate((_) => $('#date').datetimepicker('getViewDate').format('yyyy-MM-dd'))).toBe('2026-10-15');
+            expect(await page.evaluate(() => $('#date').datetimepicker('getViewDate').format('yyyy-MM-dd'))).toBe('2026-10-15');
         });
     });
 
@@ -256,7 +260,7 @@ test.describe('DateTimePicker', () => {
         test.describe(`#get${bound}Date`, () => {
             test('returns the configured bound', async ({ page }) => {
                 expect(await page.evaluate((name) => {
-                    const picker = UI.DateTimePicker.init(document.querySelector('#date'), {
+                    const picker = UI.DateTimePicker.init($.findOne('#date'), {
                         format: 'yyyy-MM-dd', minDate: '2026-09-01', maxDate: '2026-09-30',
                     });
                     return picker[`get${name}Date`]().format('yyyy-MM-dd');
@@ -274,18 +278,18 @@ test.describe('DateTimePicker', () => {
         ]) {
             test(`accepts a ${name}`, async ({ page }) => {
                 const date = await page.evaluateHandle(makeDate);
-                await page.evaluate((value) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' }).setDate(value), date);
+                await page.evaluate((value) => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).setDate(value), date);
                 await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-16');
             });
         }
 
         test('preserves epoch zero', async ({ page }) => {
-            await page.evaluate((_) => $('#date').datetimepicker({ format: 'yyyy-MM-dd HH:mm' }).setDate(0));
+            await page.evaluate(() => $('#date').datetimepicker({ format: 'yyyy-MM-dd HH:mm' }).setDate(0));
             await expect(page.getByLabel('Date', { exact: true })).toHaveValue('1970-01-01 00:00');
         });
 
         test('parses alternate formats and normalizes the input', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
                 format: 'yyyy-MM-dd', altFormats: ['dd/MM/yyyy'],
             }).setDate('16/09/2026'));
             await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-16');
@@ -300,18 +304,18 @@ test.describe('DateTimePicker', () => {
             test(`clears an ${name}`, async ({ page }) => {
                 const date = await page.evaluateHandle(makeDate);
                 await page.evaluate((value) => {
-                    const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' });
+                    const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' });
                     picker.setDate('2026-09-15');
                     picker.setDate(value);
                 }, date);
                 await expect(page.getByLabel('Date', { exact: true })).toHaveValue('');
-                expect(await page.evaluate((_) => $('#date').datetimepicker('getDate'))).toBeNull();
+                expect(await page.evaluate(() => $('#date').datetimepicker('getDate'))).toBeNull();
             });
         }
 
         test('sorts multi-date values, filters invalid input, and clears with an empty array', async ({ page }) => {
-            const instance = await page.evaluateHandle((_) => {
-                const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', multiDate: true });
+            const instance = await page.evaluateHandle(() => {
+                const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', multiDate: true });
                 picker.setDate(['2026-09-16', 'invalid', '2026-09-15']);
                 return picker;
             });
@@ -321,8 +325,8 @@ test.describe('DateTimePicker', () => {
         });
 
         test('rejects a scalar multi-date selection without changing the input', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', multiDate: true });
+            expect(await page.evaluate(() => {
+                const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', multiDate: true });
                 picker.setDate(['2026-09-15']);
                 try {
                     picker.setDate('2026-09-16');
@@ -337,8 +341,8 @@ test.describe('DateTimePicker', () => {
     for (const bound of ['Min', 'Max']) {
         test.describe(`#set${bound}Date`, () => {
             test('updates bounds, revalidates the value, and permits clearing the bound', async ({ page }) => {
-                const instance = await page.evaluateHandle((_) => {
-                    const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', inline: true });
+                const instance = await page.evaluateHandle(() => {
+                    const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true });
                     picker.setDate('2026-09-15');
                     return picker;
                 });
@@ -355,9 +359,9 @@ test.describe('DateTimePicker', () => {
     test.describe('#refresh', () => {
         for (const api of ['class', 'QuerySet']) {
             test(`revalidates a selection after callback rules change (${api})`, async ({ page }) => {
-                await page.evaluate((_) => {
+                await page.evaluate(() => {
                     window.allowed = true;
-                    UI.DateTimePicker.init(document.querySelector('#date'), {
+                    UI.DateTimePicker.init($.findOne('#date'), {
                         format: 'yyyy-MM-dd', inline: true, isValidDay: () => window.allowed,
                     }).setDate('2026-09-15');
                 });
@@ -365,7 +369,7 @@ test.describe('DateTimePicker', () => {
                 await page.evaluate((name) => {
                     window.allowed = false;
                     if (name === 'class') {
-                        UI.DateTimePicker.init(document.querySelector('#date')).refresh();
+                        UI.DateTimePicker.init($.findOne('#date')).refresh();
                     } else {
                         $('#date').datetimepicker('refresh');
                     }
@@ -378,13 +382,13 @@ test.describe('DateTimePicker', () => {
 
     test.describe('#show', () => {
         test('renders the popup with current UI and DateTime', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' }).show());
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).show());
             await expect(page.locator('.datetimepicker')).toBeVisible();
             await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toBeVisible();
         });
 
         test('renders a UI 4 modal', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', modal: true }).show());
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', modal: true }).show());
             await expect(page.locator('.modal')).toBeVisible();
             await expect(page.getByRole('button', { name: 'Set', exact: true })).toBeVisible();
         });
@@ -392,9 +396,9 @@ test.describe('DateTimePicker', () => {
 
     test.describe('#hide', () => {
         test('closes the popup and clears expanded state', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' }).show());
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).show());
             await expect(page.getByRole('dialog')).toBeVisible();
-            await page.evaluate((_) => $('#date').datetimepicker('hide'));
+            await page.evaluate(() => $('#date').datetimepicker('hide'));
             await expect(page.getByRole('dialog')).toHaveCount(0);
             await expect(page.getByLabel('Date', { exact: true })).toHaveAttribute('aria-expanded', 'false');
         });
@@ -402,16 +406,16 @@ test.describe('DateTimePicker', () => {
 
     test.describe('#toggle', () => {
         test('toggles through QuerySet', async ({ page }) => {
-            await page.evaluate((_) => $('#date').datetimepicker({ format: 'yyyy-MM-dd' }).toggle());
+            await page.evaluate(() => $('#date').datetimepicker({ format: 'yyyy-MM-dd' }).toggle());
             await expect(page.getByRole('dialog')).toBeVisible();
-            await page.evaluate((_) => $('#date').datetimepicker('toggle'));
+            await page.evaluate(() => $('#date').datetimepicker('toggle'));
             await expect(page.getByRole('dialog')).toHaveCount(0);
         });
     });
 
     test.describe('#update', () => {
         test('updates an open Popper and is harmless while closed', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const picker = $('#date').datetimepicker({ format: 'yyyy-MM-dd' });
                 picker.update();
                 picker.show();
@@ -424,23 +428,23 @@ test.describe('DateTimePicker', () => {
 
     test.describe('events', () => {
         test('emits lifecycle events in order', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 window.events = [];
                 for (const name of ['show', 'shown', 'hide', 'hidden']) {
                     $.addEvent('#date', `${name}.ui.datetimepicker`, () => window.events.push(name));
                 }
-                UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' }).show();
+                UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).show();
             });
-            await expect.poll(() => page.evaluate((_) => window.events.join(','))).toBe('show,shown');
-            await page.evaluate((_) => $('#date').datetimepicker('hide'));
-            await expect.poll(() => page.evaluate((_) => window.events.join(','))).toBe('show,shown,hide,hidden');
+            await expect.poll(() => page.evaluate(() => window.events.join(','))).toBe('show,shown');
+            await page.evaluate(() => $('#date').datetimepicker('hide'));
+            await expect.poll(() => page.evaluate(() => window.events.join(','))).toBe('show,shown,hide,hidden');
         });
 
         test('ignores interrupted popup animations and permits reopening', async ({ page }) => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
             await page.clock.install();
-            await page.evaluate((_) => {
-                const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', duration: 100 });
+            await page.evaluate(() => {
+                const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', duration: 100 });
                 window.shown = 0;
                 window.hidden = 0;
                 $.addEvent('#date', 'shown.ui.datetimepicker', () => window.shown++);
@@ -451,20 +455,20 @@ test.describe('DateTimePicker', () => {
             });
             await page.clock.runFor(300);
             await expect(page.getByRole('dialog')).toBeVisible();
-            expect(await page.evaluate((_) => window.shown)).toBe(1);
-            expect(await page.evaluate((_) => window.hidden)).toBe(0);
-            await page.evaluate((_) => $('#date').datetimepicker('hide'));
+            expect(await page.evaluate(() => window.shown)).toBe(1);
+            expect(await page.evaluate(() => window.hidden)).toBe(0);
+            await page.evaluate(() => $('#date').datetimepicker('hide'));
             await page.clock.runFor(300);
             await expect(page.getByRole('dialog')).toHaveCount(0);
-            expect(await page.evaluate((_) => window.hidden)).toBe(1);
+            expect(await page.evaluate(() => window.hidden)).toBe(1);
         });
 
         test('can be disposed during an animated panel switch', async ({ page }) => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
             await page.clock.install();
-            await page.evaluate((_) => {
-                const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd HH:mm', inline: true, duration: 100 });
-                document.querySelector('[data-ui-action="showTime"]').click();
+            await page.evaluate(() => {
+                const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd HH:mm', inline: true, duration: 100 });
+                $.findOne('[data-ui-action="showTime"]').click();
                 picker.dispose();
             });
             await page.clock.runFor(300);
@@ -473,8 +477,8 @@ test.describe('DateTimePicker', () => {
         });
 
         test('reports selection changes once and suppresses unchanged values', async ({ page }) => {
-            await page.evaluate((_) => {
-                const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' });
+            await page.evaluate(() => {
+                const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' });
                 picker.setDate('2026-09-15');
                 window.changes = 0;
                 $.addEvent('#date', 'change.ui.datetimepicker', (event) => {
@@ -485,16 +489,16 @@ test.describe('DateTimePicker', () => {
                 picker.setDate('2026-09-16');
                 picker.setDate('2026-09-16');
             });
-            expect(await page.evaluate((_) => window.changes)).toBe(1);
-            expect(await page.evaluate((_) => window.oldDate)).toBe('2026-09-15');
-            expect(await page.evaluate((_) => window.newDate)).toBe('2026-09-16');
+            expect(await page.evaluate(() => window.changes)).toBe(1);
+            expect(await page.evaluate(() => window.oldDate)).toBe('2026-09-15');
+            expect(await page.evaluate(() => window.newDate)).toBe('2026-09-16');
             await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-16');
         });
 
         for (const event of ['show', 'hide']) {
             test(`allows canceling ${event}`, async ({ page }) => {
                 await page.evaluate((name) => {
-                    const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' });
+                    const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' });
                     if (name === 'hide') {
                         picker.show();
                     }
@@ -509,7 +513,7 @@ test.describe('DateTimePicker', () => {
         for (const event of ['show', 'shown', 'hide', 'hidden', 'change', 'refresh']) {
             test(`permits disposal from ${event}`, async ({ page }) => {
                 await page.evaluate((name) => {
-                    const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' });
+                    const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' });
                     $.addEvent('#date', `${name}.ui.datetimepicker`, () => picker.dispose());
                     if (name === 'change') {
                         picker.setDate('2026-09-16');
@@ -519,16 +523,16 @@ test.describe('DateTimePicker', () => {
                 }, event);
                 if (['hide', 'hidden'].includes(event)) {
                     await expect(page.getByRole('dialog')).toBeVisible();
-                    await page.evaluate((_) => $('#date').datetimepicker('hide'));
+                    await page.evaluate(() => $('#date').datetimepicker('hide'));
                 }
                 await expect(page.getByRole('dialog')).toHaveCount(0);
-                expect(await page.evaluate((_) => $.hasData('#date', 'datetimepicker'))).toBe(false);
+                expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
             });
         }
 
         test('does not re-enter show from its own event', async ({ page }) => {
-            await page.evaluate((_) => {
-                const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' });
+            await page.evaluate(() => {
+                const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' });
                 $.addEvent('#date', 'show.ui.datetimepicker', () => picker.show());
                 picker.show();
             });
@@ -538,7 +542,7 @@ test.describe('DateTimePicker', () => {
         for (const multiDate of [false, true]) {
             test(`renders a ${multiDate ? 'multi-date' : 'single-date'} selection changed from a refresh callback`, async ({ page }) => {
                 await page.evaluate((multiple) => {
-                    const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', inline: true, multiDate: multiple });
+                    const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true, multiDate: multiple });
                     window.refreshes = 0;
                     $.addEvent('#date', 'refresh.ui.datetimepicker', () => {
                         window.refreshes++;
@@ -549,13 +553,13 @@ test.describe('DateTimePicker', () => {
                 await expect(page.locator('#date')).toHaveValue('2026-09-17');
                 await expect(page.getByRole('button', { name: 'September 17, 2026', exact: true })).toHaveAttribute('aria-pressed', 'true');
                 await expect(page.getByRole('button', { name: 'September 16, 2026', exact: true })).toHaveAttribute('aria-pressed', 'false');
-                expect(await page.evaluate((_) => window.refreshes)).toBe(1);
+                expect(await page.evaluate(() => window.refreshes)).toBe(1);
             });
         }
 
         test('renders a time changed from a refresh callback without recursive events', async ({ page }) => {
-            await page.evaluate((_) => {
-                const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'HH:mm', inline: true });
+            await page.evaluate(() => {
+                const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'HH:mm', inline: true });
                 window.refreshes = 0;
                 $.addEvent('#date', 'refresh.ui.datetimepicker', () => {
                     window.refreshes++;
@@ -566,16 +570,16 @@ test.describe('DateTimePicker', () => {
             await expect(page.locator('#date')).toHaveValue('15:10');
             await expect(page.getByRole('button', { name: 'Select Hour', exact: true })).toHaveText('15');
             await expect(page.getByRole('button', { name: 'Select Minute', exact: true })).toHaveText('10');
-            expect(await page.evaluate((_) => window.refreshes)).toBe(1);
+            expect(await page.evaluate(() => window.refreshes)).toBe(1);
         });
 
         test('reports refresh view details', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 $.addEvent('#date', 'refresh.ui.datetimepicker', (event) => {
-                    event.target.dataset.view = event.detail.view;
-                    event.target.dataset.mode = event.detail.viewMode;
+                    $.setDataset(event.target, 'view', event.detail.view);
+                    $.setDataset(event.target, 'mode', event.detail.viewMode);
                 });
-                UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', inline: true });
+                UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true });
             });
             await expect(page.locator('#date')).toHaveAttribute('data-view', 'date');
             await expect(page.locator('#date')).toHaveAttribute('data-mode', 'days');
@@ -585,7 +589,7 @@ test.describe('DateTimePicker', () => {
     test.describe('user events', () => {
         for (const sideBySide of [false, true]) {
             test(`selects a date and moves focus to time controls (sideBySide=${sideBySide})`, async ({ page }) => {
-                await page.evaluate((side) => UI.DateTimePicker.init(document.querySelector('#date'), {
+                await page.evaluate((side) => UI.DateTimePicker.init($.findOne('#date'), {
                     format: 'yyyy-MM-dd HH:mm', inline: true, sideBySide: side,
                     isValidTime: (date) => date.getHours() === 10 && date.getMinutes() === 17,
                 }), sideBySide);
@@ -596,7 +600,7 @@ test.describe('DateTimePicker', () => {
         }
 
         test('leaves the selection unchanged when a date has no valid times', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
                 format: 'yyyy-MM-dd HH:mm', inline: true, isValidTime: (date) => date.getDate() === 15,
             }).setDate('2026-09-15 12:30'));
             await page.getByRole('button', { name: 'September 16, 2026', exact: true }).click();
@@ -604,7 +608,7 @@ test.describe('DateTimePicker', () => {
         });
 
         test('clamps a selected day to its inclusive time bounds', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
                 format: 'yyyy-MM-dd HH:mm', inline: true, sideBySide: true,
                 minDate: '2026-09-16 14:00', maxDate: '2026-09-17 09:00',
             }));
@@ -615,7 +619,7 @@ test.describe('DateTimePicker', () => {
         });
 
         test('keeps keyboard navigation within calendar bounds', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
                 format: 'yyyy-MM-dd', inline: true, minDate: '2026-09-15', maxDate: '2026-09-15',
             }));
             const day = page.getByRole('button', { name: 'September 15, 2026', exact: true });
@@ -626,7 +630,7 @@ test.describe('DateTimePicker', () => {
             await expect(day).toBeFocused();
         });
         test('moves between the input and calendar with Tab and Shift+Tab', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' }));
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }));
             await page.getByLabel('Date', { exact: true }).focus();
             await page.keyboard.press('Tab');
             await expect(page.getByRole('button', { name: 'Previous Month', exact: true })).toBeFocused();
@@ -637,7 +641,7 @@ test.describe('DateTimePicker', () => {
         });
 
         test('dismisses Escape from a focused date and restores input focus', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' }).show());
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).show());
             await page.getByRole('button', { name: 'September 15, 2026', exact: true }).focus();
             await page.keyboard.press('Escape');
             await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -645,14 +649,14 @@ test.describe('DateTimePicker', () => {
         });
 
         test('navigates and selects a calendar date', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', inline: true }));
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true }));
             await page.getByRole('button', { name: 'Next Month', exact: true }).click();
             await page.getByRole('button', { name: 'October 16, 2026', exact: true }).click();
             await expect(page.locator('#date')).toHaveValue('2026-10-16');
         });
 
         test('selects hours and minutes with DateTime 8 methods', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'HH:mm', inline: true, minuteStepping: 5 }));
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'HH:mm', inline: true, minuteStepping: 5 }));
             await page.getByRole('button', { name: 'Select Hour', exact: true }).click();
             await page.getByRole('button', { name: '14', exact: true }).click();
             await page.getByRole('button', { name: 'Select Minute', exact: true }).click();
@@ -661,7 +665,7 @@ test.describe('DateTimePicker', () => {
         });
 
         test('dismisses on outside interaction and Escape', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd' }));
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }));
             await page.getByLabel('Date', { exact: true }).click();
             await expect(page.getByRole('dialog')).toBeVisible();
             await page.getByRole('button', { name: 'Outside', exact: true }).click();
@@ -688,7 +692,7 @@ test.describe('DateTimePicker', () => {
                 { key: 'Control+ArrowDown', date: 'September 15, 2027' },
             ]) {
                 test(`moves date focus with ${key}`, async ({ page }) => {
-                    await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', inline: true }));
+                    await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true }));
                     await page.getByRole('button', { name: 'September 15, 2026', exact: true }).focus();
                     await page.keyboard.press(key);
                     await expect(page.getByRole('button', { name: date, exact: true })).toBeFocused();
@@ -697,7 +701,7 @@ test.describe('DateTimePicker', () => {
             }
 
             test('selects with Space and preserves a single tab stop among dates', async ({ page }) => {
-                await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', inline: true }));
+                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true }));
                 await page.getByRole('button', { name: 'September 15, 2026', exact: true }).focus();
                 await page.keyboard.press('ArrowRight');
                 await page.keyboard.press('Space');
@@ -707,7 +711,7 @@ test.describe('DateTimePicker', () => {
         });
         test.describe('calendar views', () => {
             test('navigates decades, years, months, and days', async ({ page }) => {
-                await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', inline: true }));
+                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true }));
                 await page.getByRole('button', { name: 'Select Month', exact: true }).click();
                 await page.getByRole('button', { name: 'Next Year', exact: true }).click();
                 await page.getByRole('button', { name: 'Previous Year', exact: true }).click();
@@ -733,7 +737,7 @@ test.describe('DateTimePicker', () => {
                 { format: 'yyyy', start: '2026', direction: 'ArrowDown', target: '2029' },
             ]) {
                 test(`navigates ${format} with ${direction}`, async ({ page }) => {
-                    await page.evaluate((pattern) => UI.DateTimePicker.init(document.querySelector('#date'), { format: pattern, inline: true }), format);
+                    await page.evaluate((pattern) => UI.DateTimePicker.init($.findOne('#date'), { format: pattern, inline: true }), format);
                     await page.getByRole('button', { name: start, exact: true }).focus();
                     await page.keyboard.press(direction);
                     await expect(page.getByRole('button', { name: target, exact: true })).toBeFocused();
@@ -744,7 +748,7 @@ test.describe('DateTimePicker', () => {
 
             for (const keepOpen of [false, true]) {
                 test(`selects from a popup with keepOpen=${keepOpen}`, async ({ page }) => {
-                    await page.evaluate((keep) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', keepOpen: keep }), keepOpen);
+                    await page.evaluate((keep) => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', keepOpen: keep }), keepOpen);
                     await page.getByLabel('Date', { exact: true }).click();
                     await page.getByRole('button', { name: 'September 16, 2026', exact: true }).click();
                     await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-16');
@@ -764,7 +768,7 @@ test.describe('DateTimePicker', () => {
                 { control: 'Decrement Minute', expected: '12:25' },
             ]) {
                 test(`changes time through ${control}`, async ({ page }) => {
-                    await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'HH:mm', inline: true, minuteStepping: 5 }).setDate('12:30'));
+                    await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'HH:mm', inline: true, minuteStepping: 5 }).setDate('12:30'));
                     await page.getByRole('button', { name: control, exact: true }).click();
                     await expect(page.locator('#date')).toHaveValue(expected);
                 });
@@ -777,7 +781,7 @@ test.describe('DateTimePicker', () => {
                 { control: 'Select Minute', key: 'ArrowDown', expected: '12:25' },
             ]) {
                 test(`changes ${control} with ${key}`, async ({ page }) => {
-                    await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'HH:mm', inline: true, minuteStepping: 5 }).setDate('12:30'));
+                    await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'HH:mm', inline: true, minuteStepping: 5 }).setDate('12:30'));
                     await page.getByRole('button', { name: control, exact: true }).press(key);
                     await expect(page.locator('#date')).toHaveValue(expected);
                     await expect(page.getByRole('button', { name: control, exact: true })).toBeFocused();
@@ -785,7 +789,7 @@ test.describe('DateTimePicker', () => {
             }
 
             test('toggles the period by mouse and keyboard', async ({ page }) => {
-                await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'hh:mm a', inline: true }).setDate('10:30 am'));
+                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'hh:mm a', inline: true }).setDate('10:30 am'));
                 await page.getByRole('button', { name: 'Toggle Period', exact: true }).click();
                 await expect(page.locator('#date')).toHaveValue('10:30 pm');
                 await page.getByRole('button', { name: 'Toggle Period', exact: true }).press('ArrowUp');
@@ -803,7 +807,7 @@ test.describe('DateTimePicker', () => {
                 { view: 'Minute', first: '30', target: '35', key: 'ArrowRight', expected: '12:35' },
             ]) {
                 test(`navigates the ${view} grid with ${key}`, async ({ page }) => {
-                    await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'HH:mm', inline: true, minuteStepping: 5 }).setDate('12:30'));
+                    await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'HH:mm', inline: true, minuteStepping: 5 }).setDate('12:30'));
                     await page.getByRole('button', { name: `Select ${view}`, exact: true }).click();
                     await expect(page.getByRole('button', { name: first, exact: true })).toBeFocused();
                     await page.keyboard.press(key);
@@ -816,7 +820,7 @@ test.describe('DateTimePicker', () => {
 
         test.describe('panels and toolbar', () => {
             test('switches date/time panels and updates the toolbar', async ({ page }) => {
-                await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd HH:mm', inline: true, showToolbar: true }).setDate('2026-09-15 12:30'));
+                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd HH:mm', inline: true, showToolbar: true }).setDate('2026-09-15 12:30'));
                 await expect(page.locator('.datetimepicker .fs-3').first()).toHaveText('Sept 15');
                 await page.getByRole('button', { name: 'Select Time', exact: true }).click();
                 await expect(page.getByRole('button', { name: 'Select Hour', exact: true })).toBeVisible();
@@ -828,7 +832,7 @@ test.describe('DateTimePicker', () => {
 
             for (const format of ['yyyy-MM-dd', 'HH:mm']) {
                 test(`closes ${format} with its Close control`, async ({ page }) => {
-                    await page.evaluate((pattern) => UI.DateTimePicker.init(document.querySelector('#date'), { format: pattern, showClose: true }).show(), format);
+                    await page.evaluate((pattern) => UI.DateTimePicker.init($.findOne('#date'), { format: pattern, showClose: true }).show(), format);
                     await page.getByRole('button', { name: 'Close', exact: true }).click();
                     await expect(page.getByRole('dialog')).toHaveCount(0);
                     await expect(page.getByLabel('Date', { exact: true })).toBeFocused();
@@ -839,7 +843,7 @@ test.describe('DateTimePicker', () => {
 
     test.describe('multiDate option', () => {
         test('normalizes typed dates using a custom separator', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
                 format: 'yyyy-MM-dd', multiDate: true, multiDateSeparator: ';',
             }));
             await page.getByLabel('Date', { exact: true }).fill('2026-09-16;2026-09-15;2026-09-16');
@@ -853,7 +857,7 @@ test.describe('DateTimePicker', () => {
         ]) {
             test(`deduplicates and toggles values at ${format} precision`, async ({ page }) => {
                 await page.evaluate(({ pattern, dates }) => {
-                    const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: pattern, multiDate: true, inline: true });
+                    const picker = UI.DateTimePicker.init($.findOne('#date'), { format: pattern, multiDate: true, inline: true });
                     picker.setDate(dates);
                 }, { pattern: format, dates: values });
                 await expect(page.locator('#date')).toHaveValue(expected);
@@ -867,14 +871,14 @@ test.describe('DateTimePicker', () => {
         for (const keepInvalid of [false, true]) {
             test(`handles invalid text with keepInvalid=${keepInvalid}`, async ({ page }) => {
                 await page.evaluate((keep) => {
-                    const picker = UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', keepInvalid: keep });
+                    const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', keepInvalid: keep });
                     picker.setDate('2026-09-15');
                 }, keepInvalid);
                 await page.getByLabel('Date', { exact: true }).fill('not a date');
                 await page.getByRole('button', { name: 'Outside', exact: true }).click();
                 await expect(page.getByLabel('Date', { exact: true })).toHaveValue(keepInvalid ? 'not a date' : '2026-09-15');
                 if (keepInvalid) {
-                    expect(await page.evaluate((_) => $('#date').datetimepicker('getDate'))).toBeNull();
+                    expect(await page.evaluate(() => $('#date').datetimepicker('getDate'))).toBeNull();
                 }
             });
         }
@@ -882,7 +886,7 @@ test.describe('DateTimePicker', () => {
 
     test.describe('minuteStepping option', () => {
         test('displays selectable minute intervals and disabled time choices', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
                 format: 'HH:mm', inline: true, minuteStepping: 15, isValidTime: (date) => date.getMinutes() !== 15,
             }).setDate('12:30'));
             await page.getByRole('button', { name: 'Select Minute', exact: true }).click();
@@ -892,7 +896,7 @@ test.describe('DateTimePicker', () => {
             await expect(page.locator('#date')).toHaveValue('12:45');
         });
         test('rounds across an hour boundary', async ({ page }) => {
-            await page.evaluate((_) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'HH:mm', minuteStepping: 5 }).setDate('12:59'));
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'HH:mm', minuteStepping: 5 }).setDate('12:59'));
             await expect(page.getByLabel('Date', { exact: true })).toHaveValue('13:00');
         });
     });
@@ -903,7 +907,7 @@ test.describe('DateTimePicker', () => {
             { format: 'hh:mm a', locale: 'en-GB', period: true },
         ]) {
             test(`respects explicit ${format} in ${locale}`, async ({ page }) => {
-                await page.evaluate((options) => UI.DateTimePicker.init(document.querySelector('#date'), { ...options, inline: true }), { format, locale });
+                await page.evaluate((options) => UI.DateTimePicker.init($.findOne('#date'), { ...options, inline: true }), { format, locale });
                 await expect(page.getByRole('button', { name: 'Toggle Period', exact: true })).toHaveCount(period ? 1 : 0);
             });
         }
@@ -916,11 +920,11 @@ test.describe('DateTimePicker', () => {
     ]) {
         test.describe(`${callback} option`, () => {
             test('customizes selectable cells', async ({ page }) => {
-                await page.evaluate(({ name, pattern }) => UI.DateTimePicker.init(document.querySelector('#date'), {
+                await page.evaluate(({ name, pattern }) => UI.DateTimePicker.init($.findOne('#date'), {
                     format: pattern, inline: true,
                     [name]: (date, node) => {
-                        node.classList.add('custom-date');
-                        node.title = date.format('yyyy-MM-dd');
+                        $.addClass(node, 'custom-date');
+                        $.setProperty(node, 'title', date.format('yyyy-MM-dd'));
                     },
                 }), { name: callback, pattern: format });
                 const cell = page.getByRole('button', { name: label, exact: true });
@@ -935,7 +939,7 @@ test.describe('DateTimePicker', () => {
     test.describe('defaultView option', () => {
         for (const { view, label } of [{ view: 'months', label: 'Sept' }, { view: 'years', label: '2026' }]) {
             test(`opens on ${view} without selecting a date`, async ({ page }) => {
-                await page.evaluate((defaultView) => UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', defaultView }).show(), view);
+                await page.evaluate((defaultView) => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', defaultView }).show(), view);
                 await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
                 await expect(page.locator('#date')).toHaveValue('');
             });
@@ -944,9 +948,9 @@ test.describe('DateTimePicker', () => {
 
     test.describe('mobileModal option', () => {
         test('opens a modal on supported mobile user agents', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 Object.defineProperty(navigator, 'userAgent', { configurable: true, value: 'iPhone' });
-                UI.DateTimePicker.init(document.querySelector('#date'), { format: 'yyyy-MM-dd', mobileModal: true });
+                UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', mobileModal: true });
             });
             await page.getByLabel('Date', { exact: true }).click();
             await expect(page.getByRole('dialog', { name: 'Select Date', exact: true })).toHaveAttribute('aria-modal', 'true');
@@ -960,11 +964,11 @@ test.describe('DateTimePicker', () => {
             { format: 'HH:mm', value: '14:30', expected: '14:30' },
         ]) {
             test(`updates and clears the ${format} toolbar`, async ({ page }) => {
-                await page.evaluate(({ pattern, date }) => UI.DateTimePicker.init(document.querySelector('#date'), {
+                await page.evaluate(({ pattern, date }) => UI.DateTimePicker.init($.findOne('#date'), {
                     format: pattern, inline: true, showToolbar: true,
                 }).setDate(date), { pattern: format, date: value });
                 await expect(page.locator('.datetimepicker > .p-3')).toContainText(expected);
-                await page.evaluate((_) => $('#date').datetimepicker('clear'));
+                await page.evaluate(() => $('#date').datetimepicker('clear'));
                 await expect(page.locator('.datetimepicker > .p-3')).toContainText('-');
                 await expect(page.locator('#date')).toHaveValue('');
             });
