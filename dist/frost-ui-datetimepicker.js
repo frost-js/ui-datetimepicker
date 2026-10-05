@@ -430,6 +430,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#minDate = null;
 		#minView;
 		#modal;
+		#observer = null;
 		#open = false;
 		#originalDate;
 		#popper;
@@ -553,6 +554,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			++this.#viewTransitionId;
 			++this.#selectionId;
 			clearTimeout(this.#resetTimer);
+			this.#observer?.disconnect();
 			for (const [node, events, handler] of this.#listeners) _fr0st_query.default.removeEvent(node, events, handler);
 			this.#listeners = [];
 			for (const node of [
@@ -580,6 +582,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.#dateOptions = null;
 			this.#menuNode = null;
 			this.#modal = null;
+			this.#observer = null;
 			this.#popper = null;
 			this.#container = null;
 			this.#dateContainer = null;
@@ -966,6 +969,17 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (this.#hasHours) this.#eventsTime();
 			this.#listen(this.#menuNode, "click.ui.datetimepicker", (event) => {
 				event.stopPropagation();
+			});
+			this.#observer = new MutationObserver(() => {
+				if (this.node) this.#refreshState();
+			});
+			this.#observer.observe(this.node, {
+				attributes: true,
+				attributeFilter: ["disabled", "readonly"]
+			});
+			for (const fieldset of _fr0st_query.default.parents(this.node, "fieldset")) this.#observer.observe(fieldset, {
+				attributes: true,
+				attributeFilter: ["disabled"]
 			});
 			if (this.options.inline) return;
 			this.#listen(this.node, "click.ui.datetimepicker", (event) => {
@@ -1790,8 +1804,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				if (items.includes(node)) _fr0st_query.default.setAttribute(node, { "aria-pressed": String(_fr0st_query.default.hasClass(node, this.constructor.classes.active)) });
 				if (disabled) {
 					_fr0st_query.default.setAttribute(node, { tabindex: -1 });
-					if (_fr0st_query.default.isSame(node, focusedItem)) this.#focusItem(null, { time });
-				}
+					if (editable && _fr0st_query.default.isSame(node, focusedItem)) this.#focusItem(null, { time });
+				} else _fr0st_query.default.setAttribute(node, { tabindex: items.includes(node) && !_fr0st_query.default.isSame(node, focusedItem) ? -1 : 0 });
 			}
 			if (editable && !(time ? this.#focusedTimeItem : this.#focusedDateItem)) {
 				const first = items.find((node) => _fr0st_query.default.getAttribute(node, "aria-disabled") === "false");
@@ -1841,6 +1855,16 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (!this.node) return;
 			if (!this.#isEditable()) _fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.disabled);
 			else _fr0st_query.default.removeClass(this.#menuNode, this.constructor.classes.disabled);
+		}
+		/**
+		* Synchronizes editability without rebuilding panels or changing selection.
+		*/
+		#refreshState() {
+			this.#refreshDisabled();
+			for (const container of [this.#dateContainer, this.#timeContainer]) if (container) this.#refreshAccessibility(container);
+			if (!this.options.inline && !this.#open) _fr0st_query.default.setAttribute(_fr0st_query.default.find("[tabindex]", this.#menuNode), { tabindex: -1 });
+			_fr0st_query.default.setProperty(this.#setBtn, "disabled", !this.#isEditable());
+			if (!this.#isEditable()) this.hide();
 		}
 		/**
 		* Refreshes the time container.

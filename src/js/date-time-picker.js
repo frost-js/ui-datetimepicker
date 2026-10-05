@@ -203,6 +203,7 @@ export default class DateTimePicker extends BaseComponent {
     #minDate = null;
     #minView;
     #modal;
+    #observer = null;
     #open = false;
     #originalDate;
     #popper;
@@ -383,6 +384,7 @@ export default class DateTimePicker extends BaseComponent {
         ++this.#viewTransitionId;
         ++this.#selectionId;
         clearTimeout(this.#resetTimer);
+        this.#observer?.disconnect();
         for (const [node, events, handler] of this.#listeners) {
             $.removeEvent(node, events, handler);
         }
@@ -419,6 +421,7 @@ export default class DateTimePicker extends BaseComponent {
         this.#dateOptions = null;
         this.#menuNode = null;
         this.#modal = null;
+        this.#observer = null;
         this.#popper = null;
         this.#container = null;
         this.#dateContainer = null;
@@ -966,6 +969,22 @@ export default class DateTimePicker extends BaseComponent {
             // prevent menu node from closing modal
             event.stopPropagation();
         });
+
+        this.#observer = new MutationObserver(() => {
+            if (this.node) {
+                this.#refreshState();
+            }
+        });
+        this.#observer.observe(this.node, {
+            attributes: true,
+            attributeFilter: ['disabled', 'readonly'],
+        });
+        for (const fieldset of $.parents(this.node, 'fieldset')) {
+            this.#observer.observe(fieldset, {
+                attributes: true,
+                attributeFilter: ['disabled'],
+            });
+        }
 
         if (this.options.inline) {
             return;
@@ -2260,9 +2279,11 @@ export default class DateTimePicker extends BaseComponent {
             }
             if (disabled) {
                 $.setAttribute(node, { tabindex: -1 });
-                if ($.isSame(node, focusedItem)) {
+                if (editable && $.isSame(node, focusedItem)) {
                     this.#focusItem(null, { time });
                 }
+            } else {
+                $.setAttribute(node, { tabindex: items.includes(node) && !$.isSame(node, focusedItem) ? -1 : 0 });
             }
         }
         if (editable && !(time ? this.#focusedTimeItem : this.#focusedDateItem)) {
@@ -2341,6 +2362,25 @@ export default class DateTimePicker extends BaseComponent {
             $.addClass(this.#menuNode, this.constructor.classes.disabled);
         } else {
             $.removeClass(this.#menuNode, this.constructor.classes.disabled);
+        }
+    }
+
+    /**
+     * Synchronizes editability without rebuilding panels or changing selection.
+     */
+    #refreshState() {
+        this.#refreshDisabled();
+        for (const container of [this.#dateContainer, this.#timeContainer]) {
+            if (container) {
+                this.#refreshAccessibility(container);
+            }
+        }
+        if (!this.options.inline && !this.#open) {
+            $.setAttribute($.find('[tabindex]', this.#menuNode), { tabindex: -1 });
+        }
+        $.setProperty(this.#setBtn, 'disabled', !this.#isEditable());
+        if (!this.#isEditable()) {
+            this.hide();
         }
     }
 

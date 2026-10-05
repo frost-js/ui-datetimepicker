@@ -63,21 +63,109 @@ test.describe('DateTimePicker forms', () => {
     });
 
     test.describe('disabled state', () => {
-        test('respects disabled fieldsets and refreshes inline controls', async ({ page }) => {
-            await page.evaluate(() => {
-                const picker = UI.DateTimePicker.init($.findOne('#date'), { inline: true });
-                $.setProperty($.findOne('#fields'), 'disabled', true);
-                picker.refresh();
+        for (const target of ['#date', '#fields']) {
+            test(`synchronizes inline disabled state without rebuilding (${target})`, async ({ page }) => {
+                await page.evaluate(() => {
+                    UI.DateTimePicker.init($.findOne('#date'), { inline: true, minDate: '2026-09-15' });
+                    window.selectedCell = $.findOne('[aria-label="September 15, 2026"]');
+                    $.addEvent('#date', 'change.ui.datetimepicker refresh.ui.datetimepicker', () => $.setDataset('#date', 'notified', true));
+                });
+                const focused = page.getByRole('button', { name: 'September 17, 2026', exact: true });
+                await focused.dispatchEvent('mousedown');
+                await page.evaluate((selector) => $.setProperty(selector, 'disabled', true), target);
+                await expect(page.locator('#date')).toBeDisabled();
+                await expect(page.locator('.datetimepicker')).toHaveClass(/datetimepicker-disabled/);
+                await expect(focused).toBeDisabled();
+                await expect(page.locator('.datetimepicker [tabindex="0"]')).toHaveCount(0);
+                expect(await page.evaluate(() => new FormData($.findOne('form')).has('appointment'))).toBe(false);
+
+                await page.evaluate((selector) => $.setProperty(selector, 'disabled', false), target);
+                await expect(focused).toBeEnabled();
+                await expect(focused).toHaveAttribute('tabindex', '0');
+                await expect(page.locator('[data-ui-date][tabindex="0"]')).toHaveCount(1);
+                await expect(page.getByRole('button', { name: 'Next Month', exact: true })).toHaveAttribute('tabindex', '0');
+                await expect(page.getByRole('button', { name: 'September 14, 2026', exact: true })).toBeDisabled();
+                await expect(page.locator('.datetimepicker')).not.toHaveClass(/datetimepicker-disabled/);
+                await expect(page.locator('#date')).toHaveValue('2026-09-15');
+                await expect(page.locator('#date')).not.toHaveAttribute('data-notified');
+                expect(await page.evaluate(() => $.isSame(window.selectedCell, $.findOne('[aria-label="September 15, 2026"]')))).toBe(true);
             });
-            await expect(page.locator('#date')).toBeDisabled();
-            await expect(page.locator('.datetimepicker')).toHaveClass(/datetimepicker-disabled/);
-            await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toBeDisabled();
-            expect(await page.evaluate(() => new FormData($.findOne('form')).has('appointment'))).toBe(false);
+        }
+
+        test('observes nested fieldsets and respects the first legend exemption', async ({ page }) => {
             await page.evaluate(() => {
-                $.setProperty($.findOne('#fields'), 'disabled', false);
-                $('#date').datetimepicker('refresh');
+                $.setHtml(document.body,
+                    '<fieldset id="outer"><legend><input id="legend" value="2026-09-15"></legend>' +
+                    '<fieldset id="inner"><input id="date" value="2026-09-15"></fieldset></fieldset>',
+                );
+                $('input').datetimepicker({ inline: true });
+                $.setProperty('#outer', 'disabled', true);
             });
+            const legendMenu = page.locator('legend .datetimepicker');
+            const innerMenu = page.locator('#inner .datetimepicker');
+            await expect(innerMenu).toHaveClass(/datetimepicker-disabled/);
+            await expect(legendMenu).not.toHaveClass(/datetimepicker-disabled/);
+            await expect(legendMenu.locator('[data-ui-date][tabindex="0"]')).toHaveCount(1);
+            await page.evaluate(() => {
+                $.setProperty('#inner', 'disabled', true);
+                $.setProperty('#outer', 'disabled', false);
+            });
+            await expect(innerMenu).toHaveClass(/datetimepicker-disabled/);
+            await page.evaluate(() => $.setProperty('#inner', 'disabled', false));
+            await expect(innerMenu).not.toHaveClass(/datetimepicker-disabled/);
+            await expect(innerMenu.locator('[data-ui-date][tabindex="0"]')).toHaveCount(1);
+        });
+
+        test('synchronizes both date and time panels without losing their tab stops', async ({ page }) => {
+            await page.evaluate(() => {
+                $.setValue('#date', '2026-09-15 12:30');
+                UI.DateTimePicker.init($.findOne('#date'), { inline: true, sideBySide: true, format: 'yyyy-MM-dd HH:mm' });
+            });
+            await page.getByRole('button', { name: 'Select Hour', exact: true }).click();
+            const hour = page.getByRole('button', { name: '14', exact: true });
+            await hour.dispatchEvent('mousedown');
+            await page.evaluate(() => $.setProperty('#date', 'readOnly', true));
+            await expect(hour).toBeDisabled();
+            await expect(page.locator('.datetimepicker [tabindex="0"]')).toHaveCount(0);
+            await page.evaluate(() => $.setProperty('#date', 'readOnly', false));
+            await expect(hour).toHaveAttribute('tabindex', '0');
+            await expect(page.locator('[data-ui-hour][tabindex="0"]')).toHaveCount(1);
+            await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toHaveAttribute('tabindex', '0');
+            await expect(page.locator('#date')).toHaveValue('2026-09-15 12:30');
+        });
+
+        for (const modal of [false, true]) {
+            for (const { target, property } of [
+                { target: '#date', property: 'disabled' },
+                { target: '#date', property: 'readOnly' },
+                { target: '#fields', property: 'disabled' },
+            ]) {
+                test(`closes an open ${modal ? 'modal' : 'popup'} after ${target}.${property} changes`, async ({ page }) => {
+                    await page.evaluate((useModal) => UI.DateTimePicker.init($.findOne('#date'), { modal: useModal }).show(), modal);
+                    await expect(page.getByRole('dialog')).toBeVisible();
+                    if (modal) {
+                        await page.getByRole('button', { name: 'September 16, 2026', exact: true }).click();
+                    }
+                    await page.evaluate(({ target, property }) => $.setProperty(target, property, true), { target, property });
+                    await expect(page.getByRole('dialog')).toHaveCount(0);
+                    await expect(page.locator('#date')).toHaveAttribute('aria-expanded', 'false');
+                    await expect(page.locator('#date')).toHaveValue('2026-09-15');
+                    await page.evaluate(({ target, property }) => $.setProperty(target, property, false), { target, property });
+                    await expect(page.getByRole('dialog')).toHaveCount(0);
+                    await page.evaluate(() => $('#date').datetimepicker('show'));
+                    await expect(page.getByRole('dialog')).toBeVisible();
+                    await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toHaveAttribute('aria-pressed', 'true');
+                });
+            }
+        }
+
+        test('keeps an open picker editable when ignoreReadonly is enabled', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { ignoreReadonly: true }).show());
+            await page.evaluate(() => $.setProperty('#date', 'readOnly', true));
+            await expect(page.getByRole('dialog')).toBeVisible();
             await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toBeEnabled();
+            await page.getByRole('button', { name: 'September 16, 2026', exact: true }).click();
+            await expect(page.locator('#date')).toHaveValue('2026-09-16');
         });
 
         for (const ignoreReadonly of [false, true]) {
@@ -133,6 +221,20 @@ test.describe('DateTimePicker forms', () => {
     });
 
     test.describe('disposal', () => {
+        test('disconnects pending and future native state mutations on disposal', async ({ page }) => {
+            await page.evaluate(() => {
+                const picker = UI.DateTimePicker.init($.findOne('#date'), { inline: true });
+                window.disposedMenu = $.findOne('.datetimepicker');
+                $.setProperty('#date', 'readOnly', true);
+                picker.dispose();
+                $.setProperty('#fields', 'disabled', true);
+            });
+            await page.evaluate(() => $.setProperty('#date', 'disabled', true));
+            expect(await page.evaluate(() => $.hasClass(window.disposedMenu, 'datetimepicker-disabled'))).toBe(false);
+            expect(await page.evaluate(() => $.getAttribute($.findOne('[aria-label="September 15, 2026"]', window.disposedMenu), 'aria-disabled'))).toBe('false');
+            await expect(page.locator('.datetimepicker')).toHaveCount(0);
+        });
+
         test('restores owned styles and attributes and preserves user event handlers', async ({ page }) => {
             await page.evaluate(() => {
                 const node = $.findOne('#date');

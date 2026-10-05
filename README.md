@@ -390,7 +390,7 @@ The named native input submits the formatted string, including the multi-date se
 
 Native `required` checks an empty text input; it does not validate date syntax, bounds, or callback rules. `keepInvalid` can preserve nonempty invalid text. Apply application/server validation as needed. Inline inputs are hidden, so browser invalid-focus behavior is unsuitable for inline required controls; use a visible popup input for native required validation.
 
-Disabled fieldsets apply and exclude the input from submission. Call `refresh()` after externally changing disabled/readonly state while an inline calendar is visible. For an external value change, dispatch the corresponding event:
+Disabled fieldsets apply and exclude the input from submission. Changes to the input's disabled/readonly state and ancestor fieldsets' disabled state automatically update picker controls without redrawing panels. An open popup or modal closes when the input becomes uneditable, respecting `ignoreReadonly`. For an external value change, dispatch the corresponding event:
 
 ```js
 const input = document.querySelector('#appointment');
