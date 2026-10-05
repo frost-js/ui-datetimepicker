@@ -233,6 +233,167 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 	}
 
 //#endregion
+//#region src/js/helpers.js
+/**
+	* Creates a table.
+	* @param {Record<string, string>} classes The component classes.
+	* @param {Record<string, string>} icons The component icons.
+	* @param {object} options Options for rendering the table.
+	* @returns {HTMLElement} The new table.
+	*/
+	function createTable(classes, icons, options) {
+		const table = _fr0st_query.default.create("table", { class: classes.table });
+		if (options.header) {
+			const thead = _fr0st_query.default.create("thead");
+			_fr0st_query.default.append(table, thead);
+			const tr = _fr0st_query.default.create("tr");
+			_fr0st_query.default.append(thead, tr);
+			const prevTd = _fr0st_query.default.create("th", {
+				html: icons.left,
+				class: classes.navigation
+			});
+			if (!options.header.prev) _fr0st_query.default.addClass(prevTd, classes.disabled);
+			else {
+				_fr0st_query.default.addClass(prevTd, classes.action);
+				_fr0st_query.default.setDataset(prevTd, options.header.prev.dataset);
+				_fr0st_query.default.setAttribute(prevTd, {
+					role: "button",
+					tabindex: 0,
+					...options.header.prev.attributes
+				});
+			}
+			_fr0st_query.default.append(tr, prevTd);
+			const titleTd = _fr0st_query.default.create("th", {
+				class: classes.title,
+				text: options.header.title,
+				attributes: {
+					colspan: 5,
+					...options.header.attributes
+				}
+			});
+			if (options.header.dataset) {
+				_fr0st_query.default.addClass(titleTd, classes.action);
+				_fr0st_query.default.setDataset(titleTd, options.header.dataset);
+				_fr0st_query.default.setAttribute(titleTd, {
+					role: "button",
+					tabindex: 0
+				});
+			}
+			if (options.header.wide) _fr0st_query.default.addClass(titleTd, classes.titleWide);
+			_fr0st_query.default.append(tr, titleTd);
+			const nextTd = _fr0st_query.default.create("th", {
+				html: icons.right,
+				class: classes.navigation
+			});
+			if (!options.header.next) _fr0st_query.default.addClass(nextTd, classes.disabled);
+			else {
+				_fr0st_query.default.addClass(nextTd, classes.action);
+				_fr0st_query.default.setDataset(nextTd, options.header.next.dataset);
+				_fr0st_query.default.setAttribute(nextTd, {
+					role: "button",
+					tabindex: 0,
+					...options.header.next.attributes
+				});
+			}
+			_fr0st_query.default.append(tr, nextTd);
+			if (options.head) options.head(thead);
+		}
+		const tbody = _fr0st_query.default.create("tbody");
+		_fr0st_query.default.append(table, tbody);
+		options.body(tbody);
+		return table;
+	}
+	/**
+	* Gets the key for a selected day, month, or year.
+	* @param {DateTime} date The date.
+	* @param {'days'|'months'|'years'} minView The calendar precision.
+	* @returns {string} The selection key.
+	*/
+	function getDateKey(date, minView) {
+		if (minView === "years") return String(date.getYear());
+		if (minView === "months") return `${date.getYear()}-${date.getMonth()}`;
+		return `${date.getYear()}-${date.getMonth()}-${date.getDate()}`;
+	}
+	/**
+	* Renders a time column.
+	* @param {Record<string, string>} classes The component classes.
+	* @param {Record<string, string>} icons The component icons.
+	* @param {object} options Options for rendering the column.
+	*/
+	function renderTimeColumn(classes, icons, options) {
+		const upTd = _fr0st_query.default.create("td", {
+			html: icons.up,
+			class: [
+				classes.navigation,
+				classes.time,
+				classes.spacingTimeNav
+			],
+			style: { width: `${options.cellWidth}%` }
+		});
+		if (!options.increment) _fr0st_query.default.addClass(upTd, classes.disabled);
+		else {
+			_fr0st_query.default.addClass(upTd, classes.action);
+			_fr0st_query.default.setDataset(upTd, options.increment.dataset);
+			_fr0st_query.default.setAttribute(upTd, {
+				role: "button",
+				tabindex: 0,
+				...options.increment.attributes
+			});
+		}
+		_fr0st_query.default.append(options.upTr, upTd);
+		const selectTd = _fr0st_query.default.create("td", {
+			text: options.select.text,
+			class: [
+				classes.action,
+				classes.time,
+				classes.spacingTime
+			],
+			dataset: options.select.dataset,
+			attributes: {
+				role: "button",
+				tabindex: 0,
+				...options.select.attributes
+			}
+		});
+		_fr0st_query.default.append(options.timeTr, selectTd);
+		const downTd = _fr0st_query.default.create("td", {
+			html: icons.down,
+			class: [
+				classes.navigation,
+				classes.time,
+				classes.spacingTimeNav
+			]
+		});
+		if (!options.decrement) _fr0st_query.default.addClass(downTd, classes.disabled);
+		else {
+			_fr0st_query.default.addClass(downTd, classes.action);
+			_fr0st_query.default.setDataset(downTd, options.decrement.dataset);
+			_fr0st_query.default.setAttribute(downTd, {
+				role: "button",
+				tabindex: 0,
+				...options.decrement.attributes
+			});
+		}
+		_fr0st_query.default.append(options.downTr, downTd);
+	}
+	/**
+	* Renders a time separator column.
+	* @param {Record<string, string>} classes The component classes.
+	* @param {object} options Options for rendering the separator column.
+	*/
+	function renderTimeSeparator(classes, options) {
+		const separatorUpTd = _fr0st_query.default.create("td", { style: { width: `${options.separatorWidth}%` } });
+		_fr0st_query.default.append(options.upTr, separatorUpTd);
+		const separatorTd = _fr0st_query.default.create("td", {
+			text: ":",
+			class: [classes.time, classes.spacingSeparator]
+		});
+		_fr0st_query.default.append(options.timeTr, separatorTd);
+		const separatorDownTd = _fr0st_query.default.create("td");
+		_fr0st_query.default.append(options.downTr, separatorDownTd);
+	}
+
+//#endregion
 //#region src/js/date-time-picker.js
 /**
 	* A date string in the configured format, UNIX seconds, a 1-based date tuple,
@@ -863,83 +1024,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return date;
 		}
 		/**
-		* Creates a table.
-		* @param {object} options Options for rendering the table.
-		* @returns {HTMLElement} The new table.
-		*/
-		#createTable(options) {
-			const table = _fr0st_query.default.create("table", { class: this.constructor.classes.table });
-			if (options.header) {
-				const thead = _fr0st_query.default.create("thead");
-				_fr0st_query.default.append(table, thead);
-				const tr = _fr0st_query.default.create("tr");
-				_fr0st_query.default.append(thead, tr);
-				const prevTd = _fr0st_query.default.create("th", {
-					html: this.constructor.icons.left,
-					class: this.constructor.classes.navigation
-				});
-				if (!options.header.prev) _fr0st_query.default.addClass(prevTd, this.constructor.classes.disabled);
-				else {
-					_fr0st_query.default.addClass(prevTd, this.constructor.classes.action);
-					_fr0st_query.default.setDataset(prevTd, options.header.prev.dataset);
-					_fr0st_query.default.setAttribute(prevTd, {
-						role: "button",
-						tabindex: 0,
-						...options.header.prev.attributes
-					});
-				}
-				_fr0st_query.default.append(tr, prevTd);
-				const titleTd = _fr0st_query.default.create("th", {
-					class: this.constructor.classes.title,
-					text: options.header.title,
-					attributes: {
-						colspan: 5,
-						...options.header.attributes
-					}
-				});
-				if (options.header.dataset) {
-					_fr0st_query.default.addClass(titleTd, this.constructor.classes.action);
-					_fr0st_query.default.setDataset(titleTd, options.header.dataset);
-					_fr0st_query.default.setAttribute(titleTd, {
-						role: "button",
-						tabindex: 0
-					});
-				}
-				if (options.header.wide) _fr0st_query.default.addClass(titleTd, this.constructor.classes.titleWide);
-				_fr0st_query.default.append(tr, titleTd);
-				const nextTd = _fr0st_query.default.create("th", {
-					html: this.constructor.icons.right,
-					class: this.constructor.classes.navigation
-				});
-				if (!options.header.next) _fr0st_query.default.addClass(nextTd, this.constructor.classes.disabled);
-				else {
-					_fr0st_query.default.addClass(nextTd, this.constructor.classes.action);
-					_fr0st_query.default.setDataset(nextTd, options.header.next.dataset);
-					_fr0st_query.default.setAttribute(nextTd, {
-						role: "button",
-						tabindex: 0,
-						...options.header.next.attributes
-					});
-				}
-				_fr0st_query.default.append(tr, nextTd);
-				if (options.head) options.head(thead);
-			}
-			const tbody = _fr0st_query.default.create("tbody");
-			_fr0st_query.default.append(table, tbody);
-			options.body(tbody);
-			return table;
-		}
-		/**
-		* Gets the key for a selected day, month, or year.
-		* @param {DateTime} date The date.
-		* @returns {string} The selection key.
-		*/
-		#dateKey(date) {
-			if (this.#minView === "years") return String(date.getYear());
-			if (this.#minView === "months") return `${date.getYear()}-${date.getMonth()}`;
-			return `${date.getYear()}-${date.getMonth()}-${date.getDate()}`;
-		}
-		/**
 		* Gets the effective animation duration, respecting reduced motion.
 		* @returns {number} The duration in milliseconds.
 		*/
@@ -1068,7 +1152,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 									break;
 								default: granularity = "day";
 							}
-							if (this.#isCurrent(tempDate, { granularity })) dates = this.#dates.filter((date) => this.#dateKey(date) !== this.#dateKey(tempDate));
+							if (this.#isCurrent(tempDate, { granularity })) dates = this.#dates.filter((date) => getDateKey(date, this.#minView) !== getDateKey(tempDate, this.#minView));
 							else dates = this.#dates.concat([tempDate]);
 							this.#viewDate = tempDate;
 							this.#setDates(dates, { updateValue });
@@ -1524,23 +1608,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			_fr0st_query.default.setAttribute(item, { tabindex: 0 });
 		}
 		/**
-		* Formats a date.
-		* @param {DateTime} [date] The date to format.
-		* @returns {string} The formatted date.
-		*/
-		#formatDate(date) {
-			if (!date) return "";
-			return date.format(this.#format);
-		}
-		/**
-		* Formats multiple dates.
-		* @param {DateTime[]} [dates] The dates to format.
-		* @returns {string} The formatted dates.
-		*/
-		#formatDates(dates) {
-			return dates.map((date) => date.format(this.#format)).join(this.options.multiDateSeparator);
-		}
-		/**
 		* Determines whether a date is between min/max dates.
 		* @param {DateTime} date The date to test.
 		* @param {object} [options] The options for how to compare the dates.
@@ -1675,7 +1742,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			const unique = /* @__PURE__ */ new Map();
 			for (const date of dates) {
 				if (!this.node) break;
-				if (date && this.#isValid(date)) unique.set(this.#dateKey(date), date);
+				if (date && this.#isValid(date)) unique.set(getDateKey(date, this.#minView), date);
 			}
 			return [...unique.values()].sort((a, b) => a.getTime() - b.getTime());
 		}
@@ -1932,7 +1999,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 			if (this.#hasDate && this.#hasHours) {
 				if (!this.options.sideBySide) {
-					this.#showTimeTable = this.#createTable({ body: (tbody) => {
+					this.#showTimeTable = createTable(this.constructor.classes, this.constructor.icons, { body: (tbody) => {
 						const tr = _fr0st_query.default.create("tr");
 						_fr0st_query.default.append(tbody, tr);
 						const td = _fr0st_query.default.create("td", {
@@ -1952,7 +2019,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 						});
 						_fr0st_query.default.append(tr, td);
 					} });
-					this.#showDateTable = this.#createTable({ body: (tbody) => {
+					this.#showDateTable = createTable(this.constructor.classes, this.constructor.icons, { body: (tbody) => {
 						const row = _fr0st_query.default.create("tr");
 						_fr0st_query.default.append(tbody, row);
 						const td = _fr0st_query.default.create("td", {
@@ -1977,7 +2044,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					_fr0st_query.default.addClass(this.#container, this.constructor.classes.containerColumns);
 				}
 			}
-			if (this.options.showClose && !this.#useModal && !this.options.inline) this.#closeTable = this.#createTable({ body: (tbody) => {
+			if (this.options.showClose && !this.#useModal && !this.options.inline) this.#closeTable = createTable(this.constructor.classes, this.constructor.icons, { body: (tbody) => {
 				const row = _fr0st_query.default.create("tr");
 				_fr0st_query.default.append(tbody, row);
 				const td = _fr0st_query.default.create("td", {
@@ -2030,7 +2097,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				},
 				attributes: { "aria-label": this.constructor.lang.nextMonth }
 			};
-			const table = this.#createTable({
+			const table = createTable(this.constructor.classes, this.constructor.icons, {
 				header: {
 					title: this.#viewDate.format("LLLL yyyy"),
 					dataset: {
@@ -2112,7 +2179,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			const initialDate = this.#date ? this.#date : this.#defaultDate;
 			let current = initialDate.withHours(0);
 			const last = initialDate.endOfDay();
-			const table = this.#createTable({
+			const table = createTable(this.constructor.classes, this.constructor.icons, {
 				borderless: true,
 				body: (tbody) => {
 					const tr = _fr0st_query.default.create("tr");
@@ -2163,7 +2230,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			const initialDate = this.#date ? this.#date : this.#defaultDate;
 			let current = initialDate.withMinutes(0);
 			const last = initialDate.endOfHour();
-			const table = this.#createTable({
+			const table = createTable(this.constructor.classes, this.constructor.icons, {
 				borderless: true,
 				body: (tbody) => {
 					const tr = _fr0st_query.default.create("tr");
@@ -2289,7 +2356,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				},
 				attributes: { "aria-label": this.constructor.lang.nextYear }
 			};
-			const table = this.#createTable({
+			const table = createTable(this.constructor.classes, this.constructor.icons, {
 				header: {
 					title: this.#viewDate.format("yyyy"),
 					wide: true,
@@ -2353,7 +2420,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		*/
 		#renderTime() {
 			const initialDate = this.#date ? this.#date : this.#defaultDate;
-			const table = this.#createTable({
+			const table = createTable(this.constructor.classes, this.constructor.icons, {
 				borderless: true,
 				body: (tbody) => {
 					const separators = this.#hasHours + this.#hasMinutes - 1;
@@ -2385,7 +2452,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 							},
 							attributes: { "aria-label": this.constructor.lang.decrementHour }
 						};
-						this.#renderTimeColumn({
+						renderTimeColumn(this.constructor.classes, this.constructor.icons, {
 							increment,
 							select: {
 								text: initialDate.format(this.#useDayPeriod ? "hh" : "HH"),
@@ -2402,7 +2469,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 							downTr
 						});
 					}
-					if (this.#hasHours && this.#hasMinutes) this.#renderTimeSeparator({
+					if (this.#hasHours && this.#hasMinutes) renderTimeSeparator(this.constructor.classes, {
 						separatorWidth,
 						upTr,
 						timeTr,
@@ -2427,7 +2494,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 							},
 							attributes: { "aria-label": this.constructor.lang.decrementMinute }
 						};
-						this.#renderTimeColumn({
+						renderTimeColumn(this.constructor.classes, this.constructor.icons, {
 							increment,
 							select: {
 								text: initialDate.format("mm"),
@@ -2471,81 +2538,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				}
 			});
 			if (this.node) _fr0st_query.default.append(this.#timeContainer, table);
-		}
-		/**
-		* Renders a time column.
-		* @param {object} options Options for rendering the column.
-		*/
-		#renderTimeColumn(options) {
-			const upTd = _fr0st_query.default.create("td", {
-				html: this.constructor.icons.up,
-				class: [
-					this.constructor.classes.navigation,
-					this.constructor.classes.time,
-					this.constructor.classes.spacingTimeNav
-				],
-				style: { width: `${options.cellWidth}%` }
-			});
-			if (!options.increment) _fr0st_query.default.addClass(upTd, this.constructor.classes.disabled);
-			else {
-				_fr0st_query.default.addClass(upTd, this.constructor.classes.action);
-				_fr0st_query.default.setDataset(upTd, options.increment.dataset);
-				_fr0st_query.default.setAttribute(upTd, {
-					role: "button",
-					tabindex: 0,
-					...options.increment.attributes
-				});
-			}
-			_fr0st_query.default.append(options.upTr, upTd);
-			const selectTd = _fr0st_query.default.create("td", {
-				text: options.select.text,
-				class: [
-					this.constructor.classes.action,
-					this.constructor.classes.time,
-					this.constructor.classes.spacingTime
-				],
-				dataset: options.select.dataset,
-				attributes: {
-					role: "button",
-					tabindex: 0,
-					...options.select.attributes
-				}
-			});
-			_fr0st_query.default.append(options.timeTr, selectTd);
-			const downTd = _fr0st_query.default.create("td", {
-				html: this.constructor.icons.down,
-				class: [
-					this.constructor.classes.navigation,
-					this.constructor.classes.time,
-					this.constructor.classes.spacingTimeNav
-				]
-			});
-			if (!options.decrement) _fr0st_query.default.addClass(downTd, this.constructor.classes.disabled);
-			else {
-				_fr0st_query.default.addClass(downTd, this.constructor.classes.action);
-				_fr0st_query.default.setDataset(downTd, options.decrement.dataset);
-				_fr0st_query.default.setAttribute(downTd, {
-					role: "button",
-					tabindex: 0,
-					...options.decrement.attributes
-				});
-			}
-			_fr0st_query.default.append(options.downTr, downTd);
-		}
-		/**
-		* Renders a time separator column.
-		* @param {object} options Options for rendering the separator column.
-		*/
-		#renderTimeSeparator(options) {
-			const seperatorUpTd = _fr0st_query.default.create("td", { style: { width: `${options.separatorWidth}%` } });
-			_fr0st_query.default.append(options.upTr, seperatorUpTd);
-			const separatorTd = _fr0st_query.default.create("td", {
-				text: ":",
-				class: [this.constructor.classes.time, this.constructor.classes.spacingSeparator]
-			});
-			_fr0st_query.default.append(options.timeTr, separatorTd);
-			const separatorDownTd = _fr0st_query.default.create("td");
-			_fr0st_query.default.append(options.downTr, separatorDownTd);
 		}
 		/**
 		* Renders the toolbar.
@@ -2600,7 +2592,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				},
 				attributes: { "aria-label": this.constructor.lang.nextDecade }
 			};
-			const table = this.#createTable({
+			const table = createTable(this.constructor.classes, this.constructor.icons, {
 				header: {
 					title: `${start.format("yyyy")} - ${end.format("yyyy")}`,
 					wide: true,
@@ -2759,8 +2751,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		*/
 		#updateValue() {
 			let value;
-			if (this.options.multiDate) value = this.#formatDates(this.#dates);
-			else value = this.#formatDate(this.#date);
+			if (this.options.multiDate) value = this.#dates.map((date) => date.format(this.#format)).join(this.options.multiDateSeparator);
+			else value = this.#date ? this.#date.format(this.#format) : "";
 			_fr0st_query.default.setValue(this.node, value);
 		}
 	};

@@ -201,6 +201,167 @@ function formatFromParts(locale, options, hasDayPeriod) {
 }
 
 //#endregion
+//#region src/js/helpers.js
+/**
+* Creates a table.
+* @param {Record<string, string>} classes The component classes.
+* @param {Record<string, string>} icons The component icons.
+* @param {object} options Options for rendering the table.
+* @returns {HTMLElement} The new table.
+*/
+function createTable(classes, icons, options) {
+	const table = $.create("table", { class: classes.table });
+	if (options.header) {
+		const thead = $.create("thead");
+		$.append(table, thead);
+		const tr = $.create("tr");
+		$.append(thead, tr);
+		const prevTd = $.create("th", {
+			html: icons.left,
+			class: classes.navigation
+		});
+		if (!options.header.prev) $.addClass(prevTd, classes.disabled);
+		else {
+			$.addClass(prevTd, classes.action);
+			$.setDataset(prevTd, options.header.prev.dataset);
+			$.setAttribute(prevTd, {
+				role: "button",
+				tabindex: 0,
+				...options.header.prev.attributes
+			});
+		}
+		$.append(tr, prevTd);
+		const titleTd = $.create("th", {
+			class: classes.title,
+			text: options.header.title,
+			attributes: {
+				colspan: 5,
+				...options.header.attributes
+			}
+		});
+		if (options.header.dataset) {
+			$.addClass(titleTd, classes.action);
+			$.setDataset(titleTd, options.header.dataset);
+			$.setAttribute(titleTd, {
+				role: "button",
+				tabindex: 0
+			});
+		}
+		if (options.header.wide) $.addClass(titleTd, classes.titleWide);
+		$.append(tr, titleTd);
+		const nextTd = $.create("th", {
+			html: icons.right,
+			class: classes.navigation
+		});
+		if (!options.header.next) $.addClass(nextTd, classes.disabled);
+		else {
+			$.addClass(nextTd, classes.action);
+			$.setDataset(nextTd, options.header.next.dataset);
+			$.setAttribute(nextTd, {
+				role: "button",
+				tabindex: 0,
+				...options.header.next.attributes
+			});
+		}
+		$.append(tr, nextTd);
+		if (options.head) options.head(thead);
+	}
+	const tbody = $.create("tbody");
+	$.append(table, tbody);
+	options.body(tbody);
+	return table;
+}
+/**
+* Gets the key for a selected day, month, or year.
+* @param {DateTime} date The date.
+* @param {'days'|'months'|'years'} minView The calendar precision.
+* @returns {string} The selection key.
+*/
+function getDateKey(date, minView) {
+	if (minView === "years") return String(date.getYear());
+	if (minView === "months") return `${date.getYear()}-${date.getMonth()}`;
+	return `${date.getYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+/**
+* Renders a time column.
+* @param {Record<string, string>} classes The component classes.
+* @param {Record<string, string>} icons The component icons.
+* @param {object} options Options for rendering the column.
+*/
+function renderTimeColumn(classes, icons, options) {
+	const upTd = $.create("td", {
+		html: icons.up,
+		class: [
+			classes.navigation,
+			classes.time,
+			classes.spacingTimeNav
+		],
+		style: { width: `${options.cellWidth}%` }
+	});
+	if (!options.increment) $.addClass(upTd, classes.disabled);
+	else {
+		$.addClass(upTd, classes.action);
+		$.setDataset(upTd, options.increment.dataset);
+		$.setAttribute(upTd, {
+			role: "button",
+			tabindex: 0,
+			...options.increment.attributes
+		});
+	}
+	$.append(options.upTr, upTd);
+	const selectTd = $.create("td", {
+		text: options.select.text,
+		class: [
+			classes.action,
+			classes.time,
+			classes.spacingTime
+		],
+		dataset: options.select.dataset,
+		attributes: {
+			role: "button",
+			tabindex: 0,
+			...options.select.attributes
+		}
+	});
+	$.append(options.timeTr, selectTd);
+	const downTd = $.create("td", {
+		html: icons.down,
+		class: [
+			classes.navigation,
+			classes.time,
+			classes.spacingTimeNav
+		]
+	});
+	if (!options.decrement) $.addClass(downTd, classes.disabled);
+	else {
+		$.addClass(downTd, classes.action);
+		$.setDataset(downTd, options.decrement.dataset);
+		$.setAttribute(downTd, {
+			role: "button",
+			tabindex: 0,
+			...options.decrement.attributes
+		});
+	}
+	$.append(options.downTr, downTd);
+}
+/**
+* Renders a time separator column.
+* @param {Record<string, string>} classes The component classes.
+* @param {object} options Options for rendering the separator column.
+*/
+function renderTimeSeparator(classes, options) {
+	const separatorUpTd = $.create("td", { style: { width: `${options.separatorWidth}%` } });
+	$.append(options.upTr, separatorUpTd);
+	const separatorTd = $.create("td", {
+		text: ":",
+		class: [classes.time, classes.spacingSeparator]
+	});
+	$.append(options.timeTr, separatorTd);
+	const separatorDownTd = $.create("td");
+	$.append(options.downTr, separatorDownTd);
+}
+
+//#endregion
 //#region src/js/date-time-picker.js
 /**
 * A date string in the configured format, UNIX seconds, a 1-based date tuple,
@@ -831,83 +992,6 @@ var DateTimePicker = class extends BaseComponent {
 		return date;
 	}
 	/**
-	* Creates a table.
-	* @param {object} options Options for rendering the table.
-	* @returns {HTMLElement} The new table.
-	*/
-	#createTable(options) {
-		const table = $.create("table", { class: this.constructor.classes.table });
-		if (options.header) {
-			const thead = $.create("thead");
-			$.append(table, thead);
-			const tr = $.create("tr");
-			$.append(thead, tr);
-			const prevTd = $.create("th", {
-				html: this.constructor.icons.left,
-				class: this.constructor.classes.navigation
-			});
-			if (!options.header.prev) $.addClass(prevTd, this.constructor.classes.disabled);
-			else {
-				$.addClass(prevTd, this.constructor.classes.action);
-				$.setDataset(prevTd, options.header.prev.dataset);
-				$.setAttribute(prevTd, {
-					role: "button",
-					tabindex: 0,
-					...options.header.prev.attributes
-				});
-			}
-			$.append(tr, prevTd);
-			const titleTd = $.create("th", {
-				class: this.constructor.classes.title,
-				text: options.header.title,
-				attributes: {
-					colspan: 5,
-					...options.header.attributes
-				}
-			});
-			if (options.header.dataset) {
-				$.addClass(titleTd, this.constructor.classes.action);
-				$.setDataset(titleTd, options.header.dataset);
-				$.setAttribute(titleTd, {
-					role: "button",
-					tabindex: 0
-				});
-			}
-			if (options.header.wide) $.addClass(titleTd, this.constructor.classes.titleWide);
-			$.append(tr, titleTd);
-			const nextTd = $.create("th", {
-				html: this.constructor.icons.right,
-				class: this.constructor.classes.navigation
-			});
-			if (!options.header.next) $.addClass(nextTd, this.constructor.classes.disabled);
-			else {
-				$.addClass(nextTd, this.constructor.classes.action);
-				$.setDataset(nextTd, options.header.next.dataset);
-				$.setAttribute(nextTd, {
-					role: "button",
-					tabindex: 0,
-					...options.header.next.attributes
-				});
-			}
-			$.append(tr, nextTd);
-			if (options.head) options.head(thead);
-		}
-		const tbody = $.create("tbody");
-		$.append(table, tbody);
-		options.body(tbody);
-		return table;
-	}
-	/**
-	* Gets the key for a selected day, month, or year.
-	* @param {DateTime} date The date.
-	* @returns {string} The selection key.
-	*/
-	#dateKey(date) {
-		if (this.#minView === "years") return String(date.getYear());
-		if (this.#minView === "months") return `${date.getYear()}-${date.getMonth()}`;
-		return `${date.getYear()}-${date.getMonth()}-${date.getDate()}`;
-	}
-	/**
 	* Gets the effective animation duration, respecting reduced motion.
 	* @returns {number} The duration in milliseconds.
 	*/
@@ -1036,7 +1120,7 @@ var DateTimePicker = class extends BaseComponent {
 								break;
 							default: granularity = "day";
 						}
-						if (this.#isCurrent(tempDate, { granularity })) dates = this.#dates.filter((date) => this.#dateKey(date) !== this.#dateKey(tempDate));
+						if (this.#isCurrent(tempDate, { granularity })) dates = this.#dates.filter((date) => getDateKey(date, this.#minView) !== getDateKey(tempDate, this.#minView));
 						else dates = this.#dates.concat([tempDate]);
 						this.#viewDate = tempDate;
 						this.#setDates(dates, { updateValue });
@@ -1492,23 +1576,6 @@ var DateTimePicker = class extends BaseComponent {
 		$.setAttribute(item, { tabindex: 0 });
 	}
 	/**
-	* Formats a date.
-	* @param {DateTime} [date] The date to format.
-	* @returns {string} The formatted date.
-	*/
-	#formatDate(date) {
-		if (!date) return "";
-		return date.format(this.#format);
-	}
-	/**
-	* Formats multiple dates.
-	* @param {DateTime[]} [dates] The dates to format.
-	* @returns {string} The formatted dates.
-	*/
-	#formatDates(dates) {
-		return dates.map((date) => date.format(this.#format)).join(this.options.multiDateSeparator);
-	}
-	/**
 	* Determines whether a date is between min/max dates.
 	* @param {DateTime} date The date to test.
 	* @param {object} [options] The options for how to compare the dates.
@@ -1643,7 +1710,7 @@ var DateTimePicker = class extends BaseComponent {
 		const unique = /* @__PURE__ */ new Map();
 		for (const date of dates) {
 			if (!this.node) break;
-			if (date && this.#isValid(date)) unique.set(this.#dateKey(date), date);
+			if (date && this.#isValid(date)) unique.set(getDateKey(date, this.#minView), date);
 		}
 		return [...unique.values()].sort((a, b) => a.getTime() - b.getTime());
 	}
@@ -1900,7 +1967,7 @@ var DateTimePicker = class extends BaseComponent {
 		}
 		if (this.#hasDate && this.#hasHours) {
 			if (!this.options.sideBySide) {
-				this.#showTimeTable = this.#createTable({ body: (tbody) => {
+				this.#showTimeTable = createTable(this.constructor.classes, this.constructor.icons, { body: (tbody) => {
 					const tr = $.create("tr");
 					$.append(tbody, tr);
 					const td = $.create("td", {
@@ -1920,7 +1987,7 @@ var DateTimePicker = class extends BaseComponent {
 					});
 					$.append(tr, td);
 				} });
-				this.#showDateTable = this.#createTable({ body: (tbody) => {
+				this.#showDateTable = createTable(this.constructor.classes, this.constructor.icons, { body: (tbody) => {
 					const row = $.create("tr");
 					$.append(tbody, row);
 					const td = $.create("td", {
@@ -1945,7 +2012,7 @@ var DateTimePicker = class extends BaseComponent {
 				$.addClass(this.#container, this.constructor.classes.containerColumns);
 			}
 		}
-		if (this.options.showClose && !this.#useModal && !this.options.inline) this.#closeTable = this.#createTable({ body: (tbody) => {
+		if (this.options.showClose && !this.#useModal && !this.options.inline) this.#closeTable = createTable(this.constructor.classes, this.constructor.icons, { body: (tbody) => {
 			const row = $.create("tr");
 			$.append(tbody, row);
 			const td = $.create("td", {
@@ -1998,7 +2065,7 @@ var DateTimePicker = class extends BaseComponent {
 			},
 			attributes: { "aria-label": this.constructor.lang.nextMonth }
 		};
-		const table = this.#createTable({
+		const table = createTable(this.constructor.classes, this.constructor.icons, {
 			header: {
 				title: this.#viewDate.format("LLLL yyyy"),
 				dataset: {
@@ -2080,7 +2147,7 @@ var DateTimePicker = class extends BaseComponent {
 		const initialDate = this.#date ? this.#date : this.#defaultDate;
 		let current = initialDate.withHours(0);
 		const last = initialDate.endOfDay();
-		const table = this.#createTable({
+		const table = createTable(this.constructor.classes, this.constructor.icons, {
 			borderless: true,
 			body: (tbody) => {
 				const tr = $.create("tr");
@@ -2131,7 +2198,7 @@ var DateTimePicker = class extends BaseComponent {
 		const initialDate = this.#date ? this.#date : this.#defaultDate;
 		let current = initialDate.withMinutes(0);
 		const last = initialDate.endOfHour();
-		const table = this.#createTable({
+		const table = createTable(this.constructor.classes, this.constructor.icons, {
 			borderless: true,
 			body: (tbody) => {
 				const tr = $.create("tr");
@@ -2257,7 +2324,7 @@ var DateTimePicker = class extends BaseComponent {
 			},
 			attributes: { "aria-label": this.constructor.lang.nextYear }
 		};
-		const table = this.#createTable({
+		const table = createTable(this.constructor.classes, this.constructor.icons, {
 			header: {
 				title: this.#viewDate.format("yyyy"),
 				wide: true,
@@ -2321,7 +2388,7 @@ var DateTimePicker = class extends BaseComponent {
 	*/
 	#renderTime() {
 		const initialDate = this.#date ? this.#date : this.#defaultDate;
-		const table = this.#createTable({
+		const table = createTable(this.constructor.classes, this.constructor.icons, {
 			borderless: true,
 			body: (tbody) => {
 				const separators = this.#hasHours + this.#hasMinutes - 1;
@@ -2353,7 +2420,7 @@ var DateTimePicker = class extends BaseComponent {
 						},
 						attributes: { "aria-label": this.constructor.lang.decrementHour }
 					};
-					this.#renderTimeColumn({
+					renderTimeColumn(this.constructor.classes, this.constructor.icons, {
 						increment,
 						select: {
 							text: initialDate.format(this.#useDayPeriod ? "hh" : "HH"),
@@ -2370,7 +2437,7 @@ var DateTimePicker = class extends BaseComponent {
 						downTr
 					});
 				}
-				if (this.#hasHours && this.#hasMinutes) this.#renderTimeSeparator({
+				if (this.#hasHours && this.#hasMinutes) renderTimeSeparator(this.constructor.classes, {
 					separatorWidth,
 					upTr,
 					timeTr,
@@ -2395,7 +2462,7 @@ var DateTimePicker = class extends BaseComponent {
 						},
 						attributes: { "aria-label": this.constructor.lang.decrementMinute }
 					};
-					this.#renderTimeColumn({
+					renderTimeColumn(this.constructor.classes, this.constructor.icons, {
 						increment,
 						select: {
 							text: initialDate.format("mm"),
@@ -2439,81 +2506,6 @@ var DateTimePicker = class extends BaseComponent {
 			}
 		});
 		if (this.node) $.append(this.#timeContainer, table);
-	}
-	/**
-	* Renders a time column.
-	* @param {object} options Options for rendering the column.
-	*/
-	#renderTimeColumn(options) {
-		const upTd = $.create("td", {
-			html: this.constructor.icons.up,
-			class: [
-				this.constructor.classes.navigation,
-				this.constructor.classes.time,
-				this.constructor.classes.spacingTimeNav
-			],
-			style: { width: `${options.cellWidth}%` }
-		});
-		if (!options.increment) $.addClass(upTd, this.constructor.classes.disabled);
-		else {
-			$.addClass(upTd, this.constructor.classes.action);
-			$.setDataset(upTd, options.increment.dataset);
-			$.setAttribute(upTd, {
-				role: "button",
-				tabindex: 0,
-				...options.increment.attributes
-			});
-		}
-		$.append(options.upTr, upTd);
-		const selectTd = $.create("td", {
-			text: options.select.text,
-			class: [
-				this.constructor.classes.action,
-				this.constructor.classes.time,
-				this.constructor.classes.spacingTime
-			],
-			dataset: options.select.dataset,
-			attributes: {
-				role: "button",
-				tabindex: 0,
-				...options.select.attributes
-			}
-		});
-		$.append(options.timeTr, selectTd);
-		const downTd = $.create("td", {
-			html: this.constructor.icons.down,
-			class: [
-				this.constructor.classes.navigation,
-				this.constructor.classes.time,
-				this.constructor.classes.spacingTimeNav
-			]
-		});
-		if (!options.decrement) $.addClass(downTd, this.constructor.classes.disabled);
-		else {
-			$.addClass(downTd, this.constructor.classes.action);
-			$.setDataset(downTd, options.decrement.dataset);
-			$.setAttribute(downTd, {
-				role: "button",
-				tabindex: 0,
-				...options.decrement.attributes
-			});
-		}
-		$.append(options.downTr, downTd);
-	}
-	/**
-	* Renders a time separator column.
-	* @param {object} options Options for rendering the separator column.
-	*/
-	#renderTimeSeparator(options) {
-		const seperatorUpTd = $.create("td", { style: { width: `${options.separatorWidth}%` } });
-		$.append(options.upTr, seperatorUpTd);
-		const separatorTd = $.create("td", {
-			text: ":",
-			class: [this.constructor.classes.time, this.constructor.classes.spacingSeparator]
-		});
-		$.append(options.timeTr, separatorTd);
-		const separatorDownTd = $.create("td");
-		$.append(options.downTr, separatorDownTd);
 	}
 	/**
 	* Renders the toolbar.
@@ -2568,7 +2560,7 @@ var DateTimePicker = class extends BaseComponent {
 			},
 			attributes: { "aria-label": this.constructor.lang.nextDecade }
 		};
-		const table = this.#createTable({
+		const table = createTable(this.constructor.classes, this.constructor.icons, {
 			header: {
 				title: `${start.format("yyyy")} - ${end.format("yyyy")}`,
 				wide: true,
@@ -2727,8 +2719,8 @@ var DateTimePicker = class extends BaseComponent {
 	*/
 	#updateValue() {
 		let value;
-		if (this.options.multiDate) value = this.#formatDates(this.#dates);
-		else value = this.#formatDate(this.#date);
+		if (this.options.multiDate) value = this.#dates.map((date) => date.format(this.#format)).join(this.options.multiDateSeparator);
+		else value = this.#date ? this.#date.format(this.#format) : "";
 		$.setValue(this.node, value);
 	}
 };
