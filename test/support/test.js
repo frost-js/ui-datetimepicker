@@ -8,8 +8,9 @@ const collectCoverage = process.env.FROST_UI_DATETIMEPICKER_COVERAGE === 'true';
 const test = base.extend({
     expectedBrowserErrors: [[], { option: true }],
     entry: ['/', { option: true }],
+    pickerDefaults: [{}, { option: true }],
     uiPage: [
-        async ({ page, entry, expectedBrowserErrors }, use, testInfo) => {
+        async ({ page, entry, expectedBrowserErrors, pickerDefaults }, use, testInfo) => {
             const errors = [];
             page.on('pageerror', (error) => errors.push(error.message));
 
@@ -52,6 +53,16 @@ const test = base.extend({
                 node.remove();
                 return ready;
             });
+
+            await page.evaluate((defaults) => {
+                Object.assign(UI.DateTimePicker.defaults, {
+                    duration: 0,
+                    locale: 'en-GB',
+                    mobileModal: false,
+                    timeZone: 'UTC',
+                    ...defaults,
+                });
+            }, pickerDefaults);
 
             await use();
 
