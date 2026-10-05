@@ -8,6 +8,16 @@ test.describe('DateTimePicker formats and limits', () => {
     });
 
     test.describe('default formats', () => {
+        test('uses the public default-date formatter consistently', async ({ page }) => {
+            const format = await page.evaluate(() => UI.DateTimePicker.getDefaultDateFormat('en-GB'));
+
+            expect(format).toBe('dd/MM/yyyy');
+
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { multiDate: true }).setDate([[2026, 9, 15]]));
+
+            await expect(page.getByLabel('Appointment')).toHaveValue('15/09/2026');
+        });
+
         for (const method of ['getDefaultFormat', 'getDefaultTimeFormat']) {
             test(`caches each requested hour cycle separately (${method})`, async ({ page }) => {
                 const twelveHour = await page.evaluate((name) => UI.DateTimePicker[name]('en-US', true), method);
@@ -21,17 +31,23 @@ test.describe('DateTimePicker formats and limits', () => {
         }
     });
 
+    test.describe('format option', () => {
+        for (const { format, locale, period } of [
+            { format: 'HH:mm', locale: 'en-US', period: false },
+            { format: 'hh:mm a', locale: 'en-GB', period: true },
+        ]) {
+            test(`respects explicit ${format} in ${locale}`, async ({ page }) => {
+                await page.evaluate((options) => UI.DateTimePicker.init($.findOne('#date'), {
+                    ...options,
+                    inline: true,
+                }), { format, locale });
+
+                await expect(page.getByRole('button', { name: 'Toggle Period', exact: true })).toHaveCount(period ? 1 : 0);
+            });
+        }
+    });
+
     test.describe('locale and time zone', () => {
-        test('uses the public default-date formatter consistently', async ({ page }) => {
-            const format = await page.evaluate(() => UI.DateTimePicker.getDefaultDateFormat('en-GB'));
-
-            expect(format).toBe('dd/MM/yyyy');
-
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { multiDate: true }).setDate([[2026, 9, 15]]));
-
-            await expect(page.getByLabel('Appointment')).toHaveValue('15/09/2026');
-        });
-
         for (const { locale, weekday } of [{ locale: 'en-US', weekday: 'Sunday' }, { locale: 'en-GB', weekday: 'Monday' }]) {
             test(`starts the ${locale} calendar on ${weekday}`, async ({ page }) => {
                 await page.evaluate((language) => UI.DateTimePicker.init($.findOne('#date'), {
@@ -160,7 +176,9 @@ test.describe('DateTimePicker formats and limits', () => {
                 await expect(page.getByRole('button', { name: label, exact: true })).toBeDisabled();
             });
         }
+    });
 
+    test.describe('inclusive bounds', () => {
         test('validates rounded minute rollover against inclusive bounds', async ({ page }) => {
             const picker = await page.evaluateHandle(() => UI.DateTimePicker.init($.findOne('#date'), {
                 format: 'yyyy-MM-dd HH:mm',
@@ -206,21 +224,5 @@ test.describe('DateTimePicker formats and limits', () => {
 
             await expect(page.getByLabel('Appointment')).toHaveValue('2026-09-15 12:30:00.500');
         });
-    });
-
-    test.describe('format option', () => {
-        for (const { format, locale, period } of [
-            { format: 'HH:mm', locale: 'en-US', period: false },
-            { format: 'hh:mm a', locale: 'en-GB', period: true },
-        ]) {
-            test(`respects explicit ${format} in ${locale}`, async ({ page }) => {
-                await page.evaluate((options) => UI.DateTimePicker.init($.findOne('#date'), {
-                    ...options,
-                    inline: true,
-                }), { format, locale });
-
-                await expect(page.getByRole('button', { name: 'Toggle Period', exact: true })).toHaveCount(period ? 1 : 0);
-            });
-        }
     });
 });

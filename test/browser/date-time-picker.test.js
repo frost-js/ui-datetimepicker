@@ -5,35 +5,21 @@ test.describe('DateTimePicker', () => {
     test.beforeEach(setupInput);
 
     test.describe('#init', () => {
-        test('rejects a non-input element', async ({ page }) => {
-            expect(await page.evaluate(() => {
-                try {
-                    UI.DateTimePicker.init($.findOne('#outside'));
-                } catch (error) {
-                    return error.message;
-                }
-            })).toBe('DateTimePicker must be created on an input element.');
-        });
-
-        for (const { name, makeArgument } of [
-            { name: 'null', makeArgument: () => null },
-            { name: 'undefined', makeArgument: () => undefined },
-            { name: 'selector string', makeArgument: () => '#date' },
-            { name: 'malformed selector string', makeArgument: () => '[' },
-            { name: 'element array', makeArgument: () => [$.findOne('#date')] },
-            { name: 'QuerySet', makeArgument: () => $('#date') },
+        for (const { name, init } of [
+            { name: 'class', init: () => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }) },
+            { name: 'QuerySet', init: () => $('#date').datetimepicker({ format: 'yyyy-MM-dd' }) },
         ]) {
-            test(`rejects constructor arguments (${name})`, async ({ page }) => {
-                const argument = await page.evaluateHandle(makeArgument);
-                const error = await page.evaluate((value) => {
-                    try {
-                        new UI.DateTimePicker(value);
-                    } catch (error) {
-                        return `${error.name}: ${error.message}`;
-                    }
-                }, argument);
+            test(`creates and registers a DateTimePicker (${name})`, async ({ page }) => {
+                await page.getByLabel('Date', { exact: true }).fill('2026-09-15');
 
-                expect(error).toBe('TypeError: DateTimePicker must be created on an input element.');
+                const instance = await page.evaluateHandle(init);
+
+                expect(await instance.evaluate((value) => value instanceof UI.DateTimePicker)).toBe(true);
+                expect(await instance.evaluate((value) => $.getData('#date', 'datetimepicker') === value)).toBe(true);
+                expect(await instance.evaluate((value) => value.node === $.findOne('#date'))).toBe(true);
+                expect(await instance.evaluate((value) => Object.isFrozen(value.options))).toBe(true);
+                expect(await instance.evaluate((value) => value.getDate().format('yyyy-MM-dd'))).toBe('2026-09-15');
+                await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-15');
             });
         }
 
@@ -53,24 +39,6 @@ test.describe('DateTimePicker', () => {
             await expect(page.locator('#second')).toHaveValue('2026-09-16');
             expect(await page.evaluate(() => $('input').datetimepicker('getDate').format('yyyy-MM-dd'))).toBe('2026-09-16');
         });
-
-        for (const { name, init } of [
-            { name: 'class', init: () => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }) },
-            { name: 'QuerySet', init: () => $('#date').datetimepicker({ format: 'yyyy-MM-dd' }) },
-        ]) {
-            test(`creates and registers a DateTimePicker (${name})`, async ({ page }) => {
-                await page.getByLabel('Date', { exact: true }).fill('2026-09-15');
-
-                const instance = await page.evaluateHandle(init);
-
-                expect(await instance.evaluate((value) => value instanceof UI.DateTimePicker)).toBe(true);
-                expect(await instance.evaluate((value) => $.getData('#date', 'datetimepicker') === value)).toBe(true);
-                expect(await instance.evaluate((value) => value.node === $.findOne('#date'))).toBe(true);
-                expect(await instance.evaluate((value) => Object.isFrozen(value.options))).toBe(true);
-                expect(await instance.evaluate((value) => value.getDate().format('yyyy-MM-dd'))).toBe('2026-09-15');
-                await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-15');
-            });
-        }
 
         test('reuses the instance and gives explicit options precedence over data attributes', async ({ page }) => {
             expect(await page.evaluate(() => {
@@ -105,6 +73,15 @@ test.describe('DateTimePicker', () => {
             await expect(page.locator('.modal')).toHaveCount(0);
         });
 
+        test('uses the current date deterministically', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
+                format: 'yyyy-MM-dd HH:mm',
+                useCurrent: true,
+            }));
+
+            await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-15 12:30');
+        });
+
         test('parses string bounds after resolving the default format', async ({ page }) => {
             await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
                 inline: true,
@@ -134,98 +111,144 @@ test.describe('DateTimePicker', () => {
             expect(await instance.evaluate((value) => value.getViewDate().getTimestamp())).toBe(0);
         });
 
-        test('uses the current date deterministically', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
-                format: 'yyyy-MM-dd HH:mm',
-                useCurrent: true,
-            }));
-
-            await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-15 12:30');
-        });
-
-        for (const step of [0, -1, 61, 1.5, NaN, Infinity, '5']) {
-            test(`rejects invalid minuteStepping ${step} without registering an instance`, async ({ page }) => {
-                expect(await page.evaluate((minuteStepping) => {
-                    try {
-                        UI.DateTimePicker.init($.findOne('#date'), { minuteStepping });
-                    } catch (error) {
-                        return error.message;
-                    }
-                }, step)).toBe('minuteStepping must be an integer between 1 and 60.');
-                expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
-                await expect(page.locator('.datetimepicker')).toHaveCount(0);
-            });
-        }
-
-        for (const callback of ['isValidDay', 'renderDay']) {
-            test(`cleans up after ${callback} throws during initialization`, async ({ page }) => {
-                expect(await page.evaluate((name) => {
-                    try {
-                        UI.DateTimePicker.init($.findOne('#date'), {
-                            format: 'yyyy-MM-dd',
-                            inline: true,
-                            useCurrent: true,
-                            [name]: () => {
-                                throw new Error('Callback failed');
-                            },
-                        });
-                    } catch (error) {
-                        return error.message;
-                    }
-                }, callback)).toBe('Callback failed');
-                expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
-                await expect(page.locator('.datetimepicker')).toHaveCount(0);
-                await expect(page.getByLabel('Date', { exact: true })).toBeVisible();
-                await expect(page.getByLabel('Date', { exact: true })).not.toHaveAttribute('aria-controls');
-
-                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
-                    format: 'yyyy-MM-dd',
-                    inline: true,
-                }).setDate('2026-09-16'));
-
-                await expect(page.getByRole('button', { name: 'September 16, 2026', exact: true })).toHaveAttribute('aria-pressed', 'true');
-            });
-        }
-
-        test('cleans up registration after an unsupported format', async ({ page }) => {
+        test('rejects a non-input element', async ({ page }) => {
             expect(await page.evaluate(() => {
                 try {
-                    UI.DateTimePicker.init($.findOne('#date'), { format: 'dd' });
+                    UI.DateTimePicker.init($.findOne('#outside'));
                 } catch (error) {
                     return error.message;
                 }
-            })).toBe('Date selector requires a month.');
-            expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
+            })).toBe('DateTimePicker must be created on an input element.');
+        });
+
+        for (const { name, makeArgument } of [
+            { name: 'null', makeArgument: () => null },
+            { name: 'undefined', makeArgument: () => undefined },
+            { name: 'selector string', makeArgument: () => '#date' },
+            { name: 'malformed selector string', makeArgument: () => '[' },
+            { name: 'element array', makeArgument: () => [$.findOne('#date')] },
+            { name: 'QuerySet', makeArgument: () => $('#date') },
+        ]) {
+            test(`rejects constructor arguments (${name})`, async ({ page }) => {
+                const argument = await page.evaluateHandle(makeArgument);
+                const error = await page.evaluate((value) => {
+                    try {
+                        new UI.DateTimePicker(value);
+                    } catch (error) {
+                        return `${error.name}: ${error.message}`;
+                    }
+                }, argument);
+
+                expect(error).toBe('TypeError: DateTimePicker must be created on an input element.');
+            });
+        }
+
+        test.describe('failed initialization', () => {
+            for (const step of [0, -1, 61, 1.5, NaN, Infinity, '5']) {
+                test(`rejects invalid minuteStepping ${step} without registering an instance`, async ({ page }) => {
+                    expect(await page.evaluate((minuteStepping) => {
+                        try {
+                            UI.DateTimePicker.init($.findOne('#date'), { minuteStepping });
+                        } catch (error) {
+                            return error.message;
+                        }
+                    }, step)).toBe('minuteStepping must be an integer between 1 and 60.');
+                    expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
+                    await expect(page.locator('.datetimepicker')).toHaveCount(0);
+                });
+            }
+
+            test('cleans up registration after an unsupported format', async ({ page }) => {
+                expect(await page.evaluate(() => {
+                    try {
+                        UI.DateTimePicker.init($.findOne('#date'), { format: 'dd' });
+                    } catch (error) {
+                        return error.message;
+                    }
+                })).toBe('Date selector requires a month.');
+                expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
+            });
+
+            for (const callback of ['isValidDay', 'renderDay']) {
+                test(`cleans up after ${callback} throws during initialization`, async ({ page }) => {
+                    expect(await page.evaluate((name) => {
+                        try {
+                            UI.DateTimePicker.init($.findOne('#date'), {
+                                format: 'yyyy-MM-dd',
+                                inline: true,
+                                useCurrent: true,
+                                [name]: () => {
+                                    throw new Error('Callback failed');
+                                },
+                            });
+                        } catch (error) {
+                            return error.message;
+                        }
+                    }, callback)).toBe('Callback failed');
+                    expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
+                    await expect(page.locator('.datetimepicker')).toHaveCount(0);
+                    await expect(page.getByLabel('Date', { exact: true })).toBeVisible();
+                    await expect(page.getByLabel('Date', { exact: true })).not.toHaveAttribute('aria-controls');
+
+                    await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
+                        format: 'yyyy-MM-dd',
+                        inline: true,
+                    }).setDate('2026-09-16'));
+
+                    await expect(page.getByRole('button', { name: 'September 16, 2026', exact: true })).toHaveAttribute('aria-pressed', 'true');
+                });
+            }
         });
     });
 
     test.describe('#dispose', () => {
-        for (const { callback, format } of [
-            { callback: 'isValidYear', format: 'yyyy' },
-            { callback: 'isValidMonth', format: 'yyyy-MM' },
-            { callback: 'isValidDay', format: 'yyyy-MM-dd' },
-            { callback: 'isValidTime', format: 'HH:mm' },
-            { callback: 'renderDay', format: 'yyyy-MM-dd' },
-            { callback: 'renderMonth', format: 'yyyy-MM' },
-            { callback: 'renderYear', format: 'yyyy' },
+        for (const { name, dispose } of [
+            { name: 'class', dispose: () => UI.DateTimePicker.init($.findOne('#date')).dispose() },
+            { name: 'QuerySet', dispose: () => $('#date').datetimepicker('dispose') },
         ]) {
-            test(`permits disposal from ${callback} during initialization`, async ({ page }) => {
-                await page.evaluate(({ name, pattern }) => UI.DateTimePicker.init($.findOne('#date'), {
-                    format: pattern,
-                    inline: true,
-                    useCurrent: true,
-                    [name]: () => {
-                        $.getData('#date', 'datetimepicker').dispose();
+            test(`unregisters and permits reinitialization (${name})`, async ({ page }) => {
+                const instance = await page.evaluateHandle(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }));
 
-                        return true;
-                    },
-                }), { name: callback, pattern: format });
+                await page.evaluate(dispose);
 
-                await expect(page.locator('.datetimepicker')).toHaveCount(0);
-                await expect(page.getByLabel('Date', { exact: true })).toBeVisible();
+                expect(await instance.evaluate((value) => value.node)).toBeNull();
+                expect(await instance.evaluate((value) => value.options)).toBeNull();
                 expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
+                await expect(page.getByLabel('Date', { exact: true })).toBeVisible();
+
+                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).setDate([2026, 9, 16]));
+
+                await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-16');
             });
         }
+
+        test('restores owned styles and attributes and preserves user event handlers', async ({ page }) => {
+            await page.evaluate(() => {
+                const node = $.findOne('#date');
+
+                $.setStyle(node, 'display', 'inline-block');
+                $.setAttribute(node, 'aria-controls', 'original');
+                $.setAttribute(node, 'aria-expanded', 'mixed');
+                $.addEvent(node, 'change.ui.datetimepicker', () => $.setDataset(node, 'userChange', true));
+
+                const picker = UI.DateTimePicker.init(node, { inline: true });
+
+                $.setStyle(node, 'color', 'red');
+                picker.dispose();
+                picker.dispose();
+                $.triggerEvent(node, 'change', { bubbles: false, cancelable: false });
+            });
+
+            const input = page.getByLabel('Date', { exact: true });
+
+            await expect(input).toBeVisible();
+            await expect(input).toHaveCSS('display', 'inline-block');
+            await expect(input).toHaveCSS('color', 'rgb(255, 0, 0)');
+            await expect(input).toHaveAttribute('aria-controls', 'original');
+            await expect(input).toHaveAttribute('aria-expanded', 'mixed');
+            await expect(input).toHaveAttribute('data-user-change', 'true');
+            await expect(input).not.toHaveAttribute('aria-haspopup');
+        });
 
         test('cleans handlers and data from a detached time panel', async ({ page }) => {
             await page.evaluate(() => {
@@ -260,51 +283,30 @@ test.describe('DateTimePicker', () => {
             expect(await page.evaluate(() => $.hasData(window.timePanel, 'marker'))).toBe(false);
         });
 
-        test('restores owned styles and attributes and preserves user event handlers', async ({ page }) => {
-            await page.evaluate(() => {
-                const node = $.findOne('#date');
-
-                $.setStyle(node, 'display', 'inline-block');
-                $.setAttribute(node, 'aria-controls', 'original');
-                $.setAttribute(node, 'aria-expanded', 'mixed');
-                $.addEvent(node, 'change.ui.datetimepicker', () => $.setDataset(node, 'userChange', true));
-
-                const picker = UI.DateTimePicker.init(node, { inline: true });
-
-                $.setStyle(node, 'color', 'red');
-                picker.dispose();
-                picker.dispose();
-                $.triggerEvent(node, 'change', { bubbles: false, cancelable: false });
-            });
-
-            const input = page.getByLabel('Date', { exact: true });
-
-            await expect(input).toBeVisible();
-            await expect(input).toHaveCSS('display', 'inline-block');
-            await expect(input).toHaveCSS('color', 'rgb(255, 0, 0)');
-            await expect(input).toHaveAttribute('aria-controls', 'original');
-            await expect(input).toHaveAttribute('aria-expanded', 'mixed');
-            await expect(input).toHaveAttribute('data-user-change', 'true');
-            await expect(input).not.toHaveAttribute('aria-haspopup');
-        });
-
-        for (const { name, dispose } of [
-            { name: 'class', dispose: () => UI.DateTimePicker.init($.findOne('#date')).dispose() },
-            { name: 'QuerySet', dispose: () => $('#date').datetimepicker('dispose') },
+        for (const { callback, format } of [
+            { callback: 'isValidYear', format: 'yyyy' },
+            { callback: 'isValidMonth', format: 'yyyy-MM' },
+            { callback: 'isValidDay', format: 'yyyy-MM-dd' },
+            { callback: 'isValidTime', format: 'HH:mm' },
+            { callback: 'renderDay', format: 'yyyy-MM-dd' },
+            { callback: 'renderMonth', format: 'yyyy-MM' },
+            { callback: 'renderYear', format: 'yyyy' },
         ]) {
-            test(`unregisters and permits reinitialization (${name})`, async ({ page }) => {
-                const instance = await page.evaluateHandle(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }));
+            test(`permits disposal from ${callback} during initialization`, async ({ page }) => {
+                await page.evaluate(({ name, pattern }) => UI.DateTimePicker.init($.findOne('#date'), {
+                    format: pattern,
+                    inline: true,
+                    useCurrent: true,
+                    [name]: () => {
+                        $.getData('#date', 'datetimepicker').dispose();
 
-                await page.evaluate(dispose);
+                        return true;
+                    },
+                }), { name: callback, pattern: format });
 
-                expect(await instance.evaluate((value) => value.node)).toBeNull();
-                expect(await instance.evaluate((value) => value.options)).toBeNull();
-                expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
+                await expect(page.locator('.datetimepicker')).toHaveCount(0);
                 await expect(page.getByLabel('Date', { exact: true })).toBeVisible();
-
-                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).setDate([2026, 9, 16]));
-
-                await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-16');
+                expect(await page.evaluate(() => $.hasData('#date', 'datetimepicker'))).toBe(false);
             });
         }
     });

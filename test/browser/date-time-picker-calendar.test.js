@@ -4,7 +4,19 @@ import { setupInput } from '../setup/browser.js';
 test.describe('DateTimePicker calendar', () => {
     test.beforeEach(setupInput);
 
-    test.describe('selection and focus', () => {
+    test.describe('selection', () => {
+        test('navigates and selects a calendar date', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
+                format: 'yyyy-MM-dd',
+                inline: true,
+            }));
+
+            await page.getByRole('button', { name: 'Next Month', exact: true }).click();
+            await page.getByRole('button', { name: 'October 16, 2026', exact: true }).click();
+
+            await expect(page.locator('#date')).toHaveValue('2026-10-16');
+        });
+
         for (const sideBySide of [false, true]) {
             test(`selects a date and moves focus to time controls (sideBySide=${sideBySide})`, async ({ page }) => {
                 await page.evaluate((side) => UI.DateTimePicker.init($.findOne('#date'), {
@@ -49,6 +61,50 @@ test.describe('DateTimePicker calendar', () => {
             await page.getByRole('button', { name: 'September 17, 2026', exact: true }).click();
 
             await expect(page.locator('#date')).toHaveValue('2026-09-17 09:00');
+        });
+    });
+
+    test.describe('keyboard and focus', () => {
+        for (const { key, date } of [
+            { key: 'ArrowRight', date: 'September 16, 2026' },
+            { key: 'ArrowLeft', date: 'September 14, 2026' },
+            { key: 'ArrowUp', date: 'September 8, 2026' },
+            { key: 'ArrowDown', date: 'September 22, 2026' },
+            { key: 'Home', date: 'September 14, 2026' },
+            { key: 'End', date: 'September 20, 2026' },
+            { key: 'PageUp', date: 'August 15, 2026' },
+            { key: 'PageDown', date: 'October 15, 2026' },
+            { key: 'Control+ArrowLeft', date: 'August 15, 2026' },
+            { key: 'Control+ArrowRight', date: 'October 15, 2026' },
+            { key: 'Control+ArrowUp', date: 'September 15, 2025' },
+            { key: 'Control+ArrowDown', date: 'September 15, 2027' },
+        ]) {
+            test(`moves date focus with ${key}`, async ({ page }) => {
+                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
+                    format: 'yyyy-MM-dd',
+                    inline: true,
+                }));
+
+                await page.getByRole('button', { name: 'September 15, 2026', exact: true }).focus();
+                await page.keyboard.press(key);
+
+                await expect(page.getByRole('button', { name: date, exact: true })).toBeFocused();
+                await expect(page.getByRole('button', { name: date, exact: true })).toHaveAttribute('tabindex', '0');
+            });
+        }
+
+        test('selects with Space and preserves a single tab stop among dates', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
+                format: 'yyyy-MM-dd',
+                inline: true,
+            }));
+
+            await page.getByRole('button', { name: 'September 15, 2026', exact: true }).focus();
+            await page.keyboard.press('ArrowRight');
+            await page.keyboard.press('Space');
+
+            await expect(page.locator('#date')).toHaveValue('2026-09-16');
+            await expect(page.locator('[data-ui-date][tabindex="0"]')).toHaveCount(1);
         });
 
         test('keeps keyboard navigation within calendar bounds', async ({ page }) => {
@@ -97,19 +153,9 @@ test.describe('DateTimePicker calendar', () => {
             await expect(page.getByRole('dialog')).toHaveCount(0);
             await expect(page.getByLabel('Date', { exact: true })).toBeFocused();
         });
+    });
 
-        test('navigates and selects a calendar date', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
-                format: 'yyyy-MM-dd',
-                inline: true,
-            }));
-
-            await page.getByRole('button', { name: 'Next Month', exact: true }).click();
-            await page.getByRole('button', { name: 'October 16, 2026', exact: true }).click();
-
-            await expect(page.locator('#date')).toHaveValue('2026-10-16');
-        });
-
+    test.describe('popup dismissal', () => {
         test('dismisses on outside interaction and Escape', async ({ page }) => {
             await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }));
 
@@ -126,50 +172,6 @@ test.describe('DateTimePicker calendar', () => {
 
             await expect(page.getByRole('dialog')).toHaveCount(0);
             await expect(page.getByLabel('Date', { exact: true })).toBeFocused();
-        });
-    });
-
-    test.describe('keyboard', () => {
-        for (const { key, date } of [
-            { key: 'ArrowRight', date: 'September 16, 2026' },
-            { key: 'ArrowLeft', date: 'September 14, 2026' },
-            { key: 'ArrowUp', date: 'September 8, 2026' },
-            { key: 'ArrowDown', date: 'September 22, 2026' },
-            { key: 'Home', date: 'September 14, 2026' },
-            { key: 'End', date: 'September 20, 2026' },
-            { key: 'PageUp', date: 'August 15, 2026' },
-            { key: 'PageDown', date: 'October 15, 2026' },
-            { key: 'Control+ArrowLeft', date: 'August 15, 2026' },
-            { key: 'Control+ArrowRight', date: 'October 15, 2026' },
-            { key: 'Control+ArrowUp', date: 'September 15, 2025' },
-            { key: 'Control+ArrowDown', date: 'September 15, 2027' },
-        ]) {
-            test(`moves date focus with ${key}`, async ({ page }) => {
-                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
-                    format: 'yyyy-MM-dd',
-                    inline: true,
-                }));
-
-                await page.getByRole('button', { name: 'September 15, 2026', exact: true }).focus();
-                await page.keyboard.press(key);
-
-                await expect(page.getByRole('button', { name: date, exact: true })).toBeFocused();
-                await expect(page.getByRole('button', { name: date, exact: true })).toHaveAttribute('tabindex', '0');
-            });
-        }
-
-        test('selects with Space and preserves a single tab stop among dates', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
-                format: 'yyyy-MM-dd',
-                inline: true,
-            }));
-
-            await page.getByRole('button', { name: 'September 15, 2026', exact: true }).focus();
-            await page.keyboard.press('ArrowRight');
-            await page.keyboard.press('Space');
-
-            await expect(page.locator('#date')).toHaveValue('2026-09-16');
-            await expect(page.locator('[data-ui-date][tabindex="0"]')).toHaveCount(1);
         });
     });
 
@@ -223,7 +225,23 @@ test.describe('DateTimePicker calendar', () => {
                 await expect(page.locator('#date')).not.toHaveValue('');
             });
         }
+    });
 
+    test.describe('defaultView option', () => {
+        for (const { view, label } of [{ view: 'months', label: 'Sept' }, { view: 'years', label: '2026' }]) {
+            test(`opens on ${view} without selecting a date`, async ({ page }) => {
+                await page.evaluate((defaultView) => UI.DateTimePicker.init($.findOne('#date'), {
+                    format: 'yyyy-MM-dd',
+                    defaultView,
+                }).show(), view);
+
+                await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
+                await expect(page.locator('#date')).toHaveValue('');
+            });
+        }
+    });
+
+    test.describe('keepOpen option', () => {
         for (const keepOpen of [false, true]) {
             test(`selects from a popup with keepOpen=${keepOpen}`, async ({ page }) => {
                 await page.evaluate((keep) => UI.DateTimePicker.init($.findOne('#date'), {
@@ -302,18 +320,4 @@ test.describe('DateTimePicker calendar', () => {
             });
         });
     }
-
-    test.describe('defaultView option', () => {
-        for (const { view, label } of [{ view: 'months', label: 'Sept' }, { view: 'years', label: '2026' }]) {
-            test(`opens on ${view} without selecting a date`, async ({ page }) => {
-                await page.evaluate((defaultView) => UI.DateTimePicker.init($.findOne('#date'), {
-                    format: 'yyyy-MM-dd',
-                    defaultView,
-                }).show(), view);
-
-                await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
-                await expect(page.locator('#date')).toHaveValue('');
-            });
-        }
-    });
 });

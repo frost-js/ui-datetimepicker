@@ -16,18 +16,6 @@ test.describe('DateTimePicker modal', () => {
     });
 
     test.describe('commit and cancellation', () => {
-        test('discards a multi-date draft through Cancel', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { multiDate: true }));
-
-            await page.getByLabel('Appointment').click();
-            await page.getByRole('button', { name: 'September 16, 2026', exact: true }).click();
-            await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-
-            await expect(page.getByRole('dialog')).toHaveCount(0);
-            await expect(page.getByLabel('Appointment')).toHaveValue('2026-09-15');
-            expect(await page.evaluate(() => $('#date').datetimepicker('getDate').length)).toBe(1);
-        });
-
         for (const multiDate of [false, true]) {
             test(`commits a ${multiDate ? 'multi-date' : 'single-date'} draft once with correct old and new dates`, async ({ page }) => {
                 await page.evaluate((multiple) => {
@@ -70,6 +58,18 @@ test.describe('DateTimePicker modal', () => {
                 await expect(page.getByLabel('Appointment')).toBeFocused();
             });
         }
+
+        test('discards a multi-date draft through Cancel', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { multiDate: true }));
+
+            await page.getByLabel('Appointment').click();
+            await page.getByRole('button', { name: 'September 16, 2026', exact: true }).click();
+            await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+
+            await expect(page.getByRole('dialog')).toHaveCount(0);
+            await expect(page.getByLabel('Appointment')).toHaveValue('2026-09-15');
+            expect(await page.evaluate(() => $('#date').datetimepicker('getDate').length)).toBe(1);
+        });
 
         for (const { close, dismiss } of [
             {
@@ -132,6 +132,20 @@ test.describe('DateTimePicker modal', () => {
     });
 
     test.describe('focus and keyboard', () => {
+        test('opens from the keyboard and returns focus', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date')));
+
+            await page.getByLabel('Appointment').focus();
+            await page.getByLabel('Appointment').press('Enter');
+
+            await expect(page.getByRole('dialog', { name: 'Select Date', exact: true })).toBeVisible();
+
+            await page.keyboard.press('Escape');
+
+            await expect(page.getByRole('dialog')).toHaveCount(0);
+            await expect(page.getByLabel('Appointment')).toBeFocused();
+        });
+
         test('redirects Tab and Shift+Tab away from outside page controls', async ({ page }) => {
             await page.evaluate(() => {
                 UI.DateTimePicker.init($.findOne('#date')).show();
@@ -151,20 +165,6 @@ test.describe('DateTimePicker modal', () => {
             await page.keyboard.press('Shift+Tab');
 
             await expect(last).toBeFocused();
-        });
-
-        test('opens from the keyboard and returns focus', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date')));
-
-            await page.getByLabel('Appointment').focus();
-            await page.getByLabel('Appointment').press('Enter');
-
-            await expect(page.getByRole('dialog', { name: 'Select Date', exact: true })).toBeVisible();
-
-            await page.keyboard.press('Escape');
-
-            await expect(page.getByRole('dialog')).toHaveCount(0);
-            await expect(page.getByLabel('Appointment')).toBeFocused();
         });
 
         test('keeps a parent UI modal open and restores its input focus', async ({ page }) => {
@@ -192,34 +192,6 @@ test.describe('DateTimePicker modal', () => {
             await expect(page.locator('#parent')).toHaveClass(/show/);
             await expect(page.getByLabel('Appointment')).toBeFocused();
         });
-    });
-
-    test.describe('disposal', () => {
-        for (const event of ['show', 'shown', 'hide', 'hidden', 'change']) {
-            test(`can be disposed from ${event}`, async ({ page }) => {
-                await page.evaluate((name) => {
-                    const picker = UI.DateTimePicker.init($.findOne('#date'));
-
-                    $.addEvent('#date', `${name}.ui.datetimepicker`, () => picker.dispose());
-                    picker.show();
-                }, event);
-                if (['hide', 'hidden', 'change'].includes(event)) {
-                    await expect(page.getByRole('dialog')).toBeVisible();
-
-                    if (event === 'change') {
-                        await page.getByRole('button', { name: 'September 16, 2026', exact: true }).click();
-                        await page.getByRole('button', { name: 'Set', exact: true }).click();
-                    } else {
-                        await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-                    }
-                }
-
-                await expect(page.locator('.modal')).toHaveCount(0);
-                await expect(page.locator('.modal-backdrop')).toHaveCount(0);
-                await expect(page.locator('body')).not.toHaveClass(/modal-open/);
-                await expect(page.getByLabel('Appointment')).toBeVisible();
-            });
-        }
     });
 
     test.describe('format and attachment', () => {
@@ -274,6 +246,34 @@ test.describe('DateTimePicker modal', () => {
                     }
                 });
             }
+        }
+    });
+
+    test.describe('disposal', () => {
+        for (const event of ['show', 'shown', 'hide', 'hidden', 'change']) {
+            test(`can be disposed from ${event}`, async ({ page }) => {
+                await page.evaluate((name) => {
+                    const picker = UI.DateTimePicker.init($.findOne('#date'));
+
+                    $.addEvent('#date', `${name}.ui.datetimepicker`, () => picker.dispose());
+                    picker.show();
+                }, event);
+                if (['hide', 'hidden', 'change'].includes(event)) {
+                    await expect(page.getByRole('dialog')).toBeVisible();
+
+                    if (event === 'change') {
+                        await page.getByRole('button', { name: 'September 16, 2026', exact: true }).click();
+                        await page.getByRole('button', { name: 'Set', exact: true }).click();
+                    } else {
+                        await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+                    }
+                }
+
+                await expect(page.locator('.modal')).toHaveCount(0);
+                await expect(page.locator('.modal-backdrop')).toHaveCount(0);
+                await expect(page.locator('body')).not.toHaveClass(/modal-open/);
+                await expect(page.getByLabel('Appointment')).toBeVisible();
+            });
         }
     });
 });
