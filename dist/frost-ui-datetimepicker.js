@@ -565,6 +565,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			togglePeriod: "Toggle Period"
 		};
 		#attributes;
+		#changeHandler = null;
+		#clickHandler = null;
 		#closeTable;
 		#container;
 		#date = null;
@@ -576,6 +578,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#defaultView;
 		#focusedDateItem = null;
 		#focusedTimeItem = null;
+		#focusHandler = null;
 		#form;
 		#format;
 		#hasDate;
@@ -583,9 +586,10 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#hasMinutes;
 		#hasMonth;
 		#hasYear;
+		#inputHandler = null;
 		#keepDate;
+		#keydownHandler = null;
 		#lifecycleEvent = false;
-		#listeners = [];
 		#maxDate = null;
 		#menuNode;
 		#minDate = null;
@@ -597,6 +601,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#popper;
 		#refreshing = false;
 		#releaseDisplay;
+		#resetHandler = null;
 		#resetTimer;
 		#selectionId = 0;
 		#setBtn;
@@ -661,8 +666,10 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				};
 				if (!Number.isInteger(this.options.minuteStepping) || this.options.minuteStepping < 1 || this.options.minuteStepping > 60) throw new RangeError("minuteStepping must be an integer between 1 and 60.");
 				this.#useDayPeriod = checkDayPeriod(this.#dateOptions.locale);
-				this.#format = this.options.format || (this.options.multiDate ? getDefaultDateFormat(this.#dateOptions.locale) : getDefaultFormat(this.#dateOptions.locale, this.#useDayPeriod));
-				this.#useModal = !this.options.inline && (this.options.modal || this.options.mobileModal && /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent));
+				this.#format = this.options.format;
+				if (!this.#format) this.#format = this.options.multiDate ? getDefaultDateFormat(this.#dateOptions.locale) : getDefaultFormat(this.#dateOptions.locale, this.#useDayPeriod);
+				const mobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
+				this.#useModal = !this.options.inline && (this.options.modal || this.options.mobileModal && mobile);
 				this.#checkFormat();
 				this.#minDate = this.#parseDate(this.options.minDate);
 				this.#maxDate = this.#parseDate(this.options.maxDate);
@@ -716,8 +723,12 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			++this.#selectionId;
 			clearTimeout(this.#resetTimer);
 			this.#observer?.disconnect();
-			for (const [node, events, handler] of this.#listeners) _fr0st_query.default.removeEvent(node, events, handler);
-			this.#listeners = [];
+			if (this.#changeHandler) _fr0st_query.default.removeEvent(this.node, "change.ui.datetimepicker", this.#changeHandler);
+			if (this.#inputHandler) _fr0st_query.default.removeEvent(this.node, "input.ui.datetimepicker", this.#inputHandler);
+			if (this.#clickHandler) _fr0st_query.default.removeEvent(this.node, "click.ui.datetimepicker", this.#clickHandler);
+			if (this.#focusHandler) _fr0st_query.default.removeEvent(this.node, "focus.ui.datetimepicker", this.#focusHandler);
+			if (this.#keydownHandler) _fr0st_query.default.removeEvent(this.node, "keydown.ui.datetimepicker", this.#keydownHandler);
+			if (this.#form && this.#resetHandler) _fr0st_query.default.removeEvent(this.#form, "reset.ui.datetimepicker", this.#resetHandler);
 			for (const node of [
 				this.#menuNode,
 				this.#dateContainer,
@@ -728,10 +739,17 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				_fr0st_query.default.getData(this.#modal, _fr0st_ui.Modal.DATA_KEY)?.dispose();
 				_fr0st_query.default.remove(this.#modal);
 			}
-			if (this.#menuNode) _fr0st_query.default.remove(this.#menuNode);
+			for (const container of [this.#dateContainer, this.#timeContainer]) if (container && !_fr0st_query.default.hasDescendent(this.#menuNode, container)) _fr0st_query.default.remove(container);
+			_fr0st_query.default.remove(this.#menuNode);
 			this.#releaseDisplay?.();
 			for (const [name, value] of this.#attributes) if (value === null) _fr0st_query.default.removeAttribute(this.node, name);
 			else _fr0st_query.default.setAttribute(this.node, { [name]: value });
+			this.#changeHandler = null;
+			this.#clickHandler = null;
+			this.#focusHandler = null;
+			this.#inputHandler = null;
+			this.#keydownHandler = null;
+			this.#resetHandler = null;
 			this.#open = false;
 			this.#date = null;
 			this.#dates = null;
@@ -785,7 +803,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		* @returns {DateTime|null} The maximum date.
 		*/
 		getMaxDate() {
-			if (!this.#maxDate) return null;
 			return this.#maxDate;
 		}
 		/**
@@ -793,7 +810,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		* @returns {DateTime|null} The minimum date.
 		*/
 		getMinDate() {
-			if (!this.#minDate) return null;
 			return this.#minDate;
 		}
 		/**
@@ -839,13 +855,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				this.#refresh();
 				return;
 			}
-			if (this.options.multiDate) {
-				this.#setDates(this.#dates);
-				if (!this.node) return;
-			} else {
-				this.#setDate(this.#date);
-				if (!this.node) return;
-			}
+			if (this.options.multiDate) this.#setDates(this.#dates);
+			else this.#setDate(this.#date);
 		}
 		/**
 		* Sets the current date(s).
@@ -855,11 +866,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (this.options.multiDate) {
 				const dates = this.#parseDates(date);
 				this.#setDates(dates);
-				if (!this.node) return;
 			} else {
 				date = this.#parseDate(date);
 				this.#setDate(date);
-				if (!this.node) return;
 			}
 		}
 		/**
@@ -932,7 +941,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		* Updates the DateTimePicker position.
 		*/
 		update() {
-			if (this.#popper) this.#popper.update();
+			this.#popper?.update();
 		}
 		/**
 		* Runs a cancellable lifecycle event without recursive show/hide calls.
@@ -1034,24 +1043,32 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		* Attaches events for the DateTimePicker.
 		*/
 		#events() {
-			this.#listen(this.node, "change.ui.datetimepicker", (event) => {
-				if (!event.skipUpdate) this.#readInput(true);
-			});
-			this.#listen(this.node, "input.ui.datetimepicker", () => this.#readInput(false));
-			if (this.#form) this.#listen(this.#form, "reset.ui.datetimepicker", (event) => {
-				clearTimeout(this.#resetTimer);
-				this.#resetTimer = setTimeout(() => {
-					if (!this.node || event.defaultPrevented) return;
-					this.#date = null;
-					this.#dates = [];
-					this.#readInput(true);
-					this.#keepDate = false;
-					this.hide();
-				}, 0);
-			});
+			this.#changeHandler = (event) => {
+				if (this.node && !event.skipUpdate) this.#readInput(true);
+			};
+			this.#inputHandler = () => {
+				if (this.node) this.#readInput(false);
+			};
+			_fr0st_query.default.addEvent(this.node, "change.ui.datetimepicker", this.#changeHandler);
+			_fr0st_query.default.addEvent(this.node, "input.ui.datetimepicker", this.#inputHandler);
+			if (this.#form) {
+				this.#resetHandler = (event) => {
+					if (!this.node) return;
+					clearTimeout(this.#resetTimer);
+					this.#resetTimer = setTimeout(() => {
+						if (!this.node || event.defaultPrevented) return;
+						this.#date = null;
+						this.#dates = [];
+						this.#readInput(true);
+						this.#keepDate = false;
+						this.hide();
+					}, 0);
+				};
+				_fr0st_query.default.addEvent(this.#form, "reset.ui.datetimepicker", this.#resetHandler);
+			}
 			if (this.#hasYear) this.#eventsDate();
 			if (this.#hasHours) this.#eventsTime();
-			this.#listen(this.#menuNode, "click.ui.datetimepicker", (event) => {
+			_fr0st_query.default.addEvent(this.#menuNode, "click.ui.datetimepicker", (event) => {
 				event.stopPropagation();
 			});
 			this.#observer = new MutationObserver(() => {
@@ -1066,17 +1083,20 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				attributeFilter: ["disabled"]
 			});
 			if (this.options.inline) return;
-			this.#listen(this.node, "click.ui.datetimepicker", (event) => {
+			this.#clickHandler = (event) => {
+				if (!this.node) return;
 				if (this.#useModal) event.stopPropagation();
 				this.show();
-			});
+			};
+			_fr0st_query.default.addEvent(this.node, "click.ui.datetimepicker", this.#clickHandler);
 			if (!this.#useModal) {
-				this.#listen(this.node, "focus.ui.datetimepicker", () => {
-					if (!_fr0st_query.default.isSame(this.node, document.activeElement)) return;
+				this.#focusHandler = () => {
+					if (!this.node || !_fr0st_query.default.isSame(this.node, document.activeElement)) return;
 					this.show();
-				});
-				this.#listen(this.#menuNode, "keydown.ui.datetimepicker", (event) => {
-					if (event.code !== "Tab") return;
+				};
+				_fr0st_query.default.addEvent(this.node, "focus.ui.datetimepicker", this.#focusHandler);
+				_fr0st_query.default.addEvent(this.#menuNode, "keydown.ui.datetimepicker", (event) => {
+					if (!this.node || event.code !== "Tab") return;
 					const focusableNodes = _fr0st_query.default.find("[tabindex=\"0\"]", this.#menuNode);
 					const focusIndex = _fr0st_query.default.indexOf(focusableNodes, event.target);
 					if (event.shiftKey && focusIndex === 0) {
@@ -1088,7 +1108,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					}
 				});
 			}
-			this.#listen(this.node, "keydown.ui.datetimepicker", (event) => {
+			this.#keydownHandler = (event) => {
+				if (!this.node) return;
 				switch (event.code) {
 					case "Enter":
 					case "NumpadEnter":
@@ -1108,7 +1129,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 						_fr0st_query.default.focus(focusNode);
 					}
 				}
-			});
+			};
+			_fr0st_query.default.addEvent(this.node, "keydown.ui.datetimepicker", this.#keydownHandler);
 		}
 		/**
 		* Attaches date events for the DateTimePicker.
@@ -1152,8 +1174,10 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 									break;
 								default: granularity = "day";
 							}
-							if (this.#isCurrent(tempDate, { granularity })) dates = this.#dates.filter((date) => getDateKey(date, this.#minView) !== getDateKey(tempDate, this.#minView));
-							else dates = this.#dates.concat([tempDate]);
+							if (this.#isCurrent(tempDate, { granularity })) {
+								const key = getDateKey(tempDate, this.#minView);
+								dates = this.#dates.filter((date) => getDateKey(date, this.#minView) !== key);
+							} else dates = this.#dates.concat([tempDate]);
 							this.#viewDate = tempDate;
 							this.#setDates(dates, { updateValue });
 							if (!this.node) return;
@@ -1245,14 +1269,14 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				}
 			});
 			_fr0st_query.default.addEventDelegate(this.#dateContainer, "mousedown.ui.datetimepicker", "[aria-disabled=\"false\"]", (event) => {
-				if (!this.#dateItems.includes(event.currentTarget) || _fr0st_query.default.isSame(event.currentTarget, this.#focusedDateItem)) return;
-				let tempView = this.#viewDate;
-				tempView = tempView.withYear(_fr0st_query.default.getDataset(event.currentTarget, "uiYear"), _fr0st_query.default.getDataset(event.currentTarget, "uiMonth"), _fr0st_query.default.getDataset(event.currentTarget, "uiDate"));
+				const item = event.currentTarget;
+				if (!this.#dateItems.includes(item) || _fr0st_query.default.isSame(item, this.#focusedDateItem)) return;
+				const tempView = this.#viewDate.withYear(_fr0st_query.default.getDataset(item, "uiYear"), _fr0st_query.default.getDataset(item, "uiMonth"), _fr0st_query.default.getDataset(item, "uiDate"));
 				if (tempView.isSame(this.#viewDate)) return;
 				this.#viewDate = tempView;
 				refreshDate();
 			});
-			this.#listen(this.#dateContainer, "keydown.ui.datetimepicker", (event) => {
+			_fr0st_query.default.addEvent(this.#dateContainer, "keydown.ui.datetimepicker", (event) => {
 				if (!this.#isEditable()) return;
 				let tempView = this.#viewDate;
 				switch (event.code) {
@@ -1337,7 +1361,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		* Attaches events for the Modal.
 		*/
 		#eventsModal() {
-			this.#listen(this.#modal, "show.ui.modal", () => {
+			_fr0st_query.default.addEvent(this.#modal, "show.ui.modal", () => {
 				if (!this.#allowEvent("show")) {
 					if (this.node) _fr0st_query.default.detach(this.#modal);
 					return false;
@@ -1347,35 +1371,33 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				this.#open = true;
 				_fr0st_query.default.setAttribute(this.node, { "aria-expanded": true });
 			});
-			this.#listen(this.#modal, "shown.ui.modal", () => {
+			_fr0st_query.default.addEvent(this.#modal, "shown.ui.modal", () => {
+				if (!this.node) return;
 				_fr0st_query.default.triggerEvent(this.node, "shown.ui.datetimepicker");
 			});
-			this.#listen(this.#modal, "hide.ui.modal", () => {
+			_fr0st_query.default.addEvent(this.#modal, "hide.ui.modal", () => {
 				if (!this.#allowEvent("hide")) {
 					this.#keepDate = false;
 					return false;
 				}
 				if (this.#keepDate) {
-					if (this.options.multiDate) {
-						this.#setDates(this.#dates);
-						if (!this.node) return false;
-					} else {
-						this.#setDate(this.#date);
-						if (!this.node) return false;
-					}
+					if (this.options.multiDate) this.#setDates(this.#dates);
+					else this.#setDate(this.#date);
 				} else if (this.options.multiDate) this.#dates = this.#originalDate.slice();
 				else this.#date = this.#originalDate;
 				if (!this.node) return false;
 				this.#open = false;
 				_fr0st_query.default.setAttribute(this.node, { "aria-expanded": false });
 			});
-			this.#listen(this.#modal, "hidden.ui.modal", () => {
+			_fr0st_query.default.addEvent(this.#modal, "hidden.ui.modal", () => {
+				if (!this.node) return;
 				this.#keepDate = false;
 				this.#originalDate = null;
 				_fr0st_query.default.detach(this.#modal);
 				_fr0st_query.default.triggerEvent(this.node, "hidden.ui.datetimepicker");
 			});
-			this.#listen(this.#setBtn, "click.ui.datetimepicker", () => {
+			_fr0st_query.default.addEvent(this.#setBtn, "click.ui.datetimepicker", () => {
+				if (!this.node) return;
 				this.#keepDate = true;
 				this.hide();
 			});
@@ -1546,7 +1568,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				this.#focusItem(focusNode, { time: true });
 				_fr0st_query.default.focus(focusNode);
 			});
-			this.#listen(this.#timeContainer, "keydown.ui.datetimepicker", (event) => {
+			_fr0st_query.default.addEvent(this.#timeContainer, "keydown.ui.datetimepicker", (event) => {
+				if (!this.node) return;
 				let focusNode;
 				switch (this.#timeViewMode) {
 					case "hours":
@@ -1608,7 +1631,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			_fr0st_query.default.setAttribute(item, { tabindex: 0 });
 		}
 		/**
-		* Determines whether a date is between min/max dates.
+		* Determines whether a date is after the minimum date.
 		* @param {DateTime} date The date to test.
 		* @param {object} [options] The options for how to compare the dates.
 		* @param {string} [options.granularity] The level of granularity to use for comparison.
@@ -1625,7 +1648,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			}
 		}
 		/**
-		* Determines whether a date is between min/max dates.
+		* Determines whether a date is before the maximum date.
 		* @param {DateTime} date The date to test.
 		* @param {object} [options] The options for how to compare the dates.
 		* @param {string} [options.granularity] The level of granularity to use for comparison.
@@ -1659,7 +1682,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					break;
 				default: callback = isSameDay;
 			}
-			if (this.options.multiDate) return Boolean(this.#dates.find((currentDate) => callback(date, currentDate)));
+			if (this.options.multiDate) return this.#dates.some((currentDate) => callback(date, currentDate));
 			return this.#date && callback(date, this.#date);
 		}
 		/**
@@ -1700,21 +1723,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (granularity === "day" || !this.#hasHours) return true;
 			if (this.options.isValidTime && !this.options.isValidTime(date) || !this.node) return false;
 			return true;
-		}
-		/**
-		* Registers an event handler owned by this instance.
-		* @param {HTMLElement} node The event target.
-		* @param {string} events The event names.
-		* @param {Function} handler The handler.
-		*/
-		#listen(node, events, handler) {
-			const callback = (event) => this.node ? handler(event) : false;
-			this.#listeners.push([
-				node,
-				events,
-				callback
-			]);
-			_fr0st_query.default.addEvent(node, events, callback);
 		}
 		/**
 		* Creates a new DateTime object from format.
@@ -1792,7 +1800,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			const value = _fr0st_query.default.getValue(this.node);
 			let valid;
 			if (options.multiDate) {
-				const dates = this.#normalizeDates(value.split(options.multiDateSeparator).map((part) => this.#makeDate(part)));
+				const parsed = value.split(options.multiDateSeparator).map((part) => this.#makeDate(part));
+				const dates = this.#normalizeDates(parsed);
 				valid = dates.length > 0;
 				if (valid || !value || normalize && options.keepInvalid) this.#dates = dates;
 			} else {
@@ -1865,16 +1874,19 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			const focusedItem = time ? this.#focusedTimeItem : this.#focusedDateItem;
 			const nodes = /* @__PURE__ */ new Set([...items, ..._fr0st_query.default.find("[data-ui-action], .datetimepicker-disabled", container)]);
 			for (const node of nodes) {
+				const item = items.includes(node);
 				const disabled = !editable || _fr0st_query.default.hasClass(node, this.constructor.classes.disabled);
-				_fr0st_query.default.setAttribute(node, { "role": "button" });
-				_fr0st_query.default.setAttribute(node, { "aria-disabled": String(disabled) });
-				if (items.includes(node)) _fr0st_query.default.setAttribute(node, { "aria-pressed": String(_fr0st_query.default.hasClass(node, this.constructor.classes.active)) });
-				if (disabled) {
-					_fr0st_query.default.setAttribute(node, { tabindex: -1 });
-					if (editable && _fr0st_query.default.isSame(node, focusedItem)) this.#focusItem(null, { time });
-				} else _fr0st_query.default.setAttribute(node, { tabindex: items.includes(node) && !_fr0st_query.default.isSame(node, focusedItem) ? -1 : 0 });
+				const focusable = !disabled && (!item || _fr0st_query.default.isSame(node, focusedItem));
+				_fr0st_query.default.setAttribute(node, {
+					"role": "button",
+					"aria-disabled": String(disabled),
+					"tabindex": focusable ? 0 : -1
+				});
+				if (item) _fr0st_query.default.setAttribute(node, { "aria-pressed": String(_fr0st_query.default.hasClass(node, this.constructor.classes.active)) });
+				if (disabled && editable && _fr0st_query.default.isSame(node, focusedItem)) this.#focusItem(null, { time });
 			}
-			if (editable && !(time ? this.#focusedTimeItem : this.#focusedDateItem)) {
+			const activeItem = time ? this.#focusedTimeItem : this.#focusedDateItem;
+			if (editable && !activeItem) {
 				const first = items.find((node) => _fr0st_query.default.getAttribute(node, "aria-disabled") === "false");
 				this.#focusItem(first || null, { time });
 			}
@@ -1930,8 +1942,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.#refreshDisabled();
 			for (const container of [this.#dateContainer, this.#timeContainer]) if (container) this.#refreshAccessibility(container);
 			if (!this.options.inline && !this.#open) _fr0st_query.default.setAttribute(_fr0st_query.default.find("[tabindex]", this.#menuNode), { tabindex: -1 });
-			_fr0st_query.default.setProperty(this.#setBtn, "disabled", !this.#isEditable());
-			if (!this.#isEditable()) this.hide();
+			const editable = this.#isEditable();
+			_fr0st_query.default.setProperty(this.#setBtn, "disabled", !editable);
+			if (!editable) this.hide();
 		}
 		/**
 		* Refreshes the time container.

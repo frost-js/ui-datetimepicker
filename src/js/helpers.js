@@ -104,9 +104,11 @@ export function getDateKey(date, minView) {
     if (minView === 'years') {
         return String(date.getYear());
     }
+
     if (minView === 'months') {
         return `${date.getYear()}-${date.getMonth()}`;
     }
+
     return `${date.getYear()}-${date.getMonth()}-${date.getDate()}`;
 }
 
@@ -157,6 +159,7 @@ export function renderTimeColumn(classes, icons, options) {
             ...options.select.attributes,
         },
     });
+
     $.append(options.timeTr, selectTd);
 
     const downTd = $.create('td', {
@@ -203,6 +206,7 @@ export function renderTimeSeparator(classes, options) {
             classes.spacingSeparator,
         ],
     });
+
     $.append(options.timeTr, separatorTd);
 
     const separatorDownTd = $.create('td');

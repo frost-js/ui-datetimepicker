@@ -48,6 +48,7 @@ export function getDefaultDateFormat(locale) {
  */
 export function getDefaultFormat(locale, hasDayPeriod = checkDayPeriod(locale)) {
     const key = `${locale}:${hasDayPeriod}`;
+
     if (!(key in defaultFormats)) {
         defaultFormats[key] = formatFromParts(locale, {
             year: 'numeric',
@@ -69,6 +70,7 @@ export function getDefaultFormat(locale, hasDayPeriod = checkDayPeriod(locale)) 
  */
 export function getDefaultTimeFormat(locale, hasDayPeriod = checkDayPeriod(locale)) {
     const key = `${locale}:${hasDayPeriod}`;
+
     if (!(key in defaultTimeFormats)) {
         defaultTimeFormats[key] = formatFromParts(locale, {
             hour: '2-digit',

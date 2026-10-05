@@ -221,6 +221,70 @@ test.describe('DateTimePicker forms', () => {
     });
 
     test.describe('disposal', () => {
+        test('cleans handlers and data from a detached time panel', async ({ page }) => {
+            await page.evaluate(() => {
+                $.setValue('#date', '2026-09-15 12:30');
+                UI.DateTimePicker.init($.findOne('#date'), { inline: true, format: 'yyyy-MM-dd HH:mm' });
+            });
+
+            await page.getByRole('button', { name: 'Select Time', exact: true }).click();
+
+            await page.evaluate(() => {
+                window.timePanel = $.closest($.findOne('[data-ui-action="changeView"][data-ui-time-view="hours"]'), '.col')[0];
+                window.panelClicks = 0;
+
+                $.setData(window.timePanel, 'marker', true);
+                $.addEvent(window.timePanel, 'click.ui.datetimepicker', () => window.panelClicks++);
+            });
+
+            await page.getByRole('button', { name: 'Select Date', exact: true }).click();
+            await expect.poll(() => page.evaluate(() => $.isConnected(window.timePanel))).toBe(false);
+
+            await page.evaluate(() => {
+                window.panelClicks = 0;
+                $('#date').datetimepicker('dispose');
+                $.triggerEvent(window.timePanel, 'click.ui.datetimepicker');
+            });
+
+            expect(await page.evaluate(() => window.panelClicks)).toBe(0);
+            expect(await page.evaluate(() => $.hasData(window.timePanel, 'marker'))).toBe(false);
+        });
+
+        test('preserves user handlers and another picker on the same form', async ({ page }) => {
+            await page.evaluate(() => {
+                $.append('#fields', '<input id="second" value="2026-09-20">');
+
+                const first = UI.DateTimePicker.init($.findOne('#date'));
+                const second = UI.DateTimePicker.init($.findOne('#second'), { inline: true });
+
+                first.setDate('2026-09-16');
+                second.setDate('2026-09-21');
+
+                window.userEvents = [];
+                window.userResets = 0;
+
+                $.addEvent('#date', 'change.ui.datetimepicker input.ui.datetimepicker click.ui.datetimepicker focus.ui.datetimepicker keydown.ui.datetimepicker', (event) => {
+                    window.userEvents.push(event.type);
+                });
+                $.addEvent('#form', 'reset.ui.datetimepicker', () => window.userResets++);
+
+                first.dispose();
+
+                for (const type of ['change', 'input', 'click', 'focus', 'keydown']) {
+                    $.triggerEvent('#date', `${type}.ui.datetimepicker`);
+                }
+            });
+
+            expect(await page.evaluate(() => window.userEvents)).toEqual(['change', 'input', 'click', 'focus', 'keydown']);
+
+            await page.getByRole('button', { name: 'Reset', exact: true }).click();
+
+            await expect(page.locator('#second')).toHaveValue('2026-09-20');
+            await expect(page.getByRole('button', { name: 'September 20, 2026', exact: true })).toHaveAttribute('aria-pressed', 'true');
+            expect(await page.evaluate(() => $('#second').datetimepicker('getDate').format('yyyy-MM-dd'))).toBe('2026-09-20');
+            expect(await page.evaluate(() => window.userResets)).toBe(1);
+        });
+
         test('disconnects pending and future native state mutations on disposal', async ({ page }) => {
             await page.evaluate(() => {
                 const picker = UI.DateTimePicker.init($.findOne('#date'), { inline: true });
