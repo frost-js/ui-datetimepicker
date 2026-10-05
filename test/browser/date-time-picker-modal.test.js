@@ -247,18 +247,33 @@ test.describe('DateTimePicker modal', () => {
     });
 
     test.describe('mobileModal option', () => {
-        test('opens a modal on supported mobile user agents', async ({ page }) => {
-            await page.evaluate(() => {
-                Object.defineProperty(navigator, 'userAgent', { configurable: true, value: 'iPhone' });
-                UI.DateTimePicker.init($.findOne('#date'), {
-                    format: 'yyyy-MM-dd',
-                    mobileModal: true,
+        for (const { device, userAgent } of [
+            { device: 'mobile', userAgent: 'iPhone' },
+            { device: 'desktop', userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' },
+        ]) {
+            for (const mobileModal of [false, true]) {
+                test(`opens a ${device === 'mobile' && mobileModal ? 'modal' : 'popup'} on ${device} with mobileModal=${mobileModal}`, async ({ page }) => {
+                    await page.evaluate(({ userAgent, mobileModal }) => {
+                        Object.defineProperty(navigator, 'userAgent', { configurable: true, value: userAgent });
+                        UI.DateTimePicker.init($.findOne('#date'), {
+                            modal: false,
+                            mobileModal,
+                        });
+                    }, { userAgent, mobileModal });
+
+                    await page.getByLabel('Appointment').click();
+
+                    const dialog = page.getByRole('dialog', { name: 'Select Date', exact: true });
+
+                    await expect(dialog).toBeVisible();
+
+                    if (device === 'mobile' && mobileModal) {
+                        await expect(dialog).toHaveAttribute('aria-modal', 'true');
+                    } else {
+                        await expect(dialog).not.toHaveAttribute('aria-modal');
+                    }
                 });
-            });
-
-            await page.getByLabel('Appointment').click();
-
-            await expect(page.getByRole('dialog', { name: 'Select Date', exact: true })).toHaveAttribute('aria-modal', 'true');
-        });
+            }
+        }
     });
 });

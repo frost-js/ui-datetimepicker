@@ -4,7 +4,7 @@ import { setupInput } from '../setup/browser.js';
 test.describe('DateTimePicker time', () => {
     test.beforeEach(setupInput);
 
-    test('selects hours and minutes with DateTime 8 methods', async ({ page }) => {
+    test('selects hours and minutes from the time grids', async ({ page }) => {
         await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
             format: 'HH:mm',
             inline: true,
@@ -17,6 +17,67 @@ test.describe('DateTimePicker time', () => {
         await page.getByRole('button', { name: '35', exact: true }).click();
 
         await expect(page.locator('#date')).toHaveValue('14:35');
+    });
+
+    test.describe('isValidTime option', () => {
+        test('finds valid times that do not fall on a five-minute boundary', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
+                format: 'HH:mm',
+                inline: true,
+                isValidTime: (date) => date.getHours() === 10 && date.getMinutes() === 17,
+            }));
+
+            await expect(page.getByRole('button', { name: 'Select Hour', exact: true })).toHaveText('10');
+            await expect(page.getByRole('button', { name: 'Select Minute', exact: true })).toHaveText('17');
+        });
+
+        test('validates hour choices with the minutes preserved by selection', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
+                format: 'HH:mm',
+                inline: true,
+                isValidTime: (date) => date.getHours() === 10 ? date.getMinutes() === 17 : date.getMinutes() === 0,
+            }).setDate('10:17'));
+
+            await page.getByRole('button', { name: 'Select Hour', exact: true }).click();
+
+            await expect(page.getByRole('button', { name: '10', exact: true })).toBeEnabled();
+            await expect(page.getByRole('button', { name: '11', exact: true })).toBeDisabled();
+
+            await page.getByRole('button', { name: '10', exact: true }).click();
+
+            await expect(page.getByLabel('Date', { exact: true })).toHaveValue('10:17');
+        });
+
+        test('validates minute choices with the seconds preserved by selection', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
+                format: 'HH:mm:ss',
+                inline: true,
+                isValidTime: (date) => date.getSeconds() === 30,
+            }).setDate('12:15:30'));
+
+            await page.getByRole('button', { name: 'Select Minute', exact: true }).click();
+
+            await expect(page.getByRole('button', { name: '20', exact: true })).toBeEnabled();
+
+            await page.getByRole('button', { name: '20', exact: true }).click();
+
+            await expect(page.getByLabel('Date', { exact: true })).toHaveValue('12:20:30');
+        });
+
+        test('handles a day with no valid time', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
+                format: 'HH:mm',
+                inline: true,
+                isValidTime: () => false,
+            }));
+
+            await expect(page.locator('.datetimepicker')).toBeVisible();
+
+            await page.getByRole('button', { name: 'Select Hour', exact: true }).click();
+
+            await expect(page.locator('[data-ui-hour]')).toHaveCount(0);
+            await expect(page.locator('#date')).toHaveValue('');
+        });
     });
 
     test.describe('time controls', () => {

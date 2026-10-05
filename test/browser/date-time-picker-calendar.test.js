@@ -245,19 +245,6 @@ test.describe('DateTimePicker calendar', () => {
     });
 
     test.describe('multiDate option', () => {
-        test('normalizes typed dates using a custom separator', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
-                format: 'yyyy-MM-dd',
-                multiDate: true,
-                multiDateSeparator: ';',
-            }));
-
-            await page.getByLabel('Date', { exact: true }).fill('2026-09-16;2026-09-15;2026-09-16');
-            await page.getByRole('button', { name: 'Outside', exact: true }).click();
-
-            await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-15;2026-09-16');
-        });
-
         for (const { format, values, expected, button } of [
             {
                 format: 'yyyy-MM-dd',
@@ -284,30 +271,6 @@ test.describe('DateTimePicker calendar', () => {
                 await page.getByRole('button', { name: button, exact: true }).click();
 
                 await expect(page.locator('#date')).toHaveValue('');
-            });
-        }
-    });
-
-    test.describe('keepInvalid option', () => {
-        for (const keepInvalid of [false, true]) {
-            test(`handles invalid text with keepInvalid=${keepInvalid}`, async ({ page }) => {
-                await page.evaluate((keep) => {
-                    const picker = UI.DateTimePicker.init($.findOne('#date'), {
-                        format: 'yyyy-MM-dd',
-                        keepInvalid: keep,
-                    });
-
-                    picker.setDate('2026-09-15');
-                }, keepInvalid);
-
-                await page.getByLabel('Date', { exact: true }).fill('not a date');
-                await page.getByRole('button', { name: 'Outside', exact: true }).click();
-
-                await expect(page.getByLabel('Date', { exact: true })).toHaveValue(keepInvalid ? 'not a date' : '2026-09-15');
-
-                if (keepInvalid) {
-                    expect(await page.evaluate(() => $('#date').datetimepicker('getDate'))).toBeNull();
-                }
             });
         }
     });
