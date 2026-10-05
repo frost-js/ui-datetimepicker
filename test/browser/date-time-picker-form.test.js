@@ -144,7 +144,7 @@ test.describe('DateTimePicker forms', () => {
                 $.setStyle(node, 'color', 'red');
                 picker.dispose();
                 picker.dispose();
-                node.dispatchEvent(new Event('change'));
+                $.triggerEvent(node, 'change', { bubbles: false, cancelable: false });
             });
             const input = page.getByLabel('Appointment');
             await expect(input).toBeVisible();

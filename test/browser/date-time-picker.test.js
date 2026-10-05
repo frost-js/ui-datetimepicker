@@ -27,6 +27,19 @@ test.describe('DateTimePicker', () => {
                 }
             })).toBe('DateTimePicker must be created on an input element.');
         });
+        test('rejects non-element constructor arguments', async ({ page }) => {
+            expect(await page.evaluate(() => {
+                const node = $.findOne('#date');
+                const argumentsToReject = [null, undefined, '#date', '[', [node], $('#date')];
+                return argumentsToReject.map((argument) => {
+                    try {
+                        new UI.DateTimePicker(argument);
+                    } catch (error) {
+                        return `${error.name}: ${error.message}`;
+                    }
+                });
+            })).toEqual(Array(6).fill('TypeError: DateTimePicker must be created on an input element.'));
+        });
         test('initializes every matched node and returns the first instance (QuerySet)', async ({ page }) => {
             expect(await page.evaluate(() => {
                 $.after($.findOne('#date'), '<input id="second">');
@@ -468,7 +481,7 @@ test.describe('DateTimePicker', () => {
             await page.clock.install();
             await page.evaluate(() => {
                 const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd HH:mm', inline: true, duration: 100 });
-                $.findOne('[data-ui-action="showTime"]').click();
+                $.click('[data-ui-action="showTime"]');
                 picker.dispose();
             });
             await page.clock.runFor(300);

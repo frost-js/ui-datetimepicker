@@ -448,14 +448,14 @@ var DateTimePicker = class extends BaseComponent {
 	* @param {DateTimePickerOptions} [options] The component options.
 	*/
 	constructor(node, options) {
-		if (node?.tagName !== "INPUT") throw new TypeError("DateTimePicker must be created on an input element.");
+		if (!$._isElement(node) || $.getProperty(node, "tagName") !== "INPUT") throw new TypeError("DateTimePicker must be created on an input element.");
 		super(node, options);
 		this.#attributes = new Map([
 			"aria-controls",
 			"aria-expanded",
 			"aria-haspopup"
 		].map((name) => [name, $.getAttribute(node, name)]));
-		this.#form = node.form;
+		this.#form = $.getProperty(node, "form");
 		try {
 			this.#dateOptions = {
 				locale: this.options.locale || DateTime.getDefaultLocale(),
@@ -1749,7 +1749,7 @@ var DateTimePicker = class extends BaseComponent {
 			$.setAttribute(node, { "aria-disabled": String(disabled) });
 			if ($.hasAttribute(node, "data-ui-focus")) $.setAttribute(node, { "aria-pressed": String($.hasClass(node, this.constructor.classes.active)) });
 			if (disabled) {
-				node.tabIndex = -1;
+				$.setAttribute(node, { tabindex: -1 });
 				if ($.hasAttribute(node, "data-ui-focus")) $.setDataset(node, { uiFocus: "false" });
 			}
 		}
@@ -1757,7 +1757,7 @@ var DateTimePicker = class extends BaseComponent {
 			const first = $.findOne("[data-ui-focus][aria-disabled=\"false\"]", container);
 			if (first) {
 				$.setDataset(first, { uiFocus: "true" });
-				first.tabIndex = 0;
+				$.setAttribute(first, { tabindex: 0 });
 			}
 		}
 	}
@@ -1838,16 +1838,17 @@ var DateTimePicker = class extends BaseComponent {
 	* Renders the DateTimePicker.
 	*/
 	#render() {
+		const menuId = generateId("datetimepicker");
 		this.#menuNode = $.create("div", {
 			class: this.constructor.classes.menu,
 			attributes: {
-				"id": generateId("datetimepicker"),
+				"id": menuId,
 				"role": this.options.inline ? "group" : "dialog",
 				"aria-label": this.#hasHours ? this.constructor.lang.selectDateTime : this.constructor.lang.selectDate
 			}
 		});
 		if (!this.options.inline) $.setAttribute(this.node, {
-			"aria-controls": this.#menuNode.id,
+			"aria-controls": menuId,
 			"aria-expanded": false,
 			"aria-haspopup": "dialog"
 		});
@@ -2187,10 +2188,14 @@ var DateTimePicker = class extends BaseComponent {
 			class: this.constructor.classes.modalTitle,
 			text: titleText
 		});
-		modalTitle.id = generateId("datetimepicker-title");
-		this.#modal.id = generateId("datetimepicker-modal");
-		$.setAttribute(this.#modal, { "aria-labelledby": modalTitle.id });
-		$.setAttribute(this.node, { "aria-controls": this.#modal.id });
+		const titleId = generateId("datetimepicker-title");
+		const modalId = generateId("datetimepicker-modal");
+		$.setAttribute(modalTitle, { id: titleId });
+		$.setAttribute(this.#modal, {
+			"id": modalId,
+			"aria-labelledby": titleId
+		});
+		$.setAttribute(this.node, { "aria-controls": modalId });
 		$.append(modalHeader, modalTitle);
 		const modalBody = $.create("div", { class: this.constructor.classes.modalBody });
 		$.append(modalContent, modalBody);

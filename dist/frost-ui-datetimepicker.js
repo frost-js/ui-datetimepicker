@@ -480,14 +480,14 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		* @param {DateTimePickerOptions} [options] The component options.
 		*/
 		constructor(node, options) {
-			if (node?.tagName !== "INPUT") throw new TypeError("DateTimePicker must be created on an input element.");
+			if (!_fr0st_query.default._isElement(node) || _fr0st_query.default.getProperty(node, "tagName") !== "INPUT") throw new TypeError("DateTimePicker must be created on an input element.");
 			super(node, options);
 			this.#attributes = new Map([
 				"aria-controls",
 				"aria-expanded",
 				"aria-haspopup"
 			].map((name) => [name, _fr0st_query.default.getAttribute(node, name)]));
-			this.#form = node.form;
+			this.#form = _fr0st_query.default.getProperty(node, "form");
 			try {
 				this.#dateOptions = {
 					locale: this.options.locale || _fr0st_datetime.default.getDefaultLocale(),
@@ -1781,7 +1781,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				_fr0st_query.default.setAttribute(node, { "aria-disabled": String(disabled) });
 				if (_fr0st_query.default.hasAttribute(node, "data-ui-focus")) _fr0st_query.default.setAttribute(node, { "aria-pressed": String(_fr0st_query.default.hasClass(node, this.constructor.classes.active)) });
 				if (disabled) {
-					node.tabIndex = -1;
+					_fr0st_query.default.setAttribute(node, { tabindex: -1 });
 					if (_fr0st_query.default.hasAttribute(node, "data-ui-focus")) _fr0st_query.default.setDataset(node, { uiFocus: "false" });
 				}
 			}
@@ -1789,7 +1789,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				const first = _fr0st_query.default.findOne("[data-ui-focus][aria-disabled=\"false\"]", container);
 				if (first) {
 					_fr0st_query.default.setDataset(first, { uiFocus: "true" });
-					first.tabIndex = 0;
+					_fr0st_query.default.setAttribute(first, { tabindex: 0 });
 				}
 			}
 		}
@@ -1870,16 +1870,17 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		* Renders the DateTimePicker.
 		*/
 		#render() {
+			const menuId = (0, _fr0st_ui.generateId)("datetimepicker");
 			this.#menuNode = _fr0st_query.default.create("div", {
 				class: this.constructor.classes.menu,
 				attributes: {
-					"id": (0, _fr0st_ui.generateId)("datetimepicker"),
+					"id": menuId,
 					"role": this.options.inline ? "group" : "dialog",
 					"aria-label": this.#hasHours ? this.constructor.lang.selectDateTime : this.constructor.lang.selectDate
 				}
 			});
 			if (!this.options.inline) _fr0st_query.default.setAttribute(this.node, {
-				"aria-controls": this.#menuNode.id,
+				"aria-controls": menuId,
 				"aria-expanded": false,
 				"aria-haspopup": "dialog"
 			});
@@ -2219,10 +2220,14 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				class: this.constructor.classes.modalTitle,
 				text: titleText
 			});
-			modalTitle.id = (0, _fr0st_ui.generateId)("datetimepicker-title");
-			this.#modal.id = (0, _fr0st_ui.generateId)("datetimepicker-modal");
-			_fr0st_query.default.setAttribute(this.#modal, { "aria-labelledby": modalTitle.id });
-			_fr0st_query.default.setAttribute(this.node, { "aria-controls": this.#modal.id });
+			const titleId = (0, _fr0st_ui.generateId)("datetimepicker-title");
+			const modalId = (0, _fr0st_ui.generateId)("datetimepicker-modal");
+			_fr0st_query.default.setAttribute(modalTitle, { id: titleId });
+			_fr0st_query.default.setAttribute(this.#modal, {
+				"id": modalId,
+				"aria-labelledby": titleId
+			});
+			_fr0st_query.default.setAttribute(this.node, { "aria-controls": modalId });
 			_fr0st_query.default.append(modalHeader, modalTitle);
 			const modalBody = _fr0st_query.default.create("div", { class: this.constructor.classes.modalBody });
 			_fr0st_query.default.append(modalContent, modalBody);
