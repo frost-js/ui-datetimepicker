@@ -408,10 +408,13 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#container;
 		#date = null;
 		#dateContainer;
+		#dateItems = [];
 		#dateOptions;
 		#dates = [];
 		#defaultDate;
 		#defaultView;
+		#focusedDateItem = null;
+		#focusedTimeItem = null;
 		#form;
 		#format;
 		#hasDate;
@@ -438,6 +441,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#showDateTable;
 		#showTimeTable;
 		#timeContainer;
+		#timeItems = [];
 		#timeViewMode;
 		#toolbarDate;
 		#toolbarTime;
@@ -579,7 +583,11 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.#popper = null;
 			this.#container = null;
 			this.#dateContainer = null;
+			this.#dateItems = [];
+			this.#focusedDateItem = null;
+			this.#focusedTimeItem = null;
 			this.#timeContainer = null;
+			this.#timeItems = [];
 			this.#showTimeTable = null;
 			this.#showDateTable = null;
 			this.#closeTable = null;
@@ -1069,15 +1077,13 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 							}
 						}
 						break;
-					case "changeView": {
+					case "changeView":
 						this.#viewMode = _fr0st_query.default.getDataset(element, "uiView");
 						if (_fr0st_query.default.hasDataset(element, "uiYear")) this.#viewDate = this.#viewDate.withYear(_fr0st_query.default.getDataset(element, "uiYear"), _fr0st_query.default.getDataset(element, "uiMonth"), _fr0st_query.default.getDataset(element, "uiDate"));
 						this.#refreshDate();
 						if (!this.node) return;
-						const focusDate = _fr0st_query.default.findOne("[data-ui-focus=\"true\"]", this.#dateContainer);
-						_fr0st_query.default.focus(focusDate);
+						_fr0st_query.default.focus(this.#focusedDateItem);
 						break;
-					}
 					case "showTime":
 						showTime();
 						break;
@@ -1123,15 +1129,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					this.#refreshDate();
 					if (!this.node) return;
 					focusNode = _fr0st_query.default.findOne(focusSelector, this.#dateContainer);
-				} else {
-					const oldFocusNode = _fr0st_query.default.findOne("[data-ui-focus=\"true\"]", this.#dateContainer);
-					if (!_fr0st_query.default.isSame(focusNode, oldFocusNode)) {
-						_fr0st_query.default.setAttribute(oldFocusNode, { tabindex: -1 });
-						_fr0st_query.default.setDataset(oldFocusNode, { uiFocus: false });
-						_fr0st_query.default.setAttribute(focusNode, { tabindex: 0 });
-						_fr0st_query.default.setDataset(focusNode, { uiFocus: true });
-					}
 				}
+				this.#focusItem(focusNode);
 				_fr0st_query.default.focus(focusNode);
 			};
 			_fr0st_query.default.addEventDelegate(this.#dateContainer, "click.ui.datetimepicker", "[data-ui-action]", (event) => {
@@ -1147,7 +1146,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 						return;
 				}
 			});
-			_fr0st_query.default.addEventDelegate(this.#dateContainer, "mousedown.ui.datetimepicker", "[data-ui-focus=\"false\"][aria-disabled=\"false\"]", (event) => {
+			_fr0st_query.default.addEventDelegate(this.#dateContainer, "mousedown.ui.datetimepicker", "[aria-disabled=\"false\"]", (event) => {
+				if (!this.#dateItems.includes(event.currentTarget) || _fr0st_query.default.isSame(event.currentTarget, this.#focusedDateItem)) return;
 				let tempView = this.#viewDate;
 				tempView = tempView.withYear(_fr0st_query.default.getDataset(event.currentTarget, "uiYear"), _fr0st_query.default.getDataset(event.currentTarget, "uiMonth"), _fr0st_query.default.getDataset(event.currentTarget, "uiDate"));
 				if (tempView.isSame(this.#viewDate)) return;
@@ -1324,7 +1324,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 						this.#timeViewMode = _fr0st_query.default.getDataset(element, "uiTimeView");
 						this.#refreshTime();
 						if (!this.node) return;
-						focusSelector = "[data-ui-focus=\"true\"]";
+						_fr0st_query.default.focus(this.#focusedTimeItem);
 						break;
 					case "next":
 					case "prev": {
@@ -1345,7 +1345,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					}
 					case "showDate":
 						this.#switchView(this.#dateContainer, this.#timeContainer, () => {
-							_fr0st_query.default.focus(_fr0st_query.default.findOne("[data-ui-focus=\"true\"]", this.#dateContainer));
+							_fr0st_query.default.focus(this.#focusedDateItem);
 						});
 						break;
 					case "close":
@@ -1442,15 +1442,10 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					_fr0st_query.default.focus(focusNode);
 				}
 			});
-			_fr0st_query.default.addEventDelegate(this.#timeContainer, "mousedown.ui.datetimepicker", "[data-ui-focus=\"false\"][aria-disabled=\"false\"]", (event) => {
+			_fr0st_query.default.addEventDelegate(this.#timeContainer, "mousedown.ui.datetimepicker", "[aria-disabled=\"false\"]", (event) => {
 				const focusNode = event.currentTarget;
-				const oldFocusNode = _fr0st_query.default.findOne("[data-ui-focus=\"true\"]", this.#timeContainer);
-				if (!_fr0st_query.default.isSame(focusNode, oldFocusNode)) {
-					_fr0st_query.default.setAttribute(oldFocusNode, { tabindex: -1 });
-					_fr0st_query.default.setDataset(oldFocusNode, { uiFocus: false });
-					_fr0st_query.default.setAttribute(focusNode, { tabindex: 0 });
-					_fr0st_query.default.setDataset(focusNode, { uiFocus: true });
-				}
+				if (!this.#timeItems.includes(focusNode) || _fr0st_query.default.isSame(focusNode, this.#focusedTimeItem)) return;
+				this.#focusItem(focusNode, { time: true });
 				_fr0st_query.default.focus(focusNode);
 			});
 			this.#listen(this.#timeContainer, "keydown.ui.datetimepicker", (event) => {
@@ -1458,8 +1453,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				switch (this.#timeViewMode) {
 					case "hours":
 					case "minutes": {
-						const nodes = _fr0st_query.default.find("[data-ui-focus][aria-disabled=\"false\"]", this.#timeContainer);
-						const focusedIndex = _fr0st_query.default.indexOf(nodes, "[data-ui-focus=\"true\"]") || 0;
+						const nodes = this.#timeItems.filter((node) => _fr0st_query.default.getAttribute(node, "aria-disabled") === "false");
+						const focusedIndex = Math.max(0, nodes.indexOf(this.#focusedTimeItem));
 						switch (event.code) {
 							case "ArrowUp":
 								focusNode = nodes[focusedIndex - 4];
@@ -1481,13 +1476,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				}
 				event.preventDefault();
 				if (!focusNode) return;
-				const oldFocusNode = _fr0st_query.default.findOne("[data-ui-focus=\"true\"]", this.#timeContainer);
-				if (!_fr0st_query.default.isSame(focusNode, oldFocusNode)) {
-					_fr0st_query.default.setAttribute(oldFocusNode, { tabindex: -1 });
-					_fr0st_query.default.setDataset(oldFocusNode, { uiFocus: false });
-					_fr0st_query.default.setAttribute(focusNode, { tabindex: 0 });
-					_fr0st_query.default.setDataset(focusNode, { uiFocus: true });
-				}
+				this.#focusItem(focusNode, { time: true });
 				_fr0st_query.default.focus(focusNode);
 			});
 		}
@@ -1504,6 +1493,21 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				current = current.addMinute();
 			}
 			return null;
+		}
+		/**
+		* Updates the focused grid item and its panel's tab stop.
+		* @param {HTMLElement|null} item The focused item, or null to clear focus.
+		* @param {object} [options] The focus options.
+		* @param {boolean} [options.time=false] Whether the item belongs to the time panel.
+		*/
+		#focusItem(item, { time = false } = {}) {
+			const items = time ? this.#timeItems : this.#dateItems;
+			if (item !== null && !items.includes(item)) return;
+			const focusedItem = time ? this.#focusedTimeItem : this.#focusedDateItem;
+			_fr0st_query.default.setAttribute(focusedItem, { tabindex: -1 });
+			if (time) this.#focusedTimeItem = item;
+			else this.#focusedDateItem = item;
+			_fr0st_query.default.setAttribute(item, { tabindex: 0 });
 		}
 		/**
 		* Formats a date.
@@ -1775,22 +1779,23 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		*/
 		#refreshAccessibility(container) {
 			const editable = this.#isEditable();
-			for (const node of _fr0st_query.default.find("[data-ui-focus], [data-ui-action], .datetimepicker-disabled", container)) {
+			const time = _fr0st_query.default.isSame(container, this.#timeContainer);
+			const items = time ? this.#timeItems : this.#dateItems;
+			const focusedItem = time ? this.#focusedTimeItem : this.#focusedDateItem;
+			const nodes = /* @__PURE__ */ new Set([...items, ..._fr0st_query.default.find("[data-ui-action], .datetimepicker-disabled", container)]);
+			for (const node of nodes) {
 				const disabled = !editable || _fr0st_query.default.hasClass(node, this.constructor.classes.disabled);
 				_fr0st_query.default.setAttribute(node, { "role": "button" });
 				_fr0st_query.default.setAttribute(node, { "aria-disabled": String(disabled) });
-				if (_fr0st_query.default.hasAttribute(node, "data-ui-focus")) _fr0st_query.default.setAttribute(node, { "aria-pressed": String(_fr0st_query.default.hasClass(node, this.constructor.classes.active)) });
+				if (items.includes(node)) _fr0st_query.default.setAttribute(node, { "aria-pressed": String(_fr0st_query.default.hasClass(node, this.constructor.classes.active)) });
 				if (disabled) {
 					_fr0st_query.default.setAttribute(node, { tabindex: -1 });
-					if (_fr0st_query.default.hasAttribute(node, "data-ui-focus")) _fr0st_query.default.setDataset(node, { uiFocus: "false" });
+					if (_fr0st_query.default.isSame(node, focusedItem)) this.#focusItem(null, { time });
 				}
 			}
-			if (editable && !_fr0st_query.default.findOne("[data-ui-focus=\"true\"]", container)) {
-				const first = _fr0st_query.default.findOne("[data-ui-focus][aria-disabled=\"false\"]", container);
-				if (first) {
-					_fr0st_query.default.setDataset(first, { uiFocus: "true" });
-					_fr0st_query.default.setAttribute(first, { tabindex: 0 });
-				}
+			if (editable && !(time ? this.#focusedTimeItem : this.#focusedDateItem)) {
+				const first = items.find((node) => _fr0st_query.default.getAttribute(node, "aria-disabled") === "false");
+				this.#focusItem(first || null, { time });
 			}
 		}
 		/**
@@ -1799,6 +1804,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		*/
 		#refreshDate(notify = true) {
 			if (!this.node) return;
+			this.#dateItems = [];
+			this.#focusedDateItem = null;
 			_fr0st_query.default.empty(this.#dateContainer);
 			switch (this.#viewMode) {
 				case "years":
@@ -1841,6 +1848,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		*/
 		#refreshTime(notify = true) {
 			if (!this.node) return;
+			this.#timeItems = [];
+			this.#focusedTimeItem = null;
 			_fr0st_query.default.empty(this.#timeContainer);
 			if (this.#hasDate && !this.options.sideBySide) _fr0st_query.default.append(this.#timeContainer, this.#showDateTable);
 			switch (this.#timeViewMode) {
@@ -2054,13 +2063,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 							_fr0st_query.default.addClass(td, this.constructor.classes.action);
 							_fr0st_query.default.setDataset(td, { uiAction: "setDate" });
 						}
-						if (this.#viewDate.isSameDay(current)) {
-							_fr0st_query.default.setAttribute(td, { tabindex: 0 });
-							_fr0st_query.default.setDataset(td, { uiFocus: true });
-						} else {
-							_fr0st_query.default.setAttribute(td, { tabindex: -1 });
-							_fr0st_query.default.setDataset(td, { uiFocus: false });
-						}
+						this.#dateItems.push(td);
+						_fr0st_query.default.setAttribute(td, { tabindex: -1 });
+						if (this.#viewDate.isSameDay(current)) this.#focusItem(td);
 						if (this.#isCurrent(current, { granularity: "day" })) {
 							_fr0st_query.default.addClass(td, this.constructor.classes.active);
 							_fr0st_query.default.setAttribute(td, { "aria-pressed": true });
@@ -2114,13 +2119,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 							});
 							_fr0st_query.default.setAttribute(col, { role: "button" });
 						}
-						if (initialDate.isSameHour(current)) {
-							_fr0st_query.default.setAttribute(col, { tabindex: 0 });
-							_fr0st_query.default.setDataset(col, { uiFocus: true });
-						} else {
-							_fr0st_query.default.setAttribute(col, { tabindex: -1 });
-							_fr0st_query.default.setDataset(col, { uiFocus: false });
-						}
+						this.#timeItems.push(col);
+						_fr0st_query.default.setAttribute(col, { tabindex: -1 });
+						if (initialDate.isSameHour(current)) this.#focusItem(col, { time: true });
 						if (this.#date && this.#date.isSameHour(current)) {
 							_fr0st_query.default.addClass(col, this.constructor.classes.active);
 							_fr0st_query.default.setAttribute(col, { "aria-pressed": true });
@@ -2172,23 +2173,14 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 								"aria-label": minuteString
 							});
 						}
-						if (initialDate.isSameMinute(current)) {
-							_fr0st_query.default.setAttribute(col, { tabindex: 0 });
-							_fr0st_query.default.setDataset(col, { uiFocus: true });
-						} else {
-							_fr0st_query.default.setAttribute(col, { tabindex: -1 });
-							_fr0st_query.default.setDataset(col, { uiFocus: false });
-						}
+						this.#timeItems.push(col);
+						_fr0st_query.default.setAttribute(col, { tabindex: -1 });
+						if (initialDate.isSameMinute(current)) this.#focusItem(col, { time: true });
 						if (this.#date && this.#date.isSameMinute(current)) {
 							_fr0st_query.default.addClass(col, this.constructor.classes.active);
 							_fr0st_query.default.setAttribute(col, { "aria-pressed": true });
 						}
 						current = current.addMinutes(stepping);
-					}
-					if (!_fr0st_query.default.findOne("[data-ui-focus=\"true\"]", row)) {
-						const col = _fr0st_query.default.findOne("[data-ui-focus=\"false\"]", row);
-						_fr0st_query.default.setAttribute(col, { tabindex: 0 });
-						_fr0st_query.default.setDataset(col, { uiFocus: true });
 					}
 				}
 			});
@@ -2301,13 +2293,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 							class: this.constructor.classes.dateColumn
 						});
 						_fr0st_query.default.append(row, col);
-						if (this.#viewDate.isSameMonth(current)) {
-							_fr0st_query.default.setAttribute(col, { tabindex: 0 });
-							_fr0st_query.default.setDataset(col, { uiFocus: true });
-						} else {
-							_fr0st_query.default.setAttribute(col, { tabindex: -1 });
-							_fr0st_query.default.setDataset(col, { uiFocus: false });
-						}
+						this.#dateItems.push(col);
+						_fr0st_query.default.setAttribute(col, { tabindex: -1 });
+						if (this.#viewDate.isSameMonth(current)) this.#focusItem(col);
 						if (this.#isCurrent(current, { granularity: "month" })) _fr0st_query.default.addClass(col, this.constructor.classes.active);
 						if (!this.#isValid(current, { granularity: "month" })) {
 							if (!this.node) return;
@@ -2614,13 +2602,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 							attributes: { "aria-label": yearString }
 						});
 						_fr0st_query.default.append(row, col);
-						if (this.#viewDate.isSameYear(current)) {
-							_fr0st_query.default.setAttribute(col, { tabindex: 0 });
-							_fr0st_query.default.setDataset(col, { uiFocus: true });
-						} else {
-							_fr0st_query.default.setAttribute(col, { tabindex: -1 });
-							_fr0st_query.default.setDataset(col, { uiFocus: false });
-						}
+						this.#dateItems.push(col);
+						_fr0st_query.default.setAttribute(col, { tabindex: -1 });
+						if (this.#viewDate.isSameYear(current)) this.#focusItem(col);
 						if (this.#isCurrent(current, { granularity: "year" })) _fr0st_query.default.addClass(col, this.constructor.classes.active);
 						else if (currentYear < startYear || currentYear > endYear) _fr0st_query.default.addClass(col, this.constructor.classes.tertiary);
 						if (!this.#isValid(current, { granularity: "year" })) {

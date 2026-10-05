@@ -181,10 +181,13 @@ export default class DateTimePicker extends BaseComponent {
     #container;
     #date = null;
     #dateContainer;
+    #dateItems = [];
     #dateOptions;
     #dates = [];
     #defaultDate;
     #defaultView;
+    #focusedDateItem = null;
+    #focusedTimeItem = null;
     #form;
     #format;
     #hasDate;
@@ -211,6 +214,7 @@ export default class DateTimePicker extends BaseComponent {
     #showDateTable;
     #showTimeTable;
     #timeContainer;
+    #timeItems = [];
     #timeViewMode;
     #toolbarDate;
     #toolbarTime;
@@ -418,7 +422,11 @@ export default class DateTimePicker extends BaseComponent {
         this.#popper = null;
         this.#container = null;
         this.#dateContainer = null;
+        this.#dateItems = [];
+        this.#focusedDateItem = null;
+        this.#focusedTimeItem = null;
         this.#timeContainer = null;
+        this.#timeItems = [];
         this.#showTimeTable = null;
         this.#showDateTable = null;
         this.#closeTable = null;
@@ -1165,8 +1173,7 @@ export default class DateTimePicker extends BaseComponent {
                         return;
                     }
 
-                    const focusDate = $.findOne('[data-ui-focus="true"]', this.#dateContainer);
-                    $.focus(focusDate);
+                    $.focus(this.#focusedDateItem);
 
                     break;
                 }
@@ -1238,17 +1245,9 @@ export default class DateTimePicker extends BaseComponent {
                     return;
                 }
                 focusNode = $.findOne(focusSelector, this.#dateContainer);
-            } else {
-                const oldFocusNode = $.findOne('[data-ui-focus="true"]', this.#dateContainer);
-
-                if (!$.isSame(focusNode, oldFocusNode)) {
-                    $.setAttribute(oldFocusNode, { tabindex: -1 });
-                    $.setDataset(oldFocusNode, { uiFocus: false });
-                    $.setAttribute(focusNode, { tabindex: 0 });
-                    $.setDataset(focusNode, { uiFocus: true });
-                }
             }
 
+            this.#focusItem(focusNode);
             $.focus(focusNode);
         };
 
@@ -1270,7 +1269,10 @@ export default class DateTimePicker extends BaseComponent {
             }
         });
 
-        $.addEventDelegate(this.#dateContainer, 'mousedown.ui.datetimepicker', '[data-ui-focus="false"][aria-disabled="false"]', (event) => {
+        $.addEventDelegate(this.#dateContainer, 'mousedown.ui.datetimepicker', '[aria-disabled="false"]', (event) => {
+            if (!this.#dateItems.includes(event.currentTarget) || $.isSame(event.currentTarget, this.#focusedDateItem)) {
+                return;
+            }
             let tempView = this.#viewDate;
 
             tempView = tempView.withYear(
@@ -1555,7 +1557,7 @@ export default class DateTimePicker extends BaseComponent {
                         return;
                     }
 
-                    focusSelector = '[data-ui-focus="true"]';
+                    $.focus(this.#focusedTimeItem);
 
                     break;
                 case 'next':
@@ -1592,7 +1594,7 @@ export default class DateTimePicker extends BaseComponent {
                 }
                 case 'showDate':
                     this.#switchView(this.#dateContainer, this.#timeContainer, () => {
-                        $.focus($.findOne('[data-ui-focus="true"]', this.#dateContainer));
+                        $.focus(this.#focusedDateItem);
                     });
                     break;
                 case 'close':
@@ -1735,17 +1737,12 @@ export default class DateTimePicker extends BaseComponent {
             }
         });
 
-        $.addEventDelegate(this.#timeContainer, 'mousedown.ui.datetimepicker', '[data-ui-focus="false"][aria-disabled="false"]', (event) => {
+        $.addEventDelegate(this.#timeContainer, 'mousedown.ui.datetimepicker', '[aria-disabled="false"]', (event) => {
             const focusNode = event.currentTarget;
-            const oldFocusNode = $.findOne('[data-ui-focus="true"]', this.#timeContainer);
-
-            if (!$.isSame(focusNode, oldFocusNode)) {
-                $.setAttribute(oldFocusNode, { tabindex: -1 });
-                $.setDataset(oldFocusNode, { uiFocus: false });
-                $.setAttribute(focusNode, { tabindex: 0 });
-                $.setDataset(focusNode, { uiFocus: true });
+            if (!this.#timeItems.includes(focusNode) || $.isSame(focusNode, this.#focusedTimeItem)) {
+                return;
             }
-
+            this.#focusItem(focusNode, { time: true });
             $.focus(focusNode);
         });
 
@@ -1755,8 +1752,8 @@ export default class DateTimePicker extends BaseComponent {
             switch (this.#timeViewMode) {
                 case 'hours':
                 case 'minutes': {
-                    const nodes = $.find('[data-ui-focus][aria-disabled="false"]', this.#timeContainer);
-                    const focusedIndex = $.indexOf(nodes, '[data-ui-focus="true"]') || 0;
+                    const nodes = this.#timeItems.filter((node) => $.getAttribute(node, 'aria-disabled') === 'false');
+                    const focusedIndex = Math.max(0, nodes.indexOf(this.#focusedTimeItem));
                     switch (event.code) {
                         case 'ArrowUp':
                             focusNode = nodes[focusedIndex - 4];
@@ -1786,15 +1783,7 @@ export default class DateTimePicker extends BaseComponent {
                 return;
             }
 
-            const oldFocusNode = $.findOne('[data-ui-focus="true"]', this.#timeContainer);
-
-            if (!$.isSame(focusNode, oldFocusNode)) {
-                $.setAttribute(oldFocusNode, { tabindex: -1 });
-                $.setDataset(oldFocusNode, { uiFocus: false });
-                $.setAttribute(focusNode, { tabindex: 0 });
-                $.setDataset(focusNode, { uiFocus: true });
-            }
-
+            this.#focusItem(focusNode, { time: true });
             $.focus(focusNode);
         });
     }
@@ -1814,6 +1803,27 @@ export default class DateTimePicker extends BaseComponent {
             current = current.addMinute();
         }
         return null;
+    }
+
+    /**
+     * Updates the focused grid item and its panel's tab stop.
+     * @param {HTMLElement|null} item The focused item, or null to clear focus.
+     * @param {object} [options] The focus options.
+     * @param {boolean} [options.time=false] Whether the item belongs to the time panel.
+     */
+    #focusItem(item, { time = false } = {}) {
+        const items = time ? this.#timeItems : this.#dateItems;
+        if (item !== null && !items.includes(item)) {
+            return;
+        }
+        const focusedItem = time ? this.#focusedTimeItem : this.#focusedDateItem;
+        $.setAttribute(focusedItem, { tabindex: -1 });
+        if (time) {
+            this.#focusedTimeItem = item;
+        } else {
+            this.#focusedDateItem = item;
+        }
+        $.setAttribute(item, { tabindex: 0 });
     }
 
     /**
@@ -2237,26 +2247,27 @@ export default class DateTimePicker extends BaseComponent {
      */
     #refreshAccessibility(container) {
         const editable = this.#isEditable();
-        for (const node of $.find('[data-ui-focus], [data-ui-action], .datetimepicker-disabled', container)) {
+        const time = $.isSame(container, this.#timeContainer);
+        const items = time ? this.#timeItems : this.#dateItems;
+        const focusedItem = time ? this.#focusedTimeItem : this.#focusedDateItem;
+        const nodes = new Set([...items, ...$.find('[data-ui-action], .datetimepicker-disabled', container)]);
+        for (const node of nodes) {
             const disabled = !editable || $.hasClass(node, this.constructor.classes.disabled);
             $.setAttribute(node, { 'role': 'button' });
             $.setAttribute(node, { 'aria-disabled': String(disabled) });
-            if ($.hasAttribute(node, 'data-ui-focus')) {
+            if (items.includes(node)) {
                 $.setAttribute(node, { 'aria-pressed': String($.hasClass(node, this.constructor.classes.active)) });
             }
             if (disabled) {
                 $.setAttribute(node, { tabindex: -1 });
-                if ($.hasAttribute(node, 'data-ui-focus')) {
-                    $.setDataset(node, { uiFocus: 'false' });
+                if ($.isSame(node, focusedItem)) {
+                    this.#focusItem(null, { time });
                 }
             }
         }
-        if (editable && !$.findOne('[data-ui-focus="true"]', container)) {
-            const first = $.findOne('[data-ui-focus][aria-disabled="false"]', container);
-            if (first) {
-                $.setDataset(first, { uiFocus: 'true' });
-                $.setAttribute(first, { tabindex: 0 });
-            }
+        if (editable && !(time ? this.#focusedTimeItem : this.#focusedDateItem)) {
+            const first = items.find((node) => $.getAttribute(node, 'aria-disabled') === 'false');
+            this.#focusItem(first || null, { time });
         }
     }
 
@@ -2268,6 +2279,8 @@ export default class DateTimePicker extends BaseComponent {
         if (!this.node) {
             return;
         }
+        this.#dateItems = [];
+        this.#focusedDateItem = null;
         $.empty(this.#dateContainer);
 
         switch (this.#viewMode) {
@@ -2339,6 +2352,8 @@ export default class DateTimePicker extends BaseComponent {
         if (!this.node) {
             return;
         }
+        this.#timeItems = [];
+        this.#focusedTimeItem = null;
         $.empty(this.#timeContainer);
 
         if (this.#hasDate && !this.options.sideBySide) {
@@ -2651,20 +2666,10 @@ export default class DateTimePicker extends BaseComponent {
                         });
                     }
 
+                    this.#dateItems.push(td);
+                    $.setAttribute(td, { tabindex: -1 });
                     if (this.#viewDate.isSameDay(current)) {
-                        $.setAttribute(td, {
-                            tabindex: 0,
-                        });
-                        $.setDataset(td, {
-                            uiFocus: true,
-                        });
-                    } else {
-                        $.setAttribute(td, {
-                            tabindex: -1,
-                        });
-                        $.setDataset(td, {
-                            uiFocus: false,
-                        });
+                        this.#focusItem(td);
                     }
 
                     if (this.#isCurrent(current, { granularity: 'day' })) {
@@ -2751,20 +2756,10 @@ export default class DateTimePicker extends BaseComponent {
                         $.setAttribute(col, { role: 'button' });
                     }
 
+                    this.#timeItems.push(col);
+                    $.setAttribute(col, { tabindex: -1 });
                     if (initialDate.isSameHour(current)) {
-                        $.setAttribute(col, {
-                            tabindex: 0,
-                        });
-                        $.setDataset(col, {
-                            uiFocus: true,
-                        });
-                    } else {
-                        $.setAttribute(col, {
-                            tabindex: -1,
-                        });
-                        $.setDataset(col, {
-                            uiFocus: false,
-                        });
+                        this.#focusItem(col, { time: true });
                     }
 
                     if (this.#date && this.#date.isSameHour(current)) {
@@ -2842,20 +2837,10 @@ export default class DateTimePicker extends BaseComponent {
                         });
                     }
 
+                    this.#timeItems.push(col);
+                    $.setAttribute(col, { tabindex: -1 });
                     if (initialDate.isSameMinute(current)) {
-                        $.setAttribute(col, {
-                            tabindex: 0,
-                        });
-                        $.setDataset(col, {
-                            uiFocus: true,
-                        });
-                    } else {
-                        $.setAttribute(col, {
-                            tabindex: -1,
-                        });
-                        $.setDataset(col, {
-                            uiFocus: false,
-                        });
+                        this.#focusItem(col, { time: true });
                     }
 
                     if (this.#date && this.#date.isSameMinute(current)) {
@@ -2864,16 +2849,6 @@ export default class DateTimePicker extends BaseComponent {
                     }
 
                     current = current.addMinutes(stepping);
-                }
-
-                if (!$.findOne('[data-ui-focus="true"]', row)) {
-                    const col = $.findOne('[data-ui-focus="false"]', row);
-                    $.setAttribute(col, {
-                        tabindex: 0,
-                    });
-                    $.setDataset(col, {
-                        uiFocus: true,
-                    });
                 }
             },
         });
@@ -3044,20 +3019,10 @@ export default class DateTimePicker extends BaseComponent {
                     });
                     $.append(row, col);
 
+                    this.#dateItems.push(col);
+                    $.setAttribute(col, { tabindex: -1 });
                     if (this.#viewDate.isSameMonth(current)) {
-                        $.setAttribute(col, {
-                            tabindex: 0,
-                        });
-                        $.setDataset(col, {
-                            uiFocus: true,
-                        });
-                    } else {
-                        $.setAttribute(col, {
-                            tabindex: -1,
-                        });
-                        $.setDataset(col, {
-                            uiFocus: false,
-                        });
+                        this.#focusItem(col);
                     }
 
                     if (this.#isCurrent(current, { granularity: 'month' })) {
@@ -3502,20 +3467,10 @@ export default class DateTimePicker extends BaseComponent {
                     });
                     $.append(row, col);
 
+                    this.#dateItems.push(col);
+                    $.setAttribute(col, { tabindex: -1 });
                     if (this.#viewDate.isSameYear(current)) {
-                        $.setAttribute(col, {
-                            tabindex: 0,
-                        });
-                        $.setDataset(col, {
-                            uiFocus: true,
-                        });
-                    } else {
-                        $.setAttribute(col, {
-                            tabindex: -1,
-                        });
-                        $.setDataset(col, {
-                            uiFocus: false,
-                        });
+                        this.#focusItem(col);
                     }
 
                     if (this.#isCurrent(current, { granularity: 'year' })) {

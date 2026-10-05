@@ -774,6 +774,60 @@ test.describe('DateTimePicker', () => {
         });
 
         test.describe('time controls', () => {
+            for (const { view, start, target, next, expected } of [
+                { view: 'Hour', start: '12', target: '18', next: '19', expected: '19:30' },
+                { view: 'Minute', start: '30', target: '45', next: '50', expected: '12:50' },
+            ]) {
+                test(`continues ${view} keyboard navigation from mouse focus after refreshing`, async ({ page }) => {
+                    await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'HH:mm', inline: true, minuteStepping: 5 }).setDate('12:30'));
+                    await page.getByRole('button', { name: `Select ${view}`, exact: true }).click();
+                    await expect(page.getByRole('button', { name: start, exact: true })).toBeFocused();
+                    await page.evaluate(() => $('#date').datetimepicker('refresh'));
+                    await page.getByRole('button', { name: target, exact: true }).dispatchEvent('mousedown', { button: 0 });
+                    await expect(page.getByRole('button', { name: target, exact: true })).toBeFocused();
+                    await page.keyboard.press('ArrowRight');
+                    await expect(page.getByRole('button', { name: next, exact: true })).toBeFocused();
+                    await page.keyboard.press('Enter');
+                    await expect(page.locator('#date')).toHaveValue(expected);
+                });
+            }
+
+            test('restores the first enabled minute tab stop after refreshing an unmatched minute', async ({ page }) => {
+                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
+                    format: 'HH:mm', inline: true, isValidTime: (date) => date.getMinutes() >= 10,
+                }).setDate('12:32'));
+                await page.getByRole('button', { name: 'Select Minute', exact: true }).click();
+                await expect(page.getByRole('button', { name: '10', exact: true })).toBeFocused();
+                await page.keyboard.press('ArrowRight');
+                await expect(page.getByRole('button', { name: '15', exact: true })).toBeFocused();
+                await page.evaluate(() => $('#date').datetimepicker('refresh'));
+                await expect(page.getByRole('button', { name: '10', exact: true })).toHaveAttribute('tabindex', '0');
+                await expect(page.locator('[data-ui-minute][tabindex="0"]')).toHaveCount(1);
+                await expect(page.getByRole('button', { name: '00', exact: true })).toHaveAttribute('tabindex', '-1');
+                await page.getByRole('button', { name: '10', exact: true }).focus();
+                await page.keyboard.press('ArrowRight');
+                await expect(page.getByRole('button', { name: '15', exact: true })).toBeFocused();
+            });
+
+            test('keeps date and time grid focus independent in side-by-side mode', async ({ page }) => {
+                await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
+                    format: 'yyyy-MM-dd HH:mm', inline: true, sideBySide: true,
+                }).setDate('2026-09-15 12:30'));
+                const date = page.getByRole('button', { name: 'September 17, 2026', exact: true });
+                await date.dispatchEvent('mousedown', { button: 0 });
+                await expect(date).toBeFocused();
+                await page.getByRole('button', { name: 'Select Hour', exact: true }).click();
+                await page.keyboard.press('ArrowRight');
+                await expect(page.getByRole('button', { name: '13', exact: true })).toBeFocused();
+                await date.focus();
+                await page.keyboard.press('ArrowRight');
+                await expect(page.getByRole('button', { name: 'September 18, 2026', exact: true })).toBeFocused();
+                await expect(page.locator('[data-ui-date][tabindex="0"]')).toHaveCount(1);
+                await expect(page.locator('[data-ui-hour][tabindex="0"]')).toHaveCount(1);
+                await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toHaveAttribute('aria-pressed', 'true');
+                await expect(page.locator('[data-ui-focus]')).toHaveCount(0);
+            });
+
             for (const { control, expected } of [
                 { control: 'Increment Hour', expected: '13:30' },
                 { control: 'Decrement Hour', expected: '11:30' },
