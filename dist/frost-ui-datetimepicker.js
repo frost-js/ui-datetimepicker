@@ -235,6 +235,41 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 //#endregion
 //#region src/js/helpers.js
 /**
+	* Adjusts a date by a signed number of units.
+	* @param {DateTime} date The starting date.
+	* @param {'day'|'week'|'month'|'year'|'hour'|'minute'} unit The date/time unit.
+	* @param {number} amount The amount to add; negative values subtract.
+	* @returns {DateTime} The adjusted date.
+	*/
+	function adjustDate(date, unit, amount) {
+		switch (unit) {
+			case "day": return date.addDays(amount);
+			case "week": return date.addWeeks(amount);
+			case "month": return date.addMonths(amount);
+			case "year": return date.addYears(amount);
+			case "hour": return date.addHours(amount);
+			case "minute": return date.addMinutes(amount);
+		}
+	}
+	/**
+	* Creates a column grid inside a full-width table cell.
+	* @param {Record<string, string>} classes The component classes.
+	* @param {HTMLElement} tbody The table body.
+	* @returns {HTMLElement} The grid row to append choices to.
+	*/
+	function createGrid(classes, tbody) {
+		const tr = _fr0st_query.default.create("tr");
+		_fr0st_query.default.append(tbody, tr);
+		const td = _fr0st_query.default.create("td", {
+			class: classes.rowContainer,
+			attributes: { colspan: 7 }
+		});
+		_fr0st_query.default.append(tr, td);
+		const row = _fr0st_query.default.create("div", { class: classes.row });
+		_fr0st_query.default.append(td, row);
+		return row;
+	}
+	/**
 	* Creates a table.
 	* @param {Record<string, string>} classes The component classes.
 	* @param {Record<string, string>} icons The component icons.
@@ -313,6 +348,36 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		if (minView === "years") return String(date.getYear());
 		if (minView === "months") return `${date.getYear()}-${date.getMonth()}`;
 		return `${date.getYear()}-${date.getMonth()}-${date.getDate()}`;
+	}
+	/**
+	* Calculates the calendar date reached by a navigation key.
+	* @param {DateTime} date The currently focused date.
+	* @param {'days'|'months'|'years'} view The calendar view.
+	* @param {string} key The keyboard event code.
+	* @param {boolean} ctrlKey Whether Control is pressed.
+	* @returns {DateTime|null} The candidate date, or null for an unrelated key.
+	*/
+	function getKeyboardDate(date, view, key, ctrlKey) {
+		switch (key) {
+			case "ArrowUp":
+			case "ArrowDown":
+			case "ArrowLeft":
+			case "ArrowRight": {
+				const vertical = key === "ArrowUp" || key === "ArrowDown";
+				const direction = key === "ArrowUp" || key === "ArrowLeft" ? -1 : 1;
+				if (view === "days") {
+					let unit = vertical ? "week" : "day";
+					if (ctrlKey) unit = vertical ? "year" : "month";
+					return adjustDate(date, unit, direction);
+				}
+				return adjustDate(date, view === "months" ? "month" : "year", direction * (vertical ? 3 : 1));
+			}
+			case "Home": return view === "days" ? date.startOfWeek() : date;
+			case "End": return view === "days" ? date.endOfWeek() : date;
+			case "PageUp":
+			case "PageDown": return view === "days" ? adjustDate(date, "month", key === "PageUp" ? -1 : 1) : date;
+			default: return null;
+		}
 	}
 	/**
 	* Renders a time column.
@@ -1211,16 +1276,10 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 						break;
 					case "next":
 					case "prev": {
-						const amount = _fr0st_query.default.getDataset(element, "uiAmount") || 1;
+						const direction = action === "prev" ? -1 : 1;
+						const amount = (_fr0st_query.default.getDataset(element, "uiAmount") || 1) * direction;
 						const unit = _fr0st_query.default.getDataset(element, "uiUnit");
-						let method;
-						switch (unit) {
-							case "month":
-								method = action === "prev" ? "subMonths" : "addMonths";
-								break;
-							case "year": method = action === "prev" ? "subYears" : "addYears";
-						}
-						this.#viewDate = this.#viewDate[method](amount);
+						this.#viewDate = adjustDate(this.#viewDate, unit, amount);
 						this.#refreshDate();
 						if (!this.node) return;
 						const focusAction = _fr0st_query.default.findOne(`[data-ui-action="${action}"]`, this.#dateContainer);
@@ -1278,78 +1337,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			});
 			_fr0st_query.default.addEvent(this.#dateContainer, "keydown.ui.datetimepicker", (event) => {
 				if (!this.#isEditable()) return;
-				let tempView = this.#viewDate;
-				switch (event.code) {
-					case "ArrowUp":
-						switch (this.#viewMode) {
-							case "days":
-								if (event.ctrlKey) tempView = tempView.subYear();
-								else tempView = tempView.subWeek();
-								break;
-							case "months":
-								tempView = tempView.subMonths(3);
-								break;
-							case "years": tempView = tempView.subYears(3);
-						}
-						break;
-					case "ArrowRight":
-						switch (this.#viewMode) {
-							case "days":
-								if (event.ctrlKey) tempView = tempView.addMonth();
-								else tempView = tempView.addDay();
-								break;
-							case "months":
-								tempView = tempView.addMonth();
-								break;
-							case "years": tempView = tempView.addYear();
-						}
-						break;
-					case "ArrowDown":
-						switch (this.#viewMode) {
-							case "days":
-								if (event.ctrlKey) tempView = tempView.addYear();
-								else tempView = tempView.addWeek();
-								break;
-							case "months":
-								tempView = tempView.addMonths(3);
-								break;
-							case "years": tempView = tempView.addYears(3);
-						}
-						break;
-					case "ArrowLeft":
-						switch (this.#viewMode) {
-							case "days":
-								if (event.ctrlKey) tempView = tempView.subMonth();
-								else tempView = tempView.subDay();
-								break;
-							case "months":
-								tempView = tempView.subMonth();
-								break;
-							case "years": tempView = tempView.subYear();
-						}
-						break;
-					case "Home":
-						switch (this.#viewMode) {
-							case "days": tempView = tempView.startOfWeek();
-						}
-						break;
-					case "End":
-						switch (this.#viewMode) {
-							case "days": tempView = tempView.endOfWeek();
-						}
-						break;
-					case "PageUp":
-						switch (this.#viewMode) {
-							case "days": tempView = tempView.subMonth();
-						}
-						break;
-					case "PageDown":
-						switch (this.#viewMode) {
-							case "days": tempView = tempView.addMonth();
-						}
-						break;
-					default: return;
-				}
+				const tempView = getKeyboardDate(this.#viewDate, this.#viewMode, event.code, event.ctrlKey);
+				if (!tempView) return;
 				event.preventDefault();
 				if (tempView.isSame(this.#viewDate)) return;
 				if (!this.#isBeforeMax(tempView, { allowSame: true }) || !this.#isAfterMin(tempView, { allowSame: true })) return;
@@ -1422,52 +1411,37 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					case "setHours":
 						tempDate = tempDate.withHours(_fr0st_query.default.getDataset(element, "uiHour"));
 						this.#timeViewMode = null;
-						this.#setDate(tempDate, { updateValue });
-						if (!this.node) return;
 						if (this.#hasMinutes) focusSelector = "[data-ui-action=\"changeView\"][data-ui-time-view=\"minutes\"]";
 						else if (this.#useDayPeriod) focusSelector = "[data-ui-action=\"togglePeriod\"]";
 						break;
 					case "setMinutes":
 						tempDate = tempDate.withMinutes(_fr0st_query.default.getDataset(element, "uiMinute"));
 						this.#timeViewMode = null;
-						this.#setDate(tempDate, { updateValue });
-						if (!this.node) return;
 						if (this.#useDayPeriod) focusSelector = "[data-ui-action=\"togglePeriod\"]";
 						break;
 					case "togglePeriod":
 						tempDate = switchPeriod(tempDate);
-						this.#setDate(tempDate, { updateValue });
-						if (!this.node) return;
 						focusSelector = "[data-ui-action=\"togglePeriod\"]";
-						break;
-					case "changeView":
-						this.#timeViewMode = _fr0st_query.default.getDataset(element, "uiTimeView");
-						this.#refreshTime();
-						if (!this.node) return;
-						_fr0st_query.default.focus(this.#focusedTimeItem);
 						break;
 					case "next":
 					case "prev": {
 						const unit = _fr0st_query.default.getDataset(element, "uiUnit");
-						const amount = unit === "minute" ? this.options.minuteStepping : 1;
-						let method;
-						switch (unit) {
-							case "hour":
-								method = action === "prev" ? "subHours" : "addHours";
-								break;
-							case "minute": method = action === "prev" ? "subMinutes" : "addMinutes";
-						}
-						tempDate = tempDate[method](amount);
-						this.#setDate(tempDate, { updateValue });
-						if (!this.node) return;
+						const stepping = unit === "minute" ? this.options.minuteStepping : 1;
+						const amount = action === "prev" ? -stepping : stepping;
+						tempDate = adjustDate(tempDate, unit, amount);
 						focusSelector = `[data-ui-action="${action}"][data-ui-unit="${unit}"]`;
 						break;
 					}
+					case "changeView":
+						this.#timeViewMode = _fr0st_query.default.getDataset(element, "uiTimeView");
+						this.#refreshTime();
+						if (this.node) _fr0st_query.default.focus(this.#focusedTimeItem);
+						return;
 					case "showDate":
 						this.#switchView(this.#dateContainer, this.#timeContainer, () => {
 							_fr0st_query.default.focus(this.#focusedDateItem);
 						});
-						break;
+						return;
 					case "close":
 						if (!this.#date && !this.#hasDate) {
 							this.#setDate(this.#viewDate);
@@ -1475,7 +1449,11 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 						}
 						_fr0st_query.default.focus(this.node);
 						this.hide();
+						return;
+					default: return;
 				}
+				this.#setDate(tempDate, { updateValue });
+				if (!this.node) return;
 				if (focusSelector) {
 					const focusNode = _fr0st_query.default.findOne(focusSelector, this.#timeContainer);
 					_fr0st_query.default.focus(focusNode);
@@ -1528,24 +1506,13 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 								if (this.#timeViewMode) return;
 								timeView = "hours";
 						}
-						switch (event.code) {
-							case "ArrowUp":
-								switch (timeView) {
-									case "hours":
-										tempDate = tempDate.addHour();
-										break;
-									case "minutes": tempDate = tempDate.addMinutes(this.options.minuteStepping);
-								}
+						if (event.code !== "ArrowUp" && event.code !== "ArrowDown") return;
+						const direction = event.code === "ArrowUp" ? 1 : -1;
+						switch (timeView) {
+							case "hours":
+								tempDate = adjustDate(tempDate, "hour", direction);
 								break;
-							case "ArrowDown":
-								switch (timeView) {
-									case "hours":
-										tempDate = tempDate.subHour();
-										break;
-									case "minutes": tempDate = tempDate.subMinutes(this.options.minuteStepping);
-								}
-								break;
-							default: return;
+							case "minutes": tempDate = adjustDate(tempDate, "minute", direction * this.options.minuteStepping);
 						}
 						focusSelector = `[data-ui-action="changeView"][data-ui-time-view="${timeView}"]`;
 						break;
@@ -2195,15 +2162,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			const table = createTable(this.constructor.classes, this.constructor.icons, {
 				borderless: true,
 				body: (tbody) => {
-					const tr = _fr0st_query.default.create("tr");
-					_fr0st_query.default.append(tbody, tr);
-					const td = _fr0st_query.default.create("td", {
-						class: this.constructor.classes.rowContainer,
-						attributes: { colspan: 7 }
-					});
-					_fr0st_query.default.append(tr, td);
-					const row = _fr0st_query.default.create("div", { class: this.constructor.classes.row });
-					_fr0st_query.default.append(td, row);
+					const row = createGrid(this.constructor.classes, tbody);
 					while (current.isSameOrBeforeHour(last)) {
 						const hourString = current.format("HH");
 						const col = _fr0st_query.default.create("div", {
@@ -2246,15 +2205,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			const table = createTable(this.constructor.classes, this.constructor.icons, {
 				borderless: true,
 				body: (tbody) => {
-					const tr = _fr0st_query.default.create("tr");
-					_fr0st_query.default.append(tbody, tr);
-					const td = _fr0st_query.default.create("td", {
-						class: this.constructor.classes.rowContainer,
-						attributes: { colspan: 7 }
-					});
-					_fr0st_query.default.append(tr, td);
-					const row = _fr0st_query.default.create("div", { class: this.constructor.classes.row });
-					_fr0st_query.default.append(td, row);
+					const row = createGrid(this.constructor.classes, tbody);
 					const stepping = this.options.minuteStepping === 1 ? 5 : this.options.minuteStepping;
 					while (current.isSameOrBeforeMinute(last)) {
 						const minuteString = current.format("mm");
@@ -2382,15 +2333,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					next
 				},
 				body: (tbody) => {
-					const tr = _fr0st_query.default.create("tr");
-					_fr0st_query.default.append(tbody, tr);
-					const td = _fr0st_query.default.create("td", {
-						class: this.constructor.classes.rowContainer,
-						attributes: { colspan: 7 }
-					});
-					_fr0st_query.default.append(tr, td);
-					const row = _fr0st_query.default.create("div", { class: this.constructor.classes.row });
-					_fr0st_query.default.append(td, row);
+					const row = createGrid(this.constructor.classes, tbody);
 					while (current.isSameOrBeforeMonth(end)) {
 						const col = _fr0st_query.default.create("div", {
 							text: current.format("LLL"),
@@ -2613,15 +2556,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					next
 				},
 				body: (tbody) => {
-					const tr = _fr0st_query.default.create("tr");
-					_fr0st_query.default.append(tbody, tr);
-					const td = _fr0st_query.default.create("td", {
-						class: this.constructor.classes.rowContainer,
-						attributes: { colspan: 7 }
-					});
-					_fr0st_query.default.append(tr, td);
-					const row = _fr0st_query.default.create("div", { class: this.constructor.classes.row });
-					_fr0st_query.default.append(td, row);
+					const row = createGrid(this.constructor.classes, tbody);
 					while (current.isSameOrBeforeYear(last)) {
 						const currentYear = current.getYear();
 						const yearString = current.format("yyyy");

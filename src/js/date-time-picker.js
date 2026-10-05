@@ -3,7 +3,7 @@ import $ from '@fr0st/query';
 import { BaseComponent, generateId, Modal, Popper } from '@fr0st/ui';
 import { isAfterDay, isAfterInstant, isAfterMonth, isAfterYear, isBeforeDay, isBeforeInstant, isBeforeMonth, isBeforeYear, isSameDay, isSameInstant, isSameMonth, isSameYear } from './comparisons.js';
 import { checkDayPeriod, getDefaultDateFormat, getDefaultFormat, getDefaultTimeFormat } from './formats.js';
-import { createTable, getDateKey, renderTimeColumn, renderTimeSeparator } from './helpers.js';
+import { adjustDate, createGrid, createTable, getDateKey, getKeyboardDate, renderTimeColumn, renderTimeSeparator } from './helpers.js';
 
 /**
  * A date string in the configured format, UNIX seconds, a 1-based date tuple,
@@ -1206,25 +1206,11 @@ export default class DateTimePicker extends BaseComponent {
                     break;
                 case 'next':
                 case 'prev': {
-                    const amount = $.getDataset(element, 'uiAmount') || 1;
+                    const direction = action === 'prev' ? -1 : 1;
+                    const amount = ($.getDataset(element, 'uiAmount') || 1) * direction;
                     const unit = $.getDataset(element, 'uiUnit');
 
-                    let method;
-
-                    switch (unit) {
-                        case 'month':
-                            method = action === 'prev' ?
-                                'subMonths' :
-                                'addMonths';
-                            break;
-                        case 'year':
-                            method = action === 'prev' ?
-                                'subYears' :
-                                'addYears';
-                            break;
-                    }
-
-                    this.#viewDate = this.#viewDate[method](amount);
+                    this.#viewDate = adjustDate(this.#viewDate, unit, amount);
 
                     this.#refreshDate();
 
@@ -1325,107 +1311,10 @@ export default class DateTimePicker extends BaseComponent {
                 return;
             }
 
-            let tempView = this.#viewDate;
+            const tempView = getKeyboardDate(this.#viewDate, this.#viewMode, event.code, event.ctrlKey);
 
-            switch (event.code) {
-                case 'ArrowUp':
-                    switch (this.#viewMode) {
-                        case 'days':
-                            if (event.ctrlKey) {
-                                tempView = tempView.subYear();
-                            } else {
-                                tempView = tempView.subWeek();
-                            }
-                            break;
-                        case 'months':
-                            tempView = tempView.subMonths(3);
-                            break;
-                        case 'years':
-                            tempView = tempView.subYears(3);
-                            break;
-                    }
-                    break;
-                case 'ArrowRight':
-                    switch (this.#viewMode) {
-                        case 'days':
-                            if (event.ctrlKey) {
-                                tempView = tempView.addMonth();
-                            } else {
-                                tempView = tempView.addDay();
-                            }
-                            break;
-                        case 'months':
-                            tempView = tempView.addMonth();
-                            break;
-                        case 'years':
-                            tempView = tempView.addYear();
-                            break;
-                    }
-                    break;
-                case 'ArrowDown':
-                    switch (this.#viewMode) {
-                        case 'days':
-                            if (event.ctrlKey) {
-                                tempView = tempView.addYear();
-                            } else {
-                                tempView = tempView.addWeek();
-                            }
-                            break;
-                        case 'months':
-                            tempView = tempView.addMonths(3);
-                            break;
-                        case 'years':
-                            tempView = tempView.addYears(3);
-                            break;
-                    }
-                    break;
-                case 'ArrowLeft':
-                    switch (this.#viewMode) {
-                        case 'days':
-                            if (event.ctrlKey) {
-                                tempView = tempView.subMonth();
-                            } else {
-                                tempView = tempView.subDay();
-                            }
-                            break;
-                        case 'months':
-                            tempView = tempView.subMonth();
-                            break;
-                        case 'years':
-                            tempView = tempView.subYear();
-                            break;
-                    }
-                    break;
-                case 'Home':
-                    switch (this.#viewMode) {
-                        case 'days':
-                            tempView = tempView.startOfWeek();
-                            break;
-                    }
-                    break;
-                case 'End':
-                    switch (this.#viewMode) {
-                        case 'days':
-                            tempView = tempView.endOfWeek();
-                            break;
-                    }
-                    break;
-                case 'PageUp':
-                    switch (this.#viewMode) {
-                        case 'days':
-                            tempView = tempView.subMonth();
-                            break;
-                    }
-                    break;
-                case 'PageDown':
-                    switch (this.#viewMode) {
-                        case 'days':
-                            tempView = tempView.addMonth();
-                            break;
-                    }
-                    break;
-                default:
-                    return;
+            if (!tempView) {
+                return;
             }
 
             event.preventDefault();
@@ -1558,12 +1447,6 @@ export default class DateTimePicker extends BaseComponent {
 
                     this.#timeViewMode = null;
 
-                    this.#setDate(tempDate, { updateValue });
-
-                    if (!this.node) {
-                        return;
-                    }
-
                     if (this.#hasMinutes) {
                         focusSelector = '[data-ui-action="changeView"][data-ui-time-view="minutes"]';
                     } else if (this.#useDayPeriod) {
@@ -1578,12 +1461,6 @@ export default class DateTimePicker extends BaseComponent {
 
                     this.#timeViewMode = null;
 
-                    this.#setDate(tempDate, { updateValue });
-
-                    if (!this.node) {
-                        return;
-                    }
-
                     if (this.#useDayPeriod) {
                         focusSelector = '[data-ui-action="togglePeriod"]';
                     }
@@ -1591,67 +1468,33 @@ export default class DateTimePicker extends BaseComponent {
                     break;
                 case 'togglePeriod':
                     tempDate = switchPeriod(tempDate);
-
-                    this.#setDate(tempDate, { updateValue });
-
-                    if (!this.node) {
-                        return;
-                    }
-
                     focusSelector = '[data-ui-action="togglePeriod"]';
-
                     break;
+                case 'next':
+                case 'prev': {
+                    const unit = $.getDataset(element, 'uiUnit');
+                    const stepping = unit === 'minute' ? this.options.minuteStepping : 1;
+                    const amount = action === 'prev' ? -stepping : stepping;
+
+                    tempDate = adjustDate(tempDate, unit, amount);
+                    focusSelector = `[data-ui-action="${action}"][data-ui-unit="${unit}"]`;
+                    break;
+                }
                 case 'changeView':
                     this.#timeViewMode = $.getDataset(element, 'uiTimeView');
 
                     this.#refreshTime();
 
-                    if (!this.node) {
-                        return;
+                    if (this.node) {
+                        $.focus(this.#focusedTimeItem);
                     }
 
-                    $.focus(this.#focusedTimeItem);
-
-                    break;
-                case 'next':
-                case 'prev': {
-                    const unit = $.getDataset(element, 'uiUnit');
-                    const amount = unit === 'minute' ?
-                        this.options.minuteStepping :
-                        1;
-
-                    let method;
-
-                    switch (unit) {
-                        case 'hour':
-                            method = action === 'prev' ?
-                                'subHours' :
-                                'addHours';
-                            break;
-                        case 'minute':
-                            method = action === 'prev' ?
-                                'subMinutes' :
-                                'addMinutes';
-                            break;
-                    }
-
-                    tempDate = tempDate[method](amount);
-
-                    this.#setDate(tempDate, { updateValue });
-
-                    if (!this.node) {
-                        return;
-                    }
-
-                    focusSelector = `[data-ui-action="${action}"][data-ui-unit="${unit}"]`;
-
-                    break;
-                }
+                    return;
                 case 'showDate':
                     this.#switchView(this.#dateContainer, this.#timeContainer, () => {
                         $.focus(this.#focusedDateItem);
                     });
-                    break;
+                    return;
                 case 'close':
                     if (!this.#date && !this.#hasDate) {
                         this.#setDate(this.#viewDate);
@@ -1663,7 +1506,15 @@ export default class DateTimePicker extends BaseComponent {
 
                     $.focus(this.node);
                     this.hide();
-                    break;
+                    return;
+                default:
+                    return;
+            }
+
+            this.#setDate(tempDate, { updateValue });
+
+            if (!this.node) {
+                return;
             }
 
             if (focusSelector) {
@@ -1685,6 +1536,7 @@ export default class DateTimePicker extends BaseComponent {
             if (!this.#isEditable()) {
                 return;
             }
+
             switch (event.code) {
                 case 'Enter':
                 case 'NumpadEnter':
@@ -1745,31 +1597,19 @@ export default class DateTimePicker extends BaseComponent {
                             break;
                     }
 
-                    switch (event.code) {
-                        case 'ArrowUp':
-                            switch (timeView) {
-                                case 'hours':
-                                    tempDate = tempDate.addHour();
-                                    break;
-                                case 'minutes':
-                                    tempDate = tempDate.addMinutes(this.options.minuteStepping);
-                                    break;
-                            }
+                    if (event.code !== 'ArrowUp' && event.code !== 'ArrowDown') {
+                        return;
+                    }
 
-                            break;
-                        case 'ArrowDown':
-                            switch (timeView) {
-                                case 'hours':
-                                    tempDate = tempDate.subHour();
-                                    break;
-                                case 'minutes':
-                                    tempDate = tempDate.subMinutes(this.options.minuteStepping);
-                                    break;
-                            }
+                    const direction = event.code === 'ArrowUp' ? 1 : -1;
 
+                    switch (timeView) {
+                        case 'hours':
+                            tempDate = adjustDate(tempDate, 'hour', direction);
                             break;
-                        default:
-                            return;
+                        case 'minutes':
+                            tempDate = adjustDate(tempDate, 'minute', direction * this.options.minuteStepping);
+                            break;
                     }
 
                     focusSelector = `[data-ui-action="changeView"][data-ui-time-view="${timeView}"]`;
@@ -2841,24 +2681,7 @@ export default class DateTimePicker extends BaseComponent {
         const table = createTable(this.constructor.classes, this.constructor.icons, {
             borderless: true,
             body: (tbody) => {
-                const tr = $.create('tr');
-
-                $.append(tbody, tr);
-
-                const td = $.create('td', {
-                    class: this.constructor.classes.rowContainer,
-                    attributes: {
-                        colspan: 7,
-                    },
-                });
-
-                $.append(tr, td);
-
-                const row = $.create('div', {
-                    class: this.constructor.classes.row,
-                });
-
-                $.append(td, row);
+                const row = createGrid(this.constructor.classes, tbody);
 
                 while (current.isSameOrBeforeHour(last)) {
                     const hourString = current.format('HH');
@@ -2925,24 +2748,7 @@ export default class DateTimePicker extends BaseComponent {
         const table = createTable(this.constructor.classes, this.constructor.icons, {
             borderless: true,
             body: (tbody) => {
-                const tr = $.create('tr');
-
-                $.append(tbody, tr);
-
-                const td = $.create('td', {
-                    class: this.constructor.classes.rowContainer,
-                    attributes: {
-                        colspan: 7,
-                    },
-                });
-
-                $.append(tr, td);
-
-                const row = $.create('div', {
-                    class: this.constructor.classes.row,
-                });
-
-                $.append(td, row);
+                const row = createGrid(this.constructor.classes, tbody);
 
                 const stepping = this.options.minuteStepping === 1 ?
                     5 :
@@ -3139,24 +2945,7 @@ export default class DateTimePicker extends BaseComponent {
                 next,
             },
             body: (tbody) => {
-                const tr = $.create('tr');
-
-                $.append(tbody, tr);
-
-                const td = $.create('td', {
-                    class: this.constructor.classes.rowContainer,
-                    attributes: {
-                        colspan: 7,
-                    },
-                });
-
-                $.append(tr, td);
-
-                const row = $.create('div', {
-                    class: this.constructor.classes.row,
-                });
-
-                $.append(td, row);
+                const row = createGrid(this.constructor.classes, tbody);
 
                 while (current.isSameOrBeforeMonth(end)) {
                     const col = $.create('div', {
@@ -3505,24 +3294,7 @@ export default class DateTimePicker extends BaseComponent {
                 next,
             },
             body: (tbody) => {
-                const tr = $.create('tr');
-
-                $.append(tbody, tr);
-
-                const td = $.create('td', {
-                    class: this.constructor.classes.rowContainer,
-                    attributes: {
-                        colspan: 7,
-                    },
-                });
-
-                $.append(tr, td);
-
-                const row = $.create('div', {
-                    class: this.constructor.classes.row,
-                });
-
-                $.append(td, row);
+                const row = createGrid(this.constructor.classes, tbody);
 
                 while (current.isSameOrBeforeYear(last)) {
                     const currentYear = current.getYear();
