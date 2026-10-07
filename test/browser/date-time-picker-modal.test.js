@@ -1,14 +1,6 @@
 import { expect, test } from '#test';
 
 test.describe('DateTimePicker modal', () => {
-    test.use({
-        pickerDefaults: {
-            format: 'yyyy-MM-dd',
-            modal: true,
-            duration: 100,
-        },
-    });
-
     test.beforeEach(async ({ page }) => {
         await page.evaluate(() => {
             $.setHtml(document.body, '<label for="date">Appointment</label><input id="date" value="2026-09-15">');
@@ -19,7 +11,7 @@ test.describe('DateTimePicker modal', () => {
         for (const multiDate of [false, true]) {
             test(`commits a ${multiDate ? 'multi-date' : 'single-date'} draft once with correct old and new dates`, async ({ page }) => {
                 await page.evaluate((multiple) => {
-                    UI.DateTimePicker.init($.findOne('#date'), { multiDate: multiple });
+                    UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', modal: true, multiDate: multiple });
                     $.addEvent('#date', 'change.ui.datetimepicker', (event) => {
                         const format = (date) => {
                             if (Array.isArray(date)) {
@@ -60,7 +52,7 @@ test.describe('DateTimePicker modal', () => {
         }
 
         test('discards a multi-date draft through Cancel', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { multiDate: true }));
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', modal: true, multiDate: true }));
 
             await page.getByLabel('Appointment').click();
             await page.getByRole('button', { name: 'September 16, 2026', exact: true }).click();
@@ -87,7 +79,7 @@ test.describe('DateTimePicker modal', () => {
         ]) {
             test(`discards draft edits through ${close}`, async ({ page }) => {
                 await page.evaluate(() => {
-                    UI.DateTimePicker.init($.findOne('#date'));
+                    UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', modal: true });
                     $.addEvent('#date', 'change.ui.datetimepicker', (event) => $.setDataset(event.target, 'changed', true));
                 });
 
@@ -104,7 +96,7 @@ test.describe('DateTimePicker modal', () => {
 
         test('retains an uncommitted draft when hiding is canceled', async ({ page }) => {
             await page.evaluate(() => {
-                UI.DateTimePicker.init($.findOne('#date')).show();
+                UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', modal: true }).show();
                 $.addEventOnce('#date', 'hide.ui.datetimepicker', () => false);
             });
 
@@ -123,7 +115,7 @@ test.describe('DateTimePicker modal', () => {
         test('cancels opening without leaving a wrapper in the document', async ({ page }) => {
             await page.evaluate(() => {
                 $.addEvent('#date', 'show.ui.datetimepicker', () => false);
-                UI.DateTimePicker.init($.findOne('#date')).show();
+                UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', modal: true }).show();
             });
 
             await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -133,7 +125,7 @@ test.describe('DateTimePicker modal', () => {
 
     test.describe('focus and keyboard', () => {
         test('opens from the keyboard and returns focus', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date')));
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', modal: true }));
 
             await page.getByLabel('Appointment').focus();
             await page.getByLabel('Appointment').press('Enter');
@@ -148,7 +140,7 @@ test.describe('DateTimePicker modal', () => {
 
         test('redirects Tab and Shift+Tab away from outside page controls', async ({ page }) => {
             await page.evaluate(() => {
-                UI.DateTimePicker.init($.findOne('#date')).show();
+                UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', modal: true }).show();
                 $.append(document.body, '<button id="outside">Outside</button>');
             });
 
@@ -177,7 +169,7 @@ test.describe('DateTimePicker modal', () => {
                 $.append(document.body, parent);
                 $.append($.findOne('.modal-body', parent), [$.findOne('label'), $.findOne('#date')]);
                 UI.Modal.init(parent).show();
-                UI.DateTimePicker.init($.findOne('#date'));
+                UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', modal: true });
             });
 
             await expect(page.locator('#parent')).toHaveClass(/show/);
@@ -204,6 +196,7 @@ test.describe('DateTimePicker modal', () => {
                     $.append(document.body, '<div id="container"></div>');
                     UI.DateTimePicker.init($.findOne('#date'), {
                         format: pattern,
+                        modal: true,
                         appendTo: '#container',
                         showToolbar: true,
                     }).show();
@@ -228,6 +221,7 @@ test.describe('DateTimePicker modal', () => {
                     await page.evaluate(({ userAgent, mobileModal }) => {
                         Object.defineProperty(navigator, 'userAgent', { configurable: true, value: userAgent });
                         UI.DateTimePicker.init($.findOne('#date'), {
+                            format: 'yyyy-MM-dd',
                             modal: false,
                             mobileModal,
                         });
@@ -253,7 +247,7 @@ test.describe('DateTimePicker modal', () => {
         for (const event of ['show', 'shown', 'hide', 'hidden', 'change']) {
             test(`can be disposed from ${event}`, async ({ page }) => {
                 await page.evaluate((name) => {
-                    const picker = UI.DateTimePicker.init($.findOne('#date'));
+                    const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', modal: true });
 
                     $.addEvent('#date', `${name}.ui.datetimepicker`, () => picker.dispose());
                     picker.show();

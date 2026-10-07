@@ -18,6 +18,14 @@ test.describe('DateTimePicker', () => {
                 expect(await instance.evaluate((value) => $.getData('#date', 'datetimepicker') === value)).toBe(true);
                 expect(await instance.evaluate((value) => value.node === $.findOne('#date'))).toBe(true);
                 expect(await instance.evaluate((value) => Object.isFrozen(value.options))).toBe(true);
+                expect(await instance.evaluate((value) => value.options)).toMatchObject({
+                    duration: 100,
+                    locale: null,
+                    mobileModal: true,
+                    timeZone: null,
+                });
+                expect(await instance.evaluate((value) => value.getDate().getLocale())).toBe('en-GB');
+                expect(await instance.evaluate((value) => value.getDate().getTimeZone())).toBe('UTC');
                 expect(await instance.evaluate((value) => value.getDate().format('yyyy-MM-dd'))).toBe('2026-09-15');
                 await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-15');
             });

@@ -1,8 +1,6 @@
 import { expect, test } from '#test';
 
 test.describe('DateTimePicker forms', () => {
-    test.use({ pickerDefaults: { format: 'yyyy-MM-dd' } });
-
     test.beforeEach(async ({ page }) => {
         await page.evaluate(() => {
             $.setHtml(document.body,
@@ -16,7 +14,7 @@ test.describe('DateTimePicker forms', () => {
     test.describe('native synchronization', () => {
         test('updates the selection after typing without a duplicate native change event', async ({ page }) => {
             await page.evaluate(() => {
-                UI.DateTimePicker.init($.findOne('#date'));
+                UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' });
                 $.findOne('#date').addEventListener('change', (event) => {
                     $.setDataset(event.target, 'changes', ($.getDataset(event.target, 'changes') || 0) + 1);
                 });
@@ -31,7 +29,7 @@ test.describe('DateTimePicker forms', () => {
 
         test('normalizes alternate native input silently', async ({ page }) => {
             await page.evaluate(() => {
-                UI.DateTimePicker.init($.findOne('#date'), { altFormats: ['dd/MM/yyyy'] });
+                UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', altFormats: ['dd/MM/yyyy'] });
                 $.findOne('#date').addEventListener('change', (event) => {
                     $.setDataset(event.target, 'changes', ($.getDataset(event.target, 'changes') || 0) + 1);
                 });
@@ -82,7 +80,7 @@ test.describe('DateTimePicker forms', () => {
 
         test('updates inline calendars from a native change', async ({ page }) => {
             await page.evaluate(() => {
-                UI.DateTimePicker.init($.findOne('#date'), { inline: true });
+                UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true });
                 $.findOne('#date').value = '2026-10-16';
                 $.findOne('#date').dispatchEvent(new Event('change', { bubbles: true }));
             });
@@ -93,13 +91,13 @@ test.describe('DateTimePicker forms', () => {
 
     test.describe('submission', () => {
         test('submits the formatted native value', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date')).setDate([2026, 10, 16]));
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).setDate([2026, 10, 16]));
 
             expect(await page.evaluate(() => new FormData($.findOne('form')).get('appointment'))).toBe('2026-10-16');
         });
 
         test('keeps native required validation', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date')).clear());
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).clear());
 
             await expect(page.getByLabel('Appointment')).toHaveValue('');
             expect(await page.getByLabel('Appointment').evaluate((node) => node.validity.valueMissing)).toBe(true);
@@ -111,6 +109,7 @@ test.describe('DateTimePicker forms', () => {
             test(`synchronizes inline disabled state without rebuilding (${target})`, async ({ page }) => {
                 await page.evaluate(() => {
                     UI.DateTimePicker.init($.findOne('#date'), {
+                        format: 'yyyy-MM-dd',
                         inline: true,
                         minDate: '2026-09-15',
                     });
@@ -149,7 +148,7 @@ test.describe('DateTimePicker forms', () => {
                     '<fieldset id="outer"><legend><input id="legend" value="2026-09-15"></legend>' +
                     '<fieldset id="inner"><input id="date" value="2026-09-15"></fieldset></fieldset>',
                 );
-                $('input').datetimepicker({ inline: true });
+                $('input').datetimepicker({ format: 'yyyy-MM-dd', inline: true });
                 $.setProperty('#outer', 'disabled', true);
             });
 
@@ -208,7 +207,7 @@ test.describe('DateTimePicker forms', () => {
                 { target: '#fields', property: 'disabled' },
             ]) {
                 test(`closes an open ${modal ? 'modal' : 'popup'} after ${target}.${property} changes`, async ({ page }) => {
-                    await page.evaluate((useModal) => UI.DateTimePicker.init($.findOne('#date'), { modal: useModal }).show(), modal);
+                    await page.evaluate((useModal) => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', modal: useModal }).show(), modal);
 
                     await expect(page.getByRole('dialog')).toBeVisible();
 
@@ -234,7 +233,7 @@ test.describe('DateTimePicker forms', () => {
         }
 
         test('keeps an open picker editable when ignoreReadonly is enabled', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { ignoreReadonly: true }).show());
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', ignoreReadonly: true }).show());
             await page.evaluate(() => $.setProperty('#date', 'readOnly', true));
 
             await expect(page.getByRole('dialog')).toBeVisible();
@@ -250,7 +249,7 @@ test.describe('DateTimePicker forms', () => {
                 await page.evaluate((ignore) => {
                     $.setProperty($.findOne('#date'), 'readOnly', true);
 
-                    const picker = UI.DateTimePicker.init($.findOne('#date'), { ignoreReadonly: ignore });
+                    const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', ignoreReadonly: ignore });
 
                     picker.show();
                     picker.setDate([2026, 10, 16]);
@@ -267,6 +266,7 @@ test.describe('DateTimePicker forms', () => {
             test(`restores the ${multiDate ? 'multi-date' : 'single-date'} selection and inline view`, async ({ page }) => {
                 await page.evaluate((multiple) => {
                     const picker = UI.DateTimePicker.init($.findOne('#date'), {
+                        format: 'yyyy-MM-dd',
                         inline: true,
                         multiDate: multiple,
                     });
@@ -285,7 +285,7 @@ test.describe('DateTimePicker forms', () => {
 
         test('leaves canceled resets unchanged', async ({ page }) => {
             await page.evaluate(() => {
-                UI.DateTimePicker.init($.findOne('#date'), { inline: true }).setDate('2026-09-16');
+                UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true }).setDate('2026-09-16');
                 $.findOne('form').addEventListener('reset', (event) => event.preventDefault());
             });
 
@@ -311,7 +311,7 @@ test.describe('DateTimePicker forms', () => {
                         if (listenerOrder === 'before') {
                             form.addEventListener('reset', handler);
                         }
-                        const picker = UI.DateTimePicker.init($.findOne('#date'), { inline: true, multiDate });
+                        const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true, multiDate });
                         picker.setDate(multiDate ? ['2026-10-16', '2026-10-17'] : '2026-10-16');
                         $.addEvent('#date', 'change', (event) => $.setDataset(event.target, 'changed', true));
                         if (listenerOrder === 'after') {
@@ -337,7 +337,7 @@ test.describe('DateTimePicker forms', () => {
         test('cancels pending reset work on disposal', async ({ page }) => {
             await page.clock.install();
             await page.evaluate(() => {
-                const picker = UI.DateTimePicker.init($.findOne('#date'), { inline: true });
+                const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true });
 
                 $.findOne('form').reset();
                 picker.dispose();
@@ -354,8 +354,8 @@ test.describe('DateTimePicker forms', () => {
             await page.evaluate(() => {
                 $.append('#fields', '<input id="second" value="2026-09-20">');
 
-                const first = UI.DateTimePicker.init($.findOne('#date'));
-                const second = UI.DateTimePicker.init($.findOne('#second'), { inline: true });
+                const first = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' });
+                const second = UI.DateTimePicker.init($.findOne('#second'), { format: 'yyyy-MM-dd', inline: true });
 
                 first.setDate('2026-09-16');
                 second.setDate('2026-09-21');
@@ -387,7 +387,7 @@ test.describe('DateTimePicker forms', () => {
 
         test('disconnects pending and future native state mutations on disposal', async ({ page }) => {
             await page.evaluate(() => {
-                const picker = UI.DateTimePicker.init($.findOne('#date'), { inline: true });
+                const picker = UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', inline: true });
 
                 window.disposedMenu = $.findOne('.datetimepicker');
                 $.setProperty('#date', 'readOnly', true);
