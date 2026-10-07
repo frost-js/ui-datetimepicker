@@ -177,7 +177,7 @@ export default class DateTimePicker extends BaseComponent {
         togglePeriod: 'Toggle Period',
     };
 
-    #attributes = null;
+    #attributes = new Map();
     #changeHandler = null;
     #clickHandler = null;
     #closeTable = null;
@@ -268,17 +268,17 @@ export default class DateTimePicker extends BaseComponent {
      * @param {DateTimePickerOptions} [options] The component options.
      */
     constructor(node, options) {
-        if (!$._isElement(node) || $.getProperty(node, 'tagName') !== 'INPUT') {
+        if (!$._isElement(node) || !$.is(node, 'input')) {
             throw new TypeError('DateTimePicker must be created on an input element.');
         }
 
         super(node, options);
 
-        this.#attributes = new Map(['aria-controls', 'aria-expanded', 'aria-haspopup']
-            .map((name) => [name, $.getAttribute(node, name)]));
-        this.#form = $.getProperty(node, 'form');
-
         try {
+            this.#attributes = new Map(['aria-controls', 'aria-expanded', 'aria-haspopup']
+                .map((name) => [name, $.getAttribute(node, name)]));
+            this.#form = $.getProperty(node, 'form');
+
             this.#dateOptions = {
                 locale: this.options.locale || DateTime.getDefaultLocale(),
                 timeZone: this.options.timeZone || DateTime.getDefaultTimeZone(),

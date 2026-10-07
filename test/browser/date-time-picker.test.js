@@ -119,6 +119,52 @@ test.describe('DateTimePicker', () => {
             expect(await instance.evaluate((value) => value.getViewDate().getTimestamp())).toBe(0);
         });
 
+        test('rejects non-element arguments without disturbing an existing instance', async ({ page }) => {
+            const state = await page.evaluate(() => {
+                const node = $.findOne('#date');
+                const instance = UI.DateTimePicker.init(node);
+                const html = $.getHtml(document.body);
+                const errors = [];
+
+                for (const [name, argument] of [
+                    ['null', null],
+                    ['undefined', undefined],
+                    ['selector', '#date'],
+                    ['malformed selector', '['],
+                    ['array', [node]],
+                    ['QuerySet', $('#date')],
+                    ['document', document],
+                    ['text node', document.createTextNode('text')],
+                ]) {
+                    for (const [method, init] of [
+                        ['constructor', (node) => new UI.DateTimePicker(node)],
+                        ['init', (node) => UI.DateTimePicker.init(node)],
+                    ]) {
+                        let message = null;
+
+                        try {
+                            init(argument);
+                        } catch (error) {
+                            message = `${error.name}: ${error.message}`;
+                        }
+
+                        errors.push({ name, method, message });
+                    }
+                }
+
+                return {
+                    errors,
+                    unchanged: $.getHtml(document.body) === html &&
+                        $.getData(node, UI.DateTimePicker.DATA_KEY) === instance,
+                };
+            });
+
+            for (const { name, method, message } of state.errors) {
+                expect(message, `${name} (${method})`).toBe('TypeError: DateTimePicker must be created on an input element.');
+            }
+            expect(state.unchanged).toBe(true);
+        });
+
         test('rejects a non-input element', async ({ page }) => {
             expect(await page.evaluate(() => {
                 try {
@@ -152,6 +198,47 @@ test.describe('DateTimePicker', () => {
         }
 
         test.describe('failed initialization', () => {
+            test('preserves untouched attributes when capturing initial state throws', async ({ page }) => {
+                const state = await page.evaluate(() => {
+                    const node = $.findOne('#date');
+                    $.setAttribute(node, {
+                        'class': 'original',
+                        'aria-controls': 'original-controls',
+                        'aria-expanded': 'false',
+                        'aria-describedby': 'original-description',
+                        'aria-busy': 'false',
+                    });
+                    const html = node.outerHTML;
+                    const getAttribute = Element.prototype.getAttribute;
+                    const failure = new Error('Cannot capture attributes');
+                    let originalError = false;
+
+                    Element.prototype.getAttribute = function(name) {
+                        if (this === node && name === 'aria-expanded') {
+                            throw failure;
+                        }
+
+                        return getAttribute.call(this, name);
+                    };
+
+                    try {
+                        UI.DateTimePicker.init(node);
+                    } catch (error) {
+                        originalError = error === failure;
+                    } finally {
+                        Element.prototype.getAttribute = getAttribute;
+                    }
+
+                    return {
+                        originalError,
+                        registered: $.hasData(node, UI.DateTimePicker.DATA_KEY),
+                        unchanged: node.outerHTML === html,
+                    };
+                });
+
+                expect(state).toEqual({ originalError: true, registered: false, unchanged: true });
+            });
+
             for (const step of [0, -1, 61, 1.5, NaN, Infinity, '5']) {
                 test(`rejects invalid minuteStepping ${step} without registering an instance`, async ({ page }) => {
                     expect(await page.evaluate((minuteStepping) => {

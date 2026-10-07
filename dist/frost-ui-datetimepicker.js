@@ -629,7 +629,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			set: "Set",
 			togglePeriod: "Toggle Period"
 		};
-		#attributes = null;
+		#attributes = /* @__PURE__ */ new Map();
 		#changeHandler = null;
 		#clickHandler = null;
 		#closeTable = null;
@@ -716,15 +716,15 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		* @param {DateTimePickerOptions} [options] The component options.
 		*/
 		constructor(node, options) {
-			if (!_fr0st_query.default._isElement(node) || _fr0st_query.default.getProperty(node, "tagName") !== "INPUT") throw new TypeError("DateTimePicker must be created on an input element.");
+			if (!_fr0st_query.default._isElement(node) || !_fr0st_query.default.is(node, "input")) throw new TypeError("DateTimePicker must be created on an input element.");
 			super(node, options);
-			this.#attributes = new Map([
-				"aria-controls",
-				"aria-expanded",
-				"aria-haspopup"
-			].map((name) => [name, _fr0st_query.default.getAttribute(node, name)]));
-			this.#form = _fr0st_query.default.getProperty(node, "form");
 			try {
+				this.#attributes = new Map([
+					"aria-controls",
+					"aria-expanded",
+					"aria-haspopup"
+				].map((name) => [name, _fr0st_query.default.getAttribute(node, name)]));
+				this.#form = _fr0st_query.default.getProperty(node, "form");
 				this.#dateOptions = {
 					locale: this.options.locale || _fr0st_datetime.default.getDefaultLocale(),
 					timeZone: this.options.timeZone || _fr0st_datetime.default.getDefaultTimeZone()
