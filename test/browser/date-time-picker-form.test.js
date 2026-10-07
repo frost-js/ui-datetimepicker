@@ -295,6 +295,45 @@ test.describe('DateTimePicker forms', () => {
             await expect(page.getByRole('button', { name: 'September 16, 2026', exact: true })).toHaveAttribute('aria-pressed', 'true');
         });
 
+        for (const multiDate of [false, true]) {
+            for (const listenerOrder of ['before', 'after']) {
+                test(`retains an accepted reset when a later reset is canceled (multiDate=${multiDate}, listener=${listenerOrder})`, async ({ page }) => {
+                    await page.clock.install({ time: new Date('2026-09-15T12:30:00Z') });
+                    await page.clock.pauseAt(new Date('2026-09-15T12:30:01Z'));
+                    await page.evaluate(({ multiDate, listenerOrder }) => {
+                        const form = $.findOne('#form');
+                        let cancel = false;
+                        const handler = (event) => {
+                            if (cancel) {
+                                event.preventDefault();
+                            }
+                        };
+                        if (listenerOrder === 'before') {
+                            form.addEventListener('reset', handler);
+                        }
+                        const picker = UI.DateTimePicker.init($.findOne('#date'), { inline: true, multiDate });
+                        picker.setDate(multiDate ? ['2026-10-16', '2026-10-17'] : '2026-10-16');
+                        $.addEvent('#date', 'change', (event) => $.setDataset(event.target, 'changed', true));
+                        if (listenerOrder === 'after') {
+                            form.addEventListener('reset', handler);
+                        }
+                        form.reset();
+                        cancel = true;
+                        form.reset();
+                    }, { multiDate, listenerOrder });
+                    await page.clock.runFor(1);
+
+                    await expect(page.locator('#date')).toHaveValue('2026-09-15');
+                    await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toHaveAttribute('aria-pressed', 'true');
+                    await expect(page.locator('#date')).not.toHaveAttribute('data-changed');
+                    expect(await page.evaluate((multiple) => {
+                        const date = $('#date').datetimepicker('getDate');
+                        return multiple ? date.map((value) => value.format('yyyy-MM-dd')) : date.format('yyyy-MM-dd');
+                    }, multiDate)).toEqual(multiDate ? ['2026-09-15'] : '2026-09-15');
+                });
+            }
+        }
+
         test('cancels pending reset work on disposal', async ({ page }) => {
             await page.clock.install();
             await page.evaluate(() => {

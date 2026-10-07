@@ -215,7 +215,7 @@ export default class DateTimePicker extends BaseComponent {
     #refreshing = false;
     #releaseDisplay;
     #resetHandler = null;
-    #resetTimer;
+    #resetTimers = new Set();
     #selectionId = 0;
     #setBtn;
     #showDateTable;
@@ -401,7 +401,10 @@ export default class DateTimePicker extends BaseComponent {
         ++this.#viewTransitionId;
         ++this.#selectionId;
 
-        clearTimeout(this.#resetTimer);
+        for (const timer of this.#resetTimers) {
+            clearTimeout(timer);
+        }
+        this.#resetTimers.clear();
         this.#observer?.disconnect();
 
         // The native input and form survive disposal, so remove only our handlers.
@@ -917,10 +920,10 @@ export default class DateTimePicker extends BaseComponent {
                     return;
                 }
 
-                clearTimeout(this.#resetTimer);
-
                 // The browser restores native values after the reset event.
-                this.#resetTimer = setTimeout(() => {
+                const timer = setTimeout(() => {
+                    this.#resetTimers.delete(timer);
+
                     if (!this.node || event.defaultPrevented) {
                         return;
                     }
@@ -931,6 +934,7 @@ export default class DateTimePicker extends BaseComponent {
                     this.#keepDate = false;
                     this.hide();
                 }, 0);
+                this.#resetTimers.add(timer);
             };
 
             $.addEvent(this.#form, 'reset.ui.datetimepicker', this.#resetHandler);

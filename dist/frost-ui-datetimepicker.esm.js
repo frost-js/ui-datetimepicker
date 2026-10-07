@@ -635,7 +635,7 @@ var DateTimePicker = class extends BaseComponent {
 	#refreshing = false;
 	#releaseDisplay;
 	#resetHandler = null;
-	#resetTimer;
+	#resetTimers = /* @__PURE__ */ new Set();
 	#selectionId = 0;
 	#setBtn;
 	#showDateTable;
@@ -754,7 +754,8 @@ var DateTimePicker = class extends BaseComponent {
 		++this.#transitionId;
 		++this.#viewTransitionId;
 		++this.#selectionId;
-		clearTimeout(this.#resetTimer);
+		for (const timer of this.#resetTimers) clearTimeout(timer);
+		this.#resetTimers.clear();
 		this.#observer?.disconnect();
 		if (this.#changeHandler) $.removeEvent(this.node, "change.ui.datetimepicker", this.#changeHandler);
 		if (this.#inputHandler) $.removeEvent(this.node, "input.ui.datetimepicker", this.#inputHandler);
@@ -1087,8 +1088,8 @@ var DateTimePicker = class extends BaseComponent {
 		if (this.#form) {
 			this.#resetHandler = (event) => {
 				if (!this.node) return;
-				clearTimeout(this.#resetTimer);
-				this.#resetTimer = setTimeout(() => {
+				const timer = setTimeout(() => {
+					this.#resetTimers.delete(timer);
 					if (!this.node || event.defaultPrevented) return;
 					this.#date = null;
 					this.#dates = [];
@@ -1096,6 +1097,7 @@ var DateTimePicker = class extends BaseComponent {
 					this.#keepDate = false;
 					this.hide();
 				}, 0);
+				this.#resetTimers.add(timer);
 			};
 			$.addEvent(this.#form, "reset.ui.datetimepicker", this.#resetHandler);
 		}

@@ -667,7 +667,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#refreshing = false;
 		#releaseDisplay;
 		#resetHandler = null;
-		#resetTimer;
+		#resetTimers = /* @__PURE__ */ new Set();
 		#selectionId = 0;
 		#setBtn;
 		#showDateTable;
@@ -786,7 +786,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			++this.#transitionId;
 			++this.#viewTransitionId;
 			++this.#selectionId;
-			clearTimeout(this.#resetTimer);
+			for (const timer of this.#resetTimers) clearTimeout(timer);
+			this.#resetTimers.clear();
 			this.#observer?.disconnect();
 			if (this.#changeHandler) _fr0st_query.default.removeEvent(this.node, "change.ui.datetimepicker", this.#changeHandler);
 			if (this.#inputHandler) _fr0st_query.default.removeEvent(this.node, "input.ui.datetimepicker", this.#inputHandler);
@@ -1119,8 +1120,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (this.#form) {
 				this.#resetHandler = (event) => {
 					if (!this.node) return;
-					clearTimeout(this.#resetTimer);
-					this.#resetTimer = setTimeout(() => {
+					const timer = setTimeout(() => {
+						this.#resetTimers.delete(timer);
 						if (!this.node || event.defaultPrevented) return;
 						this.#date = null;
 						this.#dates = [];
@@ -1128,6 +1129,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 						this.#keepDate = false;
 						this.hide();
 					}, 0);
+					this.#resetTimers.add(timer);
 				};
 				_fr0st_query.default.addEvent(this.#form, "reset.ui.datetimepicker", this.#resetHandler);
 			}
