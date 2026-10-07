@@ -598,8 +598,6 @@ var DateTimePicker = class extends BaseComponent {
 		togglePeriod: "Toggle Period"
 	};
 	#attributes = /* @__PURE__ */ new Map();
-	#changeHandler = null;
-	#clickHandler = null;
 	#closeTable = null;
 	#container = null;
 	#date = null;
@@ -611,7 +609,6 @@ var DateTimePicker = class extends BaseComponent {
 	#defaultView;
 	#focusedDateItem = null;
 	#focusedTimeItem = null;
-	#focusHandler = null;
 	#form = null;
 	#format;
 	#hasDate;
@@ -619,9 +616,7 @@ var DateTimePicker = class extends BaseComponent {
 	#hasMinutes;
 	#hasMonth;
 	#hasYear;
-	#inputHandler = null;
 	#keepDate;
-	#keydownHandler = null;
 	#lifecycleEvent = false;
 	#maxDate = null;
 	#menuNode = null;
@@ -634,7 +629,6 @@ var DateTimePicker = class extends BaseComponent {
 	#popper = null;
 	#refreshing = false;
 	#releaseDisplay = null;
-	#resetHandler = null;
 	#resetTimers = /* @__PURE__ */ new Set();
 	#selectionId = 0;
 	#setBtn = null;
@@ -757,12 +751,6 @@ var DateTimePicker = class extends BaseComponent {
 		for (const timer of this.#resetTimers) clearTimeout(timer);
 		this.#resetTimers.clear();
 		this.#observer?.disconnect();
-		if (this.#changeHandler) $.removeEvent(this.node, "change.ui.datetimepicker", this.#changeHandler);
-		if (this.#inputHandler) $.removeEvent(this.node, "input.ui.datetimepicker", this.#inputHandler);
-		if (this.#clickHandler) $.removeEvent(this.node, "click.ui.datetimepicker", this.#clickHandler);
-		if (this.#focusHandler) $.removeEvent(this.node, "focus.ui.datetimepicker", this.#focusHandler);
-		if (this.#keydownHandler) $.removeEvent(this.node, "keydown.ui.datetimepicker", this.#keydownHandler);
-		if (this.#form && this.#resetHandler) $.removeEvent(this.#form, "reset.ui.datetimepicker", this.#resetHandler);
 		for (const node of [
 			this.#menuNode,
 			this.#dateContainer,
@@ -778,12 +766,6 @@ var DateTimePicker = class extends BaseComponent {
 		this.#releaseDisplay?.();
 		for (const [name, value] of this.#attributes) if (value === null) $.removeAttribute(this.node, name);
 		else $.setAttribute(this.node, { [name]: value });
-		this.#changeHandler = null;
-		this.#clickHandler = null;
-		this.#focusHandler = null;
-		this.#inputHandler = null;
-		this.#keydownHandler = null;
-		this.#resetHandler = null;
 		this.#open = false;
 		this.#date = null;
 		this.#dates = null;
@@ -1077,30 +1059,25 @@ var DateTimePicker = class extends BaseComponent {
 	* Attaches events for the DateTimePicker.
 	*/
 	#events() {
-		this.#changeHandler = (event) => {
+		this.listen(this.node, "change.ui.datetimepicker", (event) => {
 			if (this.node && !event.skipUpdate) this.#readInput(true);
-		};
-		this.#inputHandler = () => {
+		});
+		this.listen(this.node, "input.ui.datetimepicker", () => {
 			if (this.node) this.#readInput(false);
-		};
-		$.addEvent(this.node, "change.ui.datetimepicker", this.#changeHandler);
-		$.addEvent(this.node, "input.ui.datetimepicker", this.#inputHandler);
-		if (this.#form) {
-			this.#resetHandler = (event) => {
-				if (!this.node) return;
-				const timer = setTimeout(() => {
-					this.#resetTimers.delete(timer);
-					if (!this.node || event.defaultPrevented) return;
-					this.#date = null;
-					this.#dates = [];
-					this.#readInput(true);
-					this.#keepDate = false;
-					this.hide();
-				}, 0);
-				this.#resetTimers.add(timer);
-			};
-			$.addEvent(this.#form, "reset.ui.datetimepicker", this.#resetHandler);
-		}
+		});
+		if (this.#form) this.listen(this.#form, "reset.ui.datetimepicker", (event) => {
+			if (!this.node) return;
+			const timer = setTimeout(() => {
+				this.#resetTimers.delete(timer);
+				if (!this.node || event.defaultPrevented) return;
+				this.#date = null;
+				this.#dates = [];
+				this.#readInput(true);
+				this.#keepDate = false;
+				this.hide();
+			}, 0);
+			this.#resetTimers.add(timer);
+		});
 		if (this.#hasYear) this.#eventsDate();
 		if (this.#hasHours) this.#eventsTime();
 		$.addEvent(this.#menuNode, "click.ui.datetimepicker", (event) => {
@@ -1118,18 +1095,16 @@ var DateTimePicker = class extends BaseComponent {
 			attributeFilter: ["disabled"]
 		});
 		if (this.options.inline) return;
-		this.#clickHandler = (event) => {
+		this.listen(this.node, "click.ui.datetimepicker", (event) => {
 			if (!this.node) return;
 			if (this.#useModal) event.stopPropagation();
 			this.show();
-		};
-		$.addEvent(this.node, "click.ui.datetimepicker", this.#clickHandler);
+		});
 		if (!this.#useModal) {
-			this.#focusHandler = () => {
+			this.listen(this.node, "focus.ui.datetimepicker", () => {
 				if (!this.node || !$.isSame(this.node, document.activeElement)) return;
 				this.show();
-			};
-			$.addEvent(this.node, "focus.ui.datetimepicker", this.#focusHandler);
+			});
 			$.addEvent(this.#menuNode, "keydown.ui.datetimepicker", (event) => {
 				if (!this.node || event.code !== "Tab") return;
 				const focusableNodes = $.find("[tabindex=\"0\"]", this.#menuNode);
@@ -1143,7 +1118,7 @@ var DateTimePicker = class extends BaseComponent {
 				}
 			});
 		}
-		this.#keydownHandler = (event) => {
+		this.listen(this.node, "keydown.ui.datetimepicker", (event) => {
 			if (!this.node) return;
 			switch (event.code) {
 				case "Enter":
@@ -1164,8 +1139,7 @@ var DateTimePicker = class extends BaseComponent {
 					$.focus(focusNode);
 				}
 			}
-		};
-		$.addEvent(this.node, "keydown.ui.datetimepicker", this.#keydownHandler);
+		});
 	}
 	/**
 	* Attaches date events for the DateTimePicker.

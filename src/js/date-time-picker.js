@@ -178,8 +178,6 @@ export default class DateTimePicker extends BaseComponent {
     };
 
     #attributes = new Map();
-    #changeHandler = null;
-    #clickHandler = null;
     #closeTable = null;
     #container = null;
     #date = null;
@@ -191,7 +189,6 @@ export default class DateTimePicker extends BaseComponent {
     #defaultView;
     #focusedDateItem = null;
     #focusedTimeItem = null;
-    #focusHandler = null;
     #form = null;
     #format;
     #hasDate;
@@ -199,9 +196,7 @@ export default class DateTimePicker extends BaseComponent {
     #hasMinutes;
     #hasMonth;
     #hasYear;
-    #inputHandler = null;
     #keepDate;
-    #keydownHandler = null;
     #lifecycleEvent = false;
     #maxDate = null;
     #menuNode = null;
@@ -214,7 +209,6 @@ export default class DateTimePicker extends BaseComponent {
     #popper = null;
     #refreshing = false;
     #releaseDisplay = null;
-    #resetHandler = null;
     #resetTimers = new Set();
     #selectionId = 0;
     #setBtn = null;
@@ -407,31 +401,6 @@ export default class DateTimePicker extends BaseComponent {
         this.#resetTimers.clear();
         this.#observer?.disconnect();
 
-        // The native input and form survive disposal, so remove only our handlers.
-        if (this.#changeHandler) {
-            $.removeEvent(this.node, 'change.ui.datetimepicker', this.#changeHandler);
-        }
-
-        if (this.#inputHandler) {
-            $.removeEvent(this.node, 'input.ui.datetimepicker', this.#inputHandler);
-        }
-
-        if (this.#clickHandler) {
-            $.removeEvent(this.node, 'click.ui.datetimepicker', this.#clickHandler);
-        }
-
-        if (this.#focusHandler) {
-            $.removeEvent(this.node, 'focus.ui.datetimepicker', this.#focusHandler);
-        }
-
-        if (this.#keydownHandler) {
-            $.removeEvent(this.node, 'keydown.ui.datetimepicker', this.#keydownHandler);
-        }
-
-        if (this.#form && this.#resetHandler) {
-            $.removeEvent(this.#form, 'reset.ui.datetimepicker', this.#resetHandler);
-        }
-
         for (const node of [this.#menuNode, this.#dateContainer, this.#timeContainer]) {
             if (node) {
                 $.stop(node);
@@ -464,13 +433,6 @@ export default class DateTimePicker extends BaseComponent {
                 $.setAttribute(this.node, { [name]: value });
             }
         }
-
-        this.#changeHandler = null;
-        this.#clickHandler = null;
-        this.#focusHandler = null;
-        this.#inputHandler = null;
-        this.#keydownHandler = null;
-        this.#resetHandler = null;
 
         this.#open = false;
         this.#date = null;
@@ -899,23 +861,19 @@ export default class DateTimePicker extends BaseComponent {
      * Attaches events for the DateTimePicker.
      */
     #events() {
-        this.#changeHandler = (event) => {
+        this.listen(this.node, 'change.ui.datetimepicker', (event) => {
             if (this.node && !event.skipUpdate) {
                 this.#readInput(true);
             }
-        };
-
-        this.#inputHandler = () => {
+        });
+        this.listen(this.node, 'input.ui.datetimepicker', () => {
             if (this.node) {
                 this.#readInput(false);
             }
-        };
-
-        $.addEvent(this.node, 'change.ui.datetimepicker', this.#changeHandler);
-        $.addEvent(this.node, 'input.ui.datetimepicker', this.#inputHandler);
+        });
 
         if (this.#form) {
-            this.#resetHandler = (event) => {
+            this.listen(this.#form, 'reset.ui.datetimepicker', (event) => {
                 if (!this.node) {
                     return;
                 }
@@ -935,9 +893,7 @@ export default class DateTimePicker extends BaseComponent {
                     this.hide();
                 }, 0);
                 this.#resetTimers.add(timer);
-            };
-
-            $.addEvent(this.#form, 'reset.ui.datetimepicker', this.#resetHandler);
+            });
         }
 
         if (this.#hasYear) {
@@ -975,7 +931,7 @@ export default class DateTimePicker extends BaseComponent {
             return;
         }
 
-        this.#clickHandler = (event) => {
+        this.listen(this.node, 'click.ui.datetimepicker', (event) => {
             if (!this.node) {
                 return;
             }
@@ -986,20 +942,16 @@ export default class DateTimePicker extends BaseComponent {
             }
 
             this.show();
-        };
-
-        $.addEvent(this.node, 'click.ui.datetimepicker', this.#clickHandler);
+        });
 
         if (!this.#useModal) {
-            this.#focusHandler = () => {
+            this.listen(this.node, 'focus.ui.datetimepicker', () => {
                 if (!this.node || !$.isSame(this.node, document.activeElement)) {
                     return;
                 }
 
                 this.show();
-            };
-
-            $.addEvent(this.node, 'focus.ui.datetimepicker', this.#focusHandler);
+            });
 
             $.addEvent(this.#menuNode, 'keydown.ui.datetimepicker', (event) => {
                 if (!this.node || event.code !== 'Tab') {
@@ -1021,7 +973,7 @@ export default class DateTimePicker extends BaseComponent {
             });
         }
 
-        this.#keydownHandler = (event) => {
+        this.listen(this.node, 'keydown.ui.datetimepicker', (event) => {
             if (!this.node) {
                 return;
             }
@@ -1062,9 +1014,7 @@ export default class DateTimePicker extends BaseComponent {
                     }
                     break;
             }
-        };
-
-        $.addEvent(this.node, 'keydown.ui.datetimepicker', this.#keydownHandler);
+        });
     }
 
     /**

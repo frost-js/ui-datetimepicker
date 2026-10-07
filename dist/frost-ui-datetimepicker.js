@@ -630,8 +630,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			togglePeriod: "Toggle Period"
 		};
 		#attributes = /* @__PURE__ */ new Map();
-		#changeHandler = null;
-		#clickHandler = null;
 		#closeTable = null;
 		#container = null;
 		#date = null;
@@ -643,7 +641,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#defaultView;
 		#focusedDateItem = null;
 		#focusedTimeItem = null;
-		#focusHandler = null;
 		#form = null;
 		#format;
 		#hasDate;
@@ -651,9 +648,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#hasMinutes;
 		#hasMonth;
 		#hasYear;
-		#inputHandler = null;
 		#keepDate;
-		#keydownHandler = null;
 		#lifecycleEvent = false;
 		#maxDate = null;
 		#menuNode = null;
@@ -666,7 +661,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#popper = null;
 		#refreshing = false;
 		#releaseDisplay = null;
-		#resetHandler = null;
 		#resetTimers = /* @__PURE__ */ new Set();
 		#selectionId = 0;
 		#setBtn = null;
@@ -789,12 +783,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			for (const timer of this.#resetTimers) clearTimeout(timer);
 			this.#resetTimers.clear();
 			this.#observer?.disconnect();
-			if (this.#changeHandler) _fr0st_query.default.removeEvent(this.node, "change.ui.datetimepicker", this.#changeHandler);
-			if (this.#inputHandler) _fr0st_query.default.removeEvent(this.node, "input.ui.datetimepicker", this.#inputHandler);
-			if (this.#clickHandler) _fr0st_query.default.removeEvent(this.node, "click.ui.datetimepicker", this.#clickHandler);
-			if (this.#focusHandler) _fr0st_query.default.removeEvent(this.node, "focus.ui.datetimepicker", this.#focusHandler);
-			if (this.#keydownHandler) _fr0st_query.default.removeEvent(this.node, "keydown.ui.datetimepicker", this.#keydownHandler);
-			if (this.#form && this.#resetHandler) _fr0st_query.default.removeEvent(this.#form, "reset.ui.datetimepicker", this.#resetHandler);
 			for (const node of [
 				this.#menuNode,
 				this.#dateContainer,
@@ -810,12 +798,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.#releaseDisplay?.();
 			for (const [name, value] of this.#attributes) if (value === null) _fr0st_query.default.removeAttribute(this.node, name);
 			else _fr0st_query.default.setAttribute(this.node, { [name]: value });
-			this.#changeHandler = null;
-			this.#clickHandler = null;
-			this.#focusHandler = null;
-			this.#inputHandler = null;
-			this.#keydownHandler = null;
-			this.#resetHandler = null;
 			this.#open = false;
 			this.#date = null;
 			this.#dates = null;
@@ -1109,30 +1091,25 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		* Attaches events for the DateTimePicker.
 		*/
 		#events() {
-			this.#changeHandler = (event) => {
+			this.listen(this.node, "change.ui.datetimepicker", (event) => {
 				if (this.node && !event.skipUpdate) this.#readInput(true);
-			};
-			this.#inputHandler = () => {
+			});
+			this.listen(this.node, "input.ui.datetimepicker", () => {
 				if (this.node) this.#readInput(false);
-			};
-			_fr0st_query.default.addEvent(this.node, "change.ui.datetimepicker", this.#changeHandler);
-			_fr0st_query.default.addEvent(this.node, "input.ui.datetimepicker", this.#inputHandler);
-			if (this.#form) {
-				this.#resetHandler = (event) => {
-					if (!this.node) return;
-					const timer = setTimeout(() => {
-						this.#resetTimers.delete(timer);
-						if (!this.node || event.defaultPrevented) return;
-						this.#date = null;
-						this.#dates = [];
-						this.#readInput(true);
-						this.#keepDate = false;
-						this.hide();
-					}, 0);
-					this.#resetTimers.add(timer);
-				};
-				_fr0st_query.default.addEvent(this.#form, "reset.ui.datetimepicker", this.#resetHandler);
-			}
+			});
+			if (this.#form) this.listen(this.#form, "reset.ui.datetimepicker", (event) => {
+				if (!this.node) return;
+				const timer = setTimeout(() => {
+					this.#resetTimers.delete(timer);
+					if (!this.node || event.defaultPrevented) return;
+					this.#date = null;
+					this.#dates = [];
+					this.#readInput(true);
+					this.#keepDate = false;
+					this.hide();
+				}, 0);
+				this.#resetTimers.add(timer);
+			});
 			if (this.#hasYear) this.#eventsDate();
 			if (this.#hasHours) this.#eventsTime();
 			_fr0st_query.default.addEvent(this.#menuNode, "click.ui.datetimepicker", (event) => {
@@ -1150,18 +1127,16 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				attributeFilter: ["disabled"]
 			});
 			if (this.options.inline) return;
-			this.#clickHandler = (event) => {
+			this.listen(this.node, "click.ui.datetimepicker", (event) => {
 				if (!this.node) return;
 				if (this.#useModal) event.stopPropagation();
 				this.show();
-			};
-			_fr0st_query.default.addEvent(this.node, "click.ui.datetimepicker", this.#clickHandler);
+			});
 			if (!this.#useModal) {
-				this.#focusHandler = () => {
+				this.listen(this.node, "focus.ui.datetimepicker", () => {
 					if (!this.node || !_fr0st_query.default.isSame(this.node, document.activeElement)) return;
 					this.show();
-				};
-				_fr0st_query.default.addEvent(this.node, "focus.ui.datetimepicker", this.#focusHandler);
+				});
 				_fr0st_query.default.addEvent(this.#menuNode, "keydown.ui.datetimepicker", (event) => {
 					if (!this.node || event.code !== "Tab") return;
 					const focusableNodes = _fr0st_query.default.find("[tabindex=\"0\"]", this.#menuNode);
@@ -1175,7 +1150,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					}
 				});
 			}
-			this.#keydownHandler = (event) => {
+			this.listen(this.node, "keydown.ui.datetimepicker", (event) => {
 				if (!this.node) return;
 				switch (event.code) {
 					case "Enter":
@@ -1196,8 +1171,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 						_fr0st_query.default.focus(focusNode);
 					}
 				}
-			};
-			_fr0st_query.default.addEvent(this.node, "keydown.ui.datetimepicker", this.#keydownHandler);
+			});
 		}
 		/**
 		* Attaches date events for the DateTimePicker.
