@@ -1,6 +1,7 @@
 @forward "vars";
 
 @use "vars";
+@use "@fr0st/ui/src/scss/functions/helpers";
 
 .datetimepicker {
     --ui-datetimepicker-z-index: #{vars.$datetimepicker-z-index};
@@ -36,6 +37,10 @@
     &.datetimepicker-disabled {
         pointer-events: none;
     }
+
+    .datetimepicker-range-between {
+        background-color: vars.$datetimepicker-range-bg;
+    }
 }
 
 .datetimepicker-inline {
@@ -53,7 +58,12 @@
 
     &:focus-visible {
         outline: 0;
-        background-color: rgba(var(--ui-primary-rgb), .2);
+        background-color: helpers.color-alpha(primary, .2);
+    }
+
+    &.datetimepicker-range-between:hover {
+        color: vars.$datetimepicker-action-active-color;
+        background-color: vars.$datetimepicker-action-active-hover-bg;
     }
 
     &.datetimepicker-active {
@@ -73,7 +83,7 @@
 
     &:focus-visible {
         outline: 0;
-        background-color: rgba(var(--ui-primary-rgb), .2);
+        background-color: helpers.color-alpha(primary, .2);
     }
 }
 

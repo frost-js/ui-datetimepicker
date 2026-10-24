@@ -1,3 +1,5 @@
+@use "@fr0st/ui/src/scss/functions/helpers";
+
 // datetimepicker
 $datetimepicker-z-index: 1000 !default;
 $datetimepicker-width: 300px !default;
@@ -8,10 +10,11 @@ $datetimepicker-border-width: var(--ui-border-width) !default;
 $datetimepicker-border-color: var(--ui-border-color-translucent) !default;
 
 $datetimepicker-action-hover-color: $datetimepicker-color !default;
-$datetimepicker-action-hover-bg: rgba(var(--ui-body-color-rgb), .1) !default;
+$datetimepicker-action-hover-bg: helpers.color-alpha(body-color, .1) !default;
 $datetimepicker-action-active-bg: var(--ui-primary) !default;
 $datetimepicker-action-active-color: var(--ui-primary-contrast) !default;
 $datetimepicker-action-active-hover-bg: var(--ui-primary-highlight) !default;
+$datetimepicker-range-bg: var(--ui-primary-subtle) !default;
 $datetimepicker-disabled-cursor: not-allowed !default;
 $datetimepicker-disabled-opacity: .2 !default;
 $datetimepicker-time-font-size: var(--ui-font-size-lg) !default;

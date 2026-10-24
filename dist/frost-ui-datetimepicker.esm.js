@@ -433,6 +433,7 @@ function renderTimeSeparator(classes, options) {
 * a native Date, a DateTime, or null to clear a value.
 * @typedef {string|number|number[]|Date|DateTime|null} DateInput
 */
+/** @typedef {[DateTime, DateTime]} DateRange */
 /**
 * @typedef {object} DateTimePickerOptions
 * @property {string|null} [format=null] The date/time format; null derives it from the locale.
@@ -453,6 +454,8 @@ function renderTimeSeparator(classes, options) {
 * @property {((date: DateTime, node: HTMLElement) => void)|null} [renderYear=null] Customizes a year cell.
 * @property {boolean} [multiDate=false] Whether to allow multiple dates; excludes time formats.
 * @property {string} [multiDateSeparator=','] The separator between formatted dates.
+* @property {boolean} [range=false] Whether to select an inclusive pair of calendar dates.
+* @property {string} [rangeSeparator=' – '] The separator between formatted endpoints.
 * @property {number} [minuteStepping=1] The minute interval, an integer from 1 to 60.
 * @property {boolean} [useCurrent=false] Whether an empty single-date input starts at the current time.
 * @property {boolean} [keepOpen=false] Whether to keep the calendar open after selection.
@@ -504,6 +507,10 @@ var DateTimePicker = class extends BaseComponent {
 		modalTitle: "modal-title",
 		navigation: "text-primary fs-5 lh-1",
 		periodButton: "btn btn-primary d-block",
+		rangeBetween: "datetimepicker-range-between",
+		rangeEnd: "datetimepicker-range-end",
+		rangeStart: "datetimepicker-range-start",
+		rangeStatus: "visually-hidden",
 		row: "row g-0",
 		rowContainer: "p-0",
 		spacingNav: "py-2",
@@ -543,6 +550,8 @@ var DateTimePicker = class extends BaseComponent {
 		renderYear: null,
 		multiDate: false,
 		multiDateSeparator: ",",
+		range: false,
+		rangeSeparator: " – ",
 		minuteStepping: 1,
 		useCurrent: false,
 		keepOpen: false,
@@ -587,11 +596,16 @@ var DateTimePicker = class extends BaseComponent {
 		prevDecade: "Previous Decade",
 		prevMonth: "Previous Month",
 		prevYear: "Previous Year",
+		rangeEnd: "Range end",
+		rangeStart: "Range start",
 		selectDate: "Select Date",
 		selectDateTime: "Select Date & Time",
 		selectHour: "Select Hour",
 		selectMinute: "Select Minute",
 		selectMonth: "Select Month",
+		selectRange: "Select Date Range",
+		selectRangeEnd: "Select an end date.",
+		selectRangeStart: "Select a start date.",
 		selectTime: "Select Time",
 		selectYear: "Select Year",
 		set: "Set",
@@ -627,6 +641,9 @@ var DateTimePicker = class extends BaseComponent {
 	#open = false;
 	#originalDate = null;
 	#popper = null;
+	#range = null;
+	#rangeStart = null;
+	#rangeStatus = null;
 	#refreshing = false;
 	#releaseDisplay = null;
 	#resetTimers = /* @__PURE__ */ new Set();
@@ -694,14 +711,18 @@ var DateTimePicker = class extends BaseComponent {
 			if (!Number.isInteger(this.options.minuteStepping) || this.options.minuteStepping < 1 || this.options.minuteStepping > 60) throw new RangeError("minuteStepping must be an integer between 1 and 60.");
 			this.#useDayPeriod = checkDayPeriod(this.#dateOptions.locale);
 			this.#format = this.options.format;
-			if (!this.#format) this.#format = this.options.multiDate ? getDefaultDateFormat(this.#dateOptions.locale) : getDefaultFormat(this.#dateOptions.locale, this.#useDayPeriod);
+			if (!this.#format) this.#format = this.options.multiDate || this.options.range ? getDefaultDateFormat(this.#dateOptions.locale) : getDefaultFormat(this.#dateOptions.locale, this.#useDayPeriod);
 			const mobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
 			this.#useModal = !this.options.inline && (this.options.modal || this.options.mobileModal && mobile);
 			this.#checkFormat();
 			this.#minDate = this.#parseDate(this.options.minDate);
 			this.#maxDate = this.#parseDate(this.options.maxDate);
 			const value = $.getValue(this.node);
-			if (this.options.multiDate) this.#dates = this.#normalizeDates(value.split(this.options.multiDateSeparator).map((value) => this.#makeDate(value)));
+			if (this.options.range) {
+				const id = this.#selectionId;
+				const range = this.#normalizeRange(value.split(this.options.rangeSeparator).map((part) => this.#makeDate(part)));
+				if (this.node && id === this.#selectionId) this.#range = range;
+			} else if (this.options.multiDate) this.#dates = this.#normalizeDates(value.split(this.options.multiDateSeparator).map((value) => this.#makeDate(value)));
 			else {
 				this.#date = this.#makeDate(value);
 				if (!this.#date && this.options.useCurrent) this.#date = this.#now();
@@ -712,7 +733,7 @@ var DateTimePicker = class extends BaseComponent {
 			if (!this.#defaultDate) this.#defaultDate = this.#now();
 			if (this.#hasHours && !this.#isValid(this.#defaultDate)) this.#defaultDate = this.#findValidTime(this.#defaultDate) || this.#defaultDate;
 			if (!this.node) return;
-			if (this.#date || this.options.multiDate && this.#dates.length || value && !this.options.keepInvalid) this.#updateValue();
+			if (this.#date || this.#range || this.options.multiDate && this.#dates.length || value && !this.options.keepInvalid) this.#updateValue();
 			this.#render();
 			this.#events();
 			this.#resetView();
@@ -770,6 +791,9 @@ var DateTimePicker = class extends BaseComponent {
 		this.#date = null;
 		this.#dates = null;
 		this.#originalDate = null;
+		this.#range = null;
+		this.#rangeStart = null;
+		this.#rangeStatus = null;
 		this.#minDate = null;
 		this.#maxDate = null;
 		this.#viewDate = null;
@@ -807,10 +831,12 @@ var DateTimePicker = class extends BaseComponent {
 	}
 	/**
 	* Gets the current date(s).
-	* @returns {DateTime|null|DateTime[]} The current date(s).
+	* @returns {DateTime|DateRange|DateTime[]|null} The committed date(s).
 	*/
 	getDate() {
-		const committed = this.options.multiDate ? this.#dates : this.#date;
+		let committed;
+		if (this.options.range) committed = this.#range;
+		else committed = this.options.multiDate ? this.#dates : this.#date;
 		const date = this.#useModal && this.#open ? this.#originalDate : committed;
 		return Array.isArray(date) ? date.slice() : date;
 	}
@@ -845,6 +871,10 @@ var DateTimePicker = class extends BaseComponent {
 			return;
 		}
 		if (!this.#allowEvent("hide")) return;
+		if (this.#rangeStart) {
+			this.#rangeStart = null;
+			++this.#selectionId;
+		}
 		this.#open = false;
 		$.setAttribute(this.node, { "aria-expanded": false });
 		$.setAttribute($.find("[tabindex]", this.#menuNode), { tabindex: -1 });
@@ -871,15 +901,24 @@ var DateTimePicker = class extends BaseComponent {
 			this.#refresh();
 			return;
 		}
-		if (this.options.multiDate) this.#setDates(this.#dates);
+		if (this.options.range) this.#setRange(this.getDate());
+		else if (this.options.multiDate) this.#setDates(this.#dates);
 		else this.#setDate(this.#date);
 	}
 	/**
 	* Sets the current date(s).
-	* @param {DateInput|DateInput[]} date The input date, or an array of dates in multi-date mode.
+	* @param {DateInput|DateInput[]} date The input date, pair in range mode, or array in multi-date mode.
 	*/
 	setDate(date) {
-		if (this.options.multiDate) {
+		if (this.options.range) {
+			if (date === null || date === void 0) {
+				this.#setRange(null);
+				return;
+			}
+			if (!Array.isArray(date) || date.length !== 2) throw new TypeError("Range selection requires exactly two dates or null.");
+			const range = date.map((date) => this.#parseDate(date));
+			this.#setRange(range);
+		} else if (this.options.multiDate) {
 			const dates = this.#parseDates(date);
 			this.#setDates(dates);
 		} else {
@@ -1016,6 +1055,11 @@ var DateTimePicker = class extends BaseComponent {
 		if (this.#hasMinutes && !this.#hasHours) throw new Error("Minute selector requires hours.");
 		if (this.#hasHours && this.#hasYear && !this.#hasDate) throw new Error("Date/time selector requires a day of month.");
 		if (this.#hasHours && this.options.multiDate) throw new Error("Time selector cannot be used with multiDate option.");
+		if (this.options.range) {
+			if (this.options.multiDate) throw new Error("Range selection cannot be used with multiDate option.");
+			if (!this.#hasDate || this.#hasHours) throw new Error("Range selection requires a date-only format with year, month, and day.");
+			if (typeof this.options.rangeSeparator !== "string" || !this.options.rangeSeparator.length) throw new TypeError("rangeSeparator must be a nonempty string.");
+		}
 		this.#defaultView = this.options.defaultView;
 		if (this.#hasDate) this.#minView = "days";
 		else if (this.#hasMonth) this.#minView = "months";
@@ -1072,6 +1116,9 @@ var DateTimePicker = class extends BaseComponent {
 				if (!this.node || event.defaultPrevented) return;
 				this.#date = null;
 				this.#dates = [];
+				this.#range = null;
+				this.#rangeStart = null;
+				this.#originalDate = null;
 				this.#readInput(true);
 				this.#keepDate = false;
 				this.hide();
@@ -1171,7 +1218,23 @@ var DateTimePicker = class extends BaseComponent {
 			switch (action) {
 				case "setDate":
 					tempDate = tempDate.withYear($.getDataset(element, "uiYear"), $.getDataset(element, "uiMonth"), $.getDataset(element, "uiDate"));
-					if (this.options.multiDate) {
+					if (this.options.range) {
+						const id = this.#selectionId;
+						tempDate = tempDate.startOfDay();
+						if (!this.#isValid(tempDate, { granularity: "day" }) || !this.#isEditable() || id !== this.#selectionId) return;
+						this.#viewDate = tempDate;
+						if (this.#rangeStart) this.#setRange([this.#rangeStart, tempDate], { updateValue });
+						else {
+							this.#rangeStart = tempDate;
+							++this.#selectionId;
+							this.#refresh();
+						}
+						if (!this.node || id + 1 !== this.#selectionId || !this.options.inline && !this.#open) return;
+						if (this.#range && !this.#rangeStart && !this.options.keepOpen && !this.#useModal && !this.options.inline) {
+							$.focus(this.node);
+							this.hide();
+						} else $.focus(this.#focusedDateItem);
+					} else if (this.options.multiDate) {
 						let dates;
 						let granularity;
 						switch (this.#minView) {
@@ -1279,13 +1342,36 @@ var DateTimePicker = class extends BaseComponent {
 			this.#viewDate = tempView;
 			refreshDate();
 		});
+		if (this.options.range) {
+			$.addEventDelegate(this.#dateContainer, "mouseover.ui.datetimepicker", "[data-ui-date]", (event) => {
+				this.#previewRange(event.currentTarget);
+			});
+			$.addEvent(this.#dateContainer, "mouseout.ui.datetimepicker", () => {
+				this.#previewRange(null);
+			});
+		}
 		$.addEvent(this.#dateContainer, "keydown.ui.datetimepicker", (event) => {
 			if (!this.#isEditable()) return;
+			if (event.code === "Escape" && this.options.inline && this.#rangeStart) {
+				event.preventDefault();
+				event.stopPropagation();
+				this.#rangeStart = null;
+				++this.#selectionId;
+				this.#refresh();
+				if (this.node) $.focus(this.#focusedDateItem);
+				return;
+			}
 			const tempView = getKeyboardDate(this.#viewDate, this.#viewMode, event.code, event.ctrlKey);
 			if (!tempView) return;
 			event.preventDefault();
 			if (tempView.isSame(this.#viewDate)) return;
-			if (!this.#isBeforeMax(tempView, { allowSame: true }) || !this.#isAfterMin(tempView, { allowSame: true })) return;
+			if (!this.#isBeforeMax(tempView, {
+				granularity: this.options.range ? "day" : null,
+				allowSame: true
+			}) || !this.#isAfterMin(tempView, {
+				granularity: this.options.range ? "day" : null,
+				allowSame: true
+			})) return;
 			this.#viewDate = tempView;
 			refreshDate();
 		});
@@ -1299,7 +1385,7 @@ var DateTimePicker = class extends BaseComponent {
 				if (this.node) $.detach(this.#modal);
 				return false;
 			}
-			this.#originalDate = this.options.multiDate ? this.#dates.slice() : this.#date;
+			this.#originalDate = this.getDate();
 			this.#keepDate = false;
 			this.#open = true;
 			$.setAttribute(this.node, { "aria-expanded": true });
@@ -1314,11 +1400,19 @@ var DateTimePicker = class extends BaseComponent {
 				return false;
 			}
 			if (this.#keepDate) {
-				if (this.options.multiDate) this.#setDates(this.#dates);
+				if (this.options.range) this.#setRange(this.#range);
+				else if (this.options.multiDate) this.#setDates(this.#dates);
 				else this.#setDate(this.#date);
+			} else if (this.options.range) {
+				this.#range = this.#originalDate?.slice() || null;
+				++this.#selectionId;
 			} else if (this.options.multiDate) this.#dates = this.#originalDate.slice();
 			else this.#date = this.#originalDate;
 			if (!this.node) return false;
+			if (this.#rangeStart) {
+				this.#rangeStart = null;
+				++this.#selectionId;
+			}
 			this.#open = false;
 			$.setAttribute(this.node, { "aria-expanded": false });
 		});
@@ -1330,7 +1424,7 @@ var DateTimePicker = class extends BaseComponent {
 			$.triggerEvent(this.node, "hidden.ui.datetimepicker");
 		});
 		$.addEvent(this.#setBtn, "click.ui.datetimepicker", () => {
-			if (!this.node) return;
+			if (!this.#isEditable() || this.#rangeStart) return;
 			this.#keepDate = true;
 			this.hide();
 		});
@@ -1593,6 +1687,10 @@ var DateTimePicker = class extends BaseComponent {
 				break;
 			default: callback = isSameDay;
 		}
+		if (this.options.range) {
+			if (this.#rangeStart) return callback(date, this.#rangeStart);
+			return this.#range?.some((currentDate) => callback(date, currentDate)) || false;
+		}
 		if (this.options.multiDate) return this.#dates.some((currentDate) => callback(date, currentDate));
 		return this.#date && callback(date, this.#date);
 	}
@@ -1666,6 +1764,18 @@ var DateTimePicker = class extends BaseComponent {
 		return [...unique.values()].sort((a, b) => a.getTime() - b.getTime());
 	}
 	/**
+	* Validates and orders both endpoints without dropping equal dates.
+	* @param {(DateTime|null)[]|null} dates The input endpoints.
+	* @returns {DateRange|null} The normalized pair, or null if either endpoint is invalid.
+	*/
+	#normalizeRange(dates) {
+		if (dates?.length !== 2 || dates.some((date) => !date?.isValid)) return null;
+		const id = this.#selectionId;
+		const range = dates.map((date) => date.startOfDay());
+		for (const date of range) if (!this.#isValid(date, { granularity: "day" }) || !this.node || id !== this.#selectionId) return null;
+		return isAfterDay(range[0], range[1]) ? range.reverse() : range;
+	}
+	/**
 	* Creates a new DateTime object set to the current date/time.
 	* @returns {DateTime} The new DateTime.
 	*/
@@ -1703,14 +1813,37 @@ var DateTimePicker = class extends BaseComponent {
 		return dates.map((date) => this.#parseDate(date)).filter((date) => Boolean(date));
 	}
 	/**
+	* Highlights a pending range without changing selection or rebuilding cells.
+	* @param {HTMLElement|null} item The hovered day, or null to clear the preview.
+	*/
+	#previewRange(item) {
+		if (!this.#rangeStart || !this.#isEditable() || this.#viewMode !== "days") return;
+		$.removeClass(this.#dateItems, this.constructor.classes.rangeBetween);
+		if (!item || $.getAttribute(item, "aria-disabled") !== "false") return;
+		const date = this.#rangeStart.withYear($.getDataset(item, "uiYear"), $.getDataset(item, "uiMonth"), $.getDataset(item, "uiDate"));
+		const [start, end] = isBeforeDay(date, this.#rangeStart) ? [date, this.#rangeStart] : [this.#rangeStart, date];
+		for (const node of this.#dateItems) {
+			const current = this.#rangeStart.withYear($.getDataset(node, "uiYear"), $.getDataset(node, "uiMonth"), $.getDataset(node, "uiDate"));
+			if (!isSameDay(current, this.#rangeStart) && !isBeforeDay(current, start) && !isAfterDay(current, end)) $.addClass(node, this.constructor.classes.rangeBetween);
+		}
+	}
+	/**
 	* Synchronizes native input changes without emitting another change event.
 	* @param {boolean} normalize Whether to normalize or restore invalid text.
 	*/
 	#readInput(normalize) {
 		const options = this.options;
 		const value = $.getValue(this.node);
+		const id = this.#selectionId;
 		let valid;
-		if (options.multiDate) {
+		if (options.range) {
+			const committed = this.getDate();
+			const range = this.#normalizeRange(value.split(options.rangeSeparator).map((part) => this.#makeDate(part)));
+			if (!this.node || id !== this.#selectionId) return;
+			valid = Boolean(range);
+			this.#rangeStart = null;
+			this.#range = valid || !value || normalize && options.keepInvalid ? range : committed;
+		} else if (options.multiDate) {
 			const parsed = value.split(options.multiDateSeparator).map((part) => this.#makeDate(part));
 			const dates = this.#normalizeDates(parsed);
 			valid = dates.length > 0;
@@ -1723,7 +1856,10 @@ var DateTimePicker = class extends BaseComponent {
 		if (!this.node) return;
 		++this.#selectionId;
 		if (normalize && (valid || !options.keepInvalid)) this.#updateValue();
-		if (this.#useModal && this.#open) this.#originalDate = options.multiDate ? this.#dates.slice() : this.#date;
+		if (this.#useModal && this.#open) {
+			if (options.range) this.#originalDate = this.#range?.slice() || null;
+			else this.#originalDate = options.multiDate ? this.#dates.slice() : this.#date;
+		}
 		this.#resetView();
 		this.#refresh();
 	}
@@ -1736,7 +1872,20 @@ var DateTimePicker = class extends BaseComponent {
 		this.#refreshing = true;
 		const selectionId = this.#selectionId;
 		try {
-			if (this.options.showToolbar) {
+			if (this.options.range) {
+				const lang = this.constructor.lang;
+				const format = this.options.ariaFormat || this.#format;
+				let status = lang.selectRangeStart;
+				if (this.#rangeStart) status = `${lang.rangeStart}: ${this.#rangeStart.format(format)}. ${lang.selectRangeEnd}`;
+				else if (this.#range) status = `${lang.rangeStart}: ${this.#range[0].format(format)}. ${lang.rangeEnd}: ${this.#range[1].format(format)}. ${lang.selectRangeStart}`;
+				if (this.#rangeStatus && $.getText(this.#rangeStatus) !== status) $.setText(this.#rangeStatus, status);
+				if (this.options.showToolbar) {
+					const dates = this.#rangeStart ? [this.#rangeStart] : this.#range;
+					$.setText(this.#toolbarYear, "");
+					$.setText(this.#toolbarDate, dates ? dates.map((date) => date.format(this.#format)).join(this.options.rangeSeparator) : "- -");
+				}
+				$.setProperty(this.#setBtn, "disabled", !this.#isEditable() || Boolean(this.#rangeStart));
+			} else if (this.options.showToolbar) {
 				if (this.#date) {
 					if (this.#hasYear) $.setText(this.#toolbarYear, this.#date.format("yyyy"));
 					if (this.#hasDate) $.setText(this.#toolbarDate, this.#date.format("LLL d"));
@@ -1843,18 +1992,25 @@ var DateTimePicker = class extends BaseComponent {
 	*/
 	#refreshDisabled() {
 		if (!this.node) return;
-		if (!this.#isEditable()) $.addClass(this.#menuNode, this.constructor.classes.disabled);
-		else $.removeClass(this.#menuNode, this.constructor.classes.disabled);
+		if (!this.#isEditable()) {
+			$.addClass(this.#menuNode, this.constructor.classes.disabled);
+			if (this.#rangeStart) {
+				this.#rangeStart = null;
+				++this.#selectionId;
+				this.#refresh(false);
+			}
+		} else $.removeClass(this.#menuNode, this.constructor.classes.disabled);
 	}
 	/**
 	* Synchronizes editability without rebuilding panels or changing selection.
 	*/
 	#refreshState() {
 		this.#refreshDisabled();
+		if (!this.node) return;
 		for (const container of [this.#dateContainer, this.#timeContainer]) if (container) this.#refreshAccessibility(container);
 		if (!this.options.inline && !this.#open) $.setAttribute($.find("[tabindex]", this.#menuNode), { tabindex: -1 });
 		const editable = this.#isEditable();
-		$.setProperty(this.#setBtn, "disabled", !editable);
+		$.setProperty(this.#setBtn, "disabled", !editable || Boolean(this.#rangeStart));
 		if (!editable) this.hide();
 	}
 	/**
@@ -1911,6 +2067,18 @@ var DateTimePicker = class extends BaseComponent {
 		const description = $.getAttribute(this.node, "aria-describedby");
 		if (description) $.setAttribute(this.#menuNode, { "aria-describedby": description });
 		if (this.options.showToolbar) this.#renderToolbar();
+		if (this.options.range) {
+			$.setAttribute(this.#menuNode, { "aria-label": this.constructor.lang.selectRange });
+			this.#rangeStatus = $.create("p", {
+				class: this.constructor.classes.rangeStatus,
+				attributes: {
+					"role": "status",
+					"aria-live": "polite",
+					"aria-atomic": true
+				}
+			});
+			$.append(this.#menuNode, this.#rangeStatus);
+		}
 		this.#container = $.create("div", { class: this.constructor.classes.container });
 		$.append(this.#menuNode, this.#container);
 		if (this.#hasYear) {
@@ -2086,6 +2254,21 @@ var DateTimePicker = class extends BaseComponent {
 						$.setAttribute(td, { "aria-pressed": true });
 					} else if (!this.#viewDate.isSameMonth(current)) $.addClass(td, this.constructor.classes.tertiary);
 					if (now.isSameDay(current)) $.addClass(td, this.constructor.classes.today);
+					if (this.options.range) {
+						const start = this.#rangeStart || this.#range?.[0];
+						const end = this.#rangeStart ? null : this.#range?.[1];
+						const descriptions = [];
+						if (start && isSameDay(current, start)) {
+							$.addClass(td, this.constructor.classes.rangeStart);
+							descriptions.push(this.constructor.lang.rangeStart);
+						}
+						if (end && isSameDay(current, end)) {
+							$.addClass(td, this.constructor.classes.rangeEnd);
+							descriptions.push(this.constructor.lang.rangeEnd);
+						}
+						if (start && end && isAfterDay(current, start) && isBeforeDay(current, end)) $.addClass(td, this.constructor.classes.rangeBetween);
+						if (descriptions.length) $.setAttribute(td, { "aria-description": descriptions.join(", ") });
+					}
 					if (this.options.renderDay) {
 						this.options.renderDay(current, td);
 						if (!this.node) return;
@@ -2204,7 +2387,8 @@ var DateTimePicker = class extends BaseComponent {
 		const modalHeader = $.create("div", { class: this.constructor.classes.modalHeader });
 		$.append(modalContent, modalHeader);
 		let titleText;
-		if (!this.#hasHours) titleText = this.constructor.lang.selectDate;
+		if (this.options.range) titleText = this.constructor.lang.selectRange;
+		else if (!this.#hasHours) titleText = this.constructor.lang.selectDate;
 		else if (!this.#hasDate) titleText = this.constructor.lang.selectTime;
 		else titleText = this.constructor.lang.selectDateTime;
 		const modalTitle = $.create("h6", {
@@ -2550,7 +2734,8 @@ var DateTimePicker = class extends BaseComponent {
 		if (this.#timeContainer) $.stop(this.#timeContainer);
 		this.#viewMode = this.#minView;
 		this.#timeViewMode = null;
-		if (this.options.multiDate && this.#dates.length) this.#viewDate = this.#dates[0];
+		if (this.options.range && this.#range) this.#viewDate = this.#range[0];
+		else if (this.options.multiDate && this.#dates.length) this.#viewDate = this.#dates[0];
 		else if (this.#date) this.#viewDate = this.#date;
 		else {
 			this.#viewDate = this.#defaultDate;
@@ -2619,6 +2804,36 @@ var DateTimePicker = class extends BaseComponent {
 		});
 	}
 	/**
+	* Sets or clears a complete range.
+	* @param {(DateTime|null)[]|null} range The input endpoints.
+	* @param {object} options The assignment options.
+	* @param {boolean} [options.updateValue=true] Whether to commit the pair.
+	*/
+	#setRange(range, { updateValue = true } = {}) {
+		if (!this.#isEditable()) return;
+		const selectionId = this.#selectionId;
+		range = this.#normalizeRange(range);
+		if (!this.#isEditable() || selectionId !== this.#selectionId) return;
+		const oldRange = this.getDate();
+		const oldValue = $.getValue(this.node);
+		const id = ++this.#selectionId;
+		this.#range = range;
+		this.#rangeStart = null;
+		if (updateValue) {
+			this.#updateValue();
+			if (this.#useModal && this.#open) this.#originalDate = range?.slice() || null;
+		}
+		this.#refresh();
+		if (!this.node || id !== this.#selectionId || !updateValue || oldValue === $.getValue(this.node)) return;
+		$.triggerEvent(this.node, "change.ui.datetimepicker", {
+			data: { skipUpdate: true },
+			detail: {
+				old: oldRange,
+				new: range?.slice() || null
+			}
+		});
+	}
+	/**
 	* Switches panels and ignores completions from interrupted transitions.
 	* @param {HTMLElement} target The panel to show.
 	* @param {HTMLElement} source The panel to hide.
@@ -2643,7 +2858,8 @@ var DateTimePicker = class extends BaseComponent {
 	*/
 	#updateValue() {
 		let value;
-		if (this.options.multiDate) value = this.#dates.map((date) => date.format(this.#format)).join(this.options.multiDateSeparator);
+		if (this.options.range) value = this.#range ? this.#range.map((date) => date.format(this.#format)).join(this.options.rangeSeparator) : "";
+		else if (this.options.multiDate) value = this.#dates.map((date) => date.format(this.#format)).join(this.options.multiDateSeparator);
 		else value = this.#date ? this.#date.format(this.#format) : "";
 		$.setValue(this.node, value);
 	}

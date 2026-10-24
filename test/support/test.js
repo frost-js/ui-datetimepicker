@@ -7,9 +7,8 @@ const collectCoverage = process.env.FROST_UI_DATETIMEPICKER_COVERAGE === 'true';
 
 const test = base.extend({
     expectedBrowserErrors: [[], { option: true }],
-    entry: ['/', { option: true }],
     uiPage: [
-        async ({ page, entry, expectedBrowserErrors }, use, testInfo) => {
+        async ({ page, expectedBrowserErrors }, use, testInfo) => {
             const errors = [];
             page.on('pageerror', (error) => errors.push(error.message));
 
@@ -21,7 +20,7 @@ const test = base.extend({
 
             await setupClock(page);
 
-            await page.goto(entry, {
+            await page.goto('/', {
                 waitUntil: 'load',
             });
 

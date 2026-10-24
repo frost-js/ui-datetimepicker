@@ -465,6 +465,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 	* a native Date, a DateTime, or null to clear a value.
 	* @typedef {string|number|number[]|Date|DateTime|null} DateInput
 	*/
+	/** @typedef {[DateTime, DateTime]} DateRange */
 	/**
 	* @typedef {object} DateTimePickerOptions
 	* @property {string|null} [format=null] The date/time format; null derives it from the locale.
@@ -485,6 +486,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 	* @property {((date: DateTime, node: HTMLElement) => void)|null} [renderYear=null] Customizes a year cell.
 	* @property {boolean} [multiDate=false] Whether to allow multiple dates; excludes time formats.
 	* @property {string} [multiDateSeparator=','] The separator between formatted dates.
+	* @property {boolean} [range=false] Whether to select an inclusive pair of calendar dates.
+	* @property {string} [rangeSeparator=' – '] The separator between formatted endpoints.
 	* @property {number} [minuteStepping=1] The minute interval, an integer from 1 to 60.
 	* @property {boolean} [useCurrent=false] Whether an empty single-date input starts at the current time.
 	* @property {boolean} [keepOpen=false] Whether to keep the calendar open after selection.
@@ -536,6 +539,10 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			modalTitle: "modal-title",
 			navigation: "text-primary fs-5 lh-1",
 			periodButton: "btn btn-primary d-block",
+			rangeBetween: "datetimepicker-range-between",
+			rangeEnd: "datetimepicker-range-end",
+			rangeStart: "datetimepicker-range-start",
+			rangeStatus: "visually-hidden",
 			row: "row g-0",
 			rowContainer: "p-0",
 			spacingNav: "py-2",
@@ -575,6 +582,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			renderYear: null,
 			multiDate: false,
 			multiDateSeparator: ",",
+			range: false,
+			rangeSeparator: " – ",
 			minuteStepping: 1,
 			useCurrent: false,
 			keepOpen: false,
@@ -619,11 +628,16 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			prevDecade: "Previous Decade",
 			prevMonth: "Previous Month",
 			prevYear: "Previous Year",
+			rangeEnd: "Range end",
+			rangeStart: "Range start",
 			selectDate: "Select Date",
 			selectDateTime: "Select Date & Time",
 			selectHour: "Select Hour",
 			selectMinute: "Select Minute",
 			selectMonth: "Select Month",
+			selectRange: "Select Date Range",
+			selectRangeEnd: "Select an end date.",
+			selectRangeStart: "Select a start date.",
 			selectTime: "Select Time",
 			selectYear: "Select Year",
 			set: "Set",
@@ -659,6 +673,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#open = false;
 		#originalDate = null;
 		#popper = null;
+		#range = null;
+		#rangeStart = null;
+		#rangeStatus = null;
 		#refreshing = false;
 		#releaseDisplay = null;
 		#resetTimers = /* @__PURE__ */ new Set();
@@ -726,14 +743,18 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				if (!Number.isInteger(this.options.minuteStepping) || this.options.minuteStepping < 1 || this.options.minuteStepping > 60) throw new RangeError("minuteStepping must be an integer between 1 and 60.");
 				this.#useDayPeriod = checkDayPeriod(this.#dateOptions.locale);
 				this.#format = this.options.format;
-				if (!this.#format) this.#format = this.options.multiDate ? getDefaultDateFormat(this.#dateOptions.locale) : getDefaultFormat(this.#dateOptions.locale, this.#useDayPeriod);
+				if (!this.#format) this.#format = this.options.multiDate || this.options.range ? getDefaultDateFormat(this.#dateOptions.locale) : getDefaultFormat(this.#dateOptions.locale, this.#useDayPeriod);
 				const mobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
 				this.#useModal = !this.options.inline && (this.options.modal || this.options.mobileModal && mobile);
 				this.#checkFormat();
 				this.#minDate = this.#parseDate(this.options.minDate);
 				this.#maxDate = this.#parseDate(this.options.maxDate);
 				const value = _fr0st_query.default.getValue(this.node);
-				if (this.options.multiDate) this.#dates = this.#normalizeDates(value.split(this.options.multiDateSeparator).map((value) => this.#makeDate(value)));
+				if (this.options.range) {
+					const id = this.#selectionId;
+					const range = this.#normalizeRange(value.split(this.options.rangeSeparator).map((part) => this.#makeDate(part)));
+					if (this.node && id === this.#selectionId) this.#range = range;
+				} else if (this.options.multiDate) this.#dates = this.#normalizeDates(value.split(this.options.multiDateSeparator).map((value) => this.#makeDate(value)));
 				else {
 					this.#date = this.#makeDate(value);
 					if (!this.#date && this.options.useCurrent) this.#date = this.#now();
@@ -744,7 +765,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				if (!this.#defaultDate) this.#defaultDate = this.#now();
 				if (this.#hasHours && !this.#isValid(this.#defaultDate)) this.#defaultDate = this.#findValidTime(this.#defaultDate) || this.#defaultDate;
 				if (!this.node) return;
-				if (this.#date || this.options.multiDate && this.#dates.length || value && !this.options.keepInvalid) this.#updateValue();
+				if (this.#date || this.#range || this.options.multiDate && this.#dates.length || value && !this.options.keepInvalid) this.#updateValue();
 				this.#render();
 				this.#events();
 				this.#resetView();
@@ -802,6 +823,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.#date = null;
 			this.#dates = null;
 			this.#originalDate = null;
+			this.#range = null;
+			this.#rangeStart = null;
+			this.#rangeStatus = null;
 			this.#minDate = null;
 			this.#maxDate = null;
 			this.#viewDate = null;
@@ -839,10 +863,12 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		}
 		/**
 		* Gets the current date(s).
-		* @returns {DateTime|null|DateTime[]} The current date(s).
+		* @returns {DateTime|DateRange|DateTime[]|null} The committed date(s).
 		*/
 		getDate() {
-			const committed = this.options.multiDate ? this.#dates : this.#date;
+			let committed;
+			if (this.options.range) committed = this.#range;
+			else committed = this.options.multiDate ? this.#dates : this.#date;
 			const date = this.#useModal && this.#open ? this.#originalDate : committed;
 			return Array.isArray(date) ? date.slice() : date;
 		}
@@ -877,6 +903,10 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				return;
 			}
 			if (!this.#allowEvent("hide")) return;
+			if (this.#rangeStart) {
+				this.#rangeStart = null;
+				++this.#selectionId;
+			}
 			this.#open = false;
 			_fr0st_query.default.setAttribute(this.node, { "aria-expanded": false });
 			_fr0st_query.default.setAttribute(_fr0st_query.default.find("[tabindex]", this.#menuNode), { tabindex: -1 });
@@ -903,15 +933,24 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				this.#refresh();
 				return;
 			}
-			if (this.options.multiDate) this.#setDates(this.#dates);
+			if (this.options.range) this.#setRange(this.getDate());
+			else if (this.options.multiDate) this.#setDates(this.#dates);
 			else this.#setDate(this.#date);
 		}
 		/**
 		* Sets the current date(s).
-		* @param {DateInput|DateInput[]} date The input date, or an array of dates in multi-date mode.
+		* @param {DateInput|DateInput[]} date The input date, pair in range mode, or array in multi-date mode.
 		*/
 		setDate(date) {
-			if (this.options.multiDate) {
+			if (this.options.range) {
+				if (date === null || date === void 0) {
+					this.#setRange(null);
+					return;
+				}
+				if (!Array.isArray(date) || date.length !== 2) throw new TypeError("Range selection requires exactly two dates or null.");
+				const range = date.map((date) => this.#parseDate(date));
+				this.#setRange(range);
+			} else if (this.options.multiDate) {
 				const dates = this.#parseDates(date);
 				this.#setDates(dates);
 			} else {
@@ -1048,6 +1087,11 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (this.#hasMinutes && !this.#hasHours) throw new Error("Minute selector requires hours.");
 			if (this.#hasHours && this.#hasYear && !this.#hasDate) throw new Error("Date/time selector requires a day of month.");
 			if (this.#hasHours && this.options.multiDate) throw new Error("Time selector cannot be used with multiDate option.");
+			if (this.options.range) {
+				if (this.options.multiDate) throw new Error("Range selection cannot be used with multiDate option.");
+				if (!this.#hasDate || this.#hasHours) throw new Error("Range selection requires a date-only format with year, month, and day.");
+				if (typeof this.options.rangeSeparator !== "string" || !this.options.rangeSeparator.length) throw new TypeError("rangeSeparator must be a nonempty string.");
+			}
 			this.#defaultView = this.options.defaultView;
 			if (this.#hasDate) this.#minView = "days";
 			else if (this.#hasMonth) this.#minView = "months";
@@ -1104,6 +1148,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					if (!this.node || event.defaultPrevented) return;
 					this.#date = null;
 					this.#dates = [];
+					this.#range = null;
+					this.#rangeStart = null;
+					this.#originalDate = null;
 					this.#readInput(true);
 					this.#keepDate = false;
 					this.hide();
@@ -1203,7 +1250,23 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				switch (action) {
 					case "setDate":
 						tempDate = tempDate.withYear(_fr0st_query.default.getDataset(element, "uiYear"), _fr0st_query.default.getDataset(element, "uiMonth"), _fr0st_query.default.getDataset(element, "uiDate"));
-						if (this.options.multiDate) {
+						if (this.options.range) {
+							const id = this.#selectionId;
+							tempDate = tempDate.startOfDay();
+							if (!this.#isValid(tempDate, { granularity: "day" }) || !this.#isEditable() || id !== this.#selectionId) return;
+							this.#viewDate = tempDate;
+							if (this.#rangeStart) this.#setRange([this.#rangeStart, tempDate], { updateValue });
+							else {
+								this.#rangeStart = tempDate;
+								++this.#selectionId;
+								this.#refresh();
+							}
+							if (!this.node || id + 1 !== this.#selectionId || !this.options.inline && !this.#open) return;
+							if (this.#range && !this.#rangeStart && !this.options.keepOpen && !this.#useModal && !this.options.inline) {
+								_fr0st_query.default.focus(this.node);
+								this.hide();
+							} else _fr0st_query.default.focus(this.#focusedDateItem);
+						} else if (this.options.multiDate) {
 							let dates;
 							let granularity;
 							switch (this.#minView) {
@@ -1311,13 +1374,36 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				this.#viewDate = tempView;
 				refreshDate();
 			});
+			if (this.options.range) {
+				_fr0st_query.default.addEventDelegate(this.#dateContainer, "mouseover.ui.datetimepicker", "[data-ui-date]", (event) => {
+					this.#previewRange(event.currentTarget);
+				});
+				_fr0st_query.default.addEvent(this.#dateContainer, "mouseout.ui.datetimepicker", () => {
+					this.#previewRange(null);
+				});
+			}
 			_fr0st_query.default.addEvent(this.#dateContainer, "keydown.ui.datetimepicker", (event) => {
 				if (!this.#isEditable()) return;
+				if (event.code === "Escape" && this.options.inline && this.#rangeStart) {
+					event.preventDefault();
+					event.stopPropagation();
+					this.#rangeStart = null;
+					++this.#selectionId;
+					this.#refresh();
+					if (this.node) _fr0st_query.default.focus(this.#focusedDateItem);
+					return;
+				}
 				const tempView = getKeyboardDate(this.#viewDate, this.#viewMode, event.code, event.ctrlKey);
 				if (!tempView) return;
 				event.preventDefault();
 				if (tempView.isSame(this.#viewDate)) return;
-				if (!this.#isBeforeMax(tempView, { allowSame: true }) || !this.#isAfterMin(tempView, { allowSame: true })) return;
+				if (!this.#isBeforeMax(tempView, {
+					granularity: this.options.range ? "day" : null,
+					allowSame: true
+				}) || !this.#isAfterMin(tempView, {
+					granularity: this.options.range ? "day" : null,
+					allowSame: true
+				})) return;
 				this.#viewDate = tempView;
 				refreshDate();
 			});
@@ -1331,7 +1417,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					if (this.node) _fr0st_query.default.detach(this.#modal);
 					return false;
 				}
-				this.#originalDate = this.options.multiDate ? this.#dates.slice() : this.#date;
+				this.#originalDate = this.getDate();
 				this.#keepDate = false;
 				this.#open = true;
 				_fr0st_query.default.setAttribute(this.node, { "aria-expanded": true });
@@ -1346,11 +1432,19 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					return false;
 				}
 				if (this.#keepDate) {
-					if (this.options.multiDate) this.#setDates(this.#dates);
+					if (this.options.range) this.#setRange(this.#range);
+					else if (this.options.multiDate) this.#setDates(this.#dates);
 					else this.#setDate(this.#date);
+				} else if (this.options.range) {
+					this.#range = this.#originalDate?.slice() || null;
+					++this.#selectionId;
 				} else if (this.options.multiDate) this.#dates = this.#originalDate.slice();
 				else this.#date = this.#originalDate;
 				if (!this.node) return false;
+				if (this.#rangeStart) {
+					this.#rangeStart = null;
+					++this.#selectionId;
+				}
 				this.#open = false;
 				_fr0st_query.default.setAttribute(this.node, { "aria-expanded": false });
 			});
@@ -1362,7 +1456,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				_fr0st_query.default.triggerEvent(this.node, "hidden.ui.datetimepicker");
 			});
 			_fr0st_query.default.addEvent(this.#setBtn, "click.ui.datetimepicker", () => {
-				if (!this.node) return;
+				if (!this.#isEditable() || this.#rangeStart) return;
 				this.#keepDate = true;
 				this.hide();
 			});
@@ -1625,6 +1719,10 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					break;
 				default: callback = isSameDay;
 			}
+			if (this.options.range) {
+				if (this.#rangeStart) return callback(date, this.#rangeStart);
+				return this.#range?.some((currentDate) => callback(date, currentDate)) || false;
+			}
 			if (this.options.multiDate) return this.#dates.some((currentDate) => callback(date, currentDate));
 			return this.#date && callback(date, this.#date);
 		}
@@ -1698,6 +1796,18 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return [...unique.values()].sort((a, b) => a.getTime() - b.getTime());
 		}
 		/**
+		* Validates and orders both endpoints without dropping equal dates.
+		* @param {(DateTime|null)[]|null} dates The input endpoints.
+		* @returns {DateRange|null} The normalized pair, or null if either endpoint is invalid.
+		*/
+		#normalizeRange(dates) {
+			if (dates?.length !== 2 || dates.some((date) => !date?.isValid)) return null;
+			const id = this.#selectionId;
+			const range = dates.map((date) => date.startOfDay());
+			for (const date of range) if (!this.#isValid(date, { granularity: "day" }) || !this.node || id !== this.#selectionId) return null;
+			return isAfterDay(range[0], range[1]) ? range.reverse() : range;
+		}
+		/**
 		* Creates a new DateTime object set to the current date/time.
 		* @returns {DateTime} The new DateTime.
 		*/
@@ -1735,14 +1845,37 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			return dates.map((date) => this.#parseDate(date)).filter((date) => Boolean(date));
 		}
 		/**
+		* Highlights a pending range without changing selection or rebuilding cells.
+		* @param {HTMLElement|null} item The hovered day, or null to clear the preview.
+		*/
+		#previewRange(item) {
+			if (!this.#rangeStart || !this.#isEditable() || this.#viewMode !== "days") return;
+			_fr0st_query.default.removeClass(this.#dateItems, this.constructor.classes.rangeBetween);
+			if (!item || _fr0st_query.default.getAttribute(item, "aria-disabled") !== "false") return;
+			const date = this.#rangeStart.withYear(_fr0st_query.default.getDataset(item, "uiYear"), _fr0st_query.default.getDataset(item, "uiMonth"), _fr0st_query.default.getDataset(item, "uiDate"));
+			const [start, end] = isBeforeDay(date, this.#rangeStart) ? [date, this.#rangeStart] : [this.#rangeStart, date];
+			for (const node of this.#dateItems) {
+				const current = this.#rangeStart.withYear(_fr0st_query.default.getDataset(node, "uiYear"), _fr0st_query.default.getDataset(node, "uiMonth"), _fr0st_query.default.getDataset(node, "uiDate"));
+				if (!isSameDay(current, this.#rangeStart) && !isBeforeDay(current, start) && !isAfterDay(current, end)) _fr0st_query.default.addClass(node, this.constructor.classes.rangeBetween);
+			}
+		}
+		/**
 		* Synchronizes native input changes without emitting another change event.
 		* @param {boolean} normalize Whether to normalize or restore invalid text.
 		*/
 		#readInput(normalize) {
 			const options = this.options;
 			const value = _fr0st_query.default.getValue(this.node);
+			const id = this.#selectionId;
 			let valid;
-			if (options.multiDate) {
+			if (options.range) {
+				const committed = this.getDate();
+				const range = this.#normalizeRange(value.split(options.rangeSeparator).map((part) => this.#makeDate(part)));
+				if (!this.node || id !== this.#selectionId) return;
+				valid = Boolean(range);
+				this.#rangeStart = null;
+				this.#range = valid || !value || normalize && options.keepInvalid ? range : committed;
+			} else if (options.multiDate) {
 				const parsed = value.split(options.multiDateSeparator).map((part) => this.#makeDate(part));
 				const dates = this.#normalizeDates(parsed);
 				valid = dates.length > 0;
@@ -1755,7 +1888,10 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (!this.node) return;
 			++this.#selectionId;
 			if (normalize && (valid || !options.keepInvalid)) this.#updateValue();
-			if (this.#useModal && this.#open) this.#originalDate = options.multiDate ? this.#dates.slice() : this.#date;
+			if (this.#useModal && this.#open) {
+				if (options.range) this.#originalDate = this.#range?.slice() || null;
+				else this.#originalDate = options.multiDate ? this.#dates.slice() : this.#date;
+			}
 			this.#resetView();
 			this.#refresh();
 		}
@@ -1768,7 +1904,20 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.#refreshing = true;
 			const selectionId = this.#selectionId;
 			try {
-				if (this.options.showToolbar) {
+				if (this.options.range) {
+					const lang = this.constructor.lang;
+					const format = this.options.ariaFormat || this.#format;
+					let status = lang.selectRangeStart;
+					if (this.#rangeStart) status = `${lang.rangeStart}: ${this.#rangeStart.format(format)}. ${lang.selectRangeEnd}`;
+					else if (this.#range) status = `${lang.rangeStart}: ${this.#range[0].format(format)}. ${lang.rangeEnd}: ${this.#range[1].format(format)}. ${lang.selectRangeStart}`;
+					if (this.#rangeStatus && _fr0st_query.default.getText(this.#rangeStatus) !== status) _fr0st_query.default.setText(this.#rangeStatus, status);
+					if (this.options.showToolbar) {
+						const dates = this.#rangeStart ? [this.#rangeStart] : this.#range;
+						_fr0st_query.default.setText(this.#toolbarYear, "");
+						_fr0st_query.default.setText(this.#toolbarDate, dates ? dates.map((date) => date.format(this.#format)).join(this.options.rangeSeparator) : "- -");
+					}
+					_fr0st_query.default.setProperty(this.#setBtn, "disabled", !this.#isEditable() || Boolean(this.#rangeStart));
+				} else if (this.options.showToolbar) {
 					if (this.#date) {
 						if (this.#hasYear) _fr0st_query.default.setText(this.#toolbarYear, this.#date.format("yyyy"));
 						if (this.#hasDate) _fr0st_query.default.setText(this.#toolbarDate, this.#date.format("LLL d"));
@@ -1875,18 +2024,25 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		*/
 		#refreshDisabled() {
 			if (!this.node) return;
-			if (!this.#isEditable()) _fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.disabled);
-			else _fr0st_query.default.removeClass(this.#menuNode, this.constructor.classes.disabled);
+			if (!this.#isEditable()) {
+				_fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.disabled);
+				if (this.#rangeStart) {
+					this.#rangeStart = null;
+					++this.#selectionId;
+					this.#refresh(false);
+				}
+			} else _fr0st_query.default.removeClass(this.#menuNode, this.constructor.classes.disabled);
 		}
 		/**
 		* Synchronizes editability without rebuilding panels or changing selection.
 		*/
 		#refreshState() {
 			this.#refreshDisabled();
+			if (!this.node) return;
 			for (const container of [this.#dateContainer, this.#timeContainer]) if (container) this.#refreshAccessibility(container);
 			if (!this.options.inline && !this.#open) _fr0st_query.default.setAttribute(_fr0st_query.default.find("[tabindex]", this.#menuNode), { tabindex: -1 });
 			const editable = this.#isEditable();
-			_fr0st_query.default.setProperty(this.#setBtn, "disabled", !editable);
+			_fr0st_query.default.setProperty(this.#setBtn, "disabled", !editable || Boolean(this.#rangeStart));
 			if (!editable) this.hide();
 		}
 		/**
@@ -1943,6 +2099,18 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			const description = _fr0st_query.default.getAttribute(this.node, "aria-describedby");
 			if (description) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-describedby": description });
 			if (this.options.showToolbar) this.#renderToolbar();
+			if (this.options.range) {
+				_fr0st_query.default.setAttribute(this.#menuNode, { "aria-label": this.constructor.lang.selectRange });
+				this.#rangeStatus = _fr0st_query.default.create("p", {
+					class: this.constructor.classes.rangeStatus,
+					attributes: {
+						"role": "status",
+						"aria-live": "polite",
+						"aria-atomic": true
+					}
+				});
+				_fr0st_query.default.append(this.#menuNode, this.#rangeStatus);
+			}
 			this.#container = _fr0st_query.default.create("div", { class: this.constructor.classes.container });
 			_fr0st_query.default.append(this.#menuNode, this.#container);
 			if (this.#hasYear) {
@@ -2118,6 +2286,21 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 							_fr0st_query.default.setAttribute(td, { "aria-pressed": true });
 						} else if (!this.#viewDate.isSameMonth(current)) _fr0st_query.default.addClass(td, this.constructor.classes.tertiary);
 						if (now.isSameDay(current)) _fr0st_query.default.addClass(td, this.constructor.classes.today);
+						if (this.options.range) {
+							const start = this.#rangeStart || this.#range?.[0];
+							const end = this.#rangeStart ? null : this.#range?.[1];
+							const descriptions = [];
+							if (start && isSameDay(current, start)) {
+								_fr0st_query.default.addClass(td, this.constructor.classes.rangeStart);
+								descriptions.push(this.constructor.lang.rangeStart);
+							}
+							if (end && isSameDay(current, end)) {
+								_fr0st_query.default.addClass(td, this.constructor.classes.rangeEnd);
+								descriptions.push(this.constructor.lang.rangeEnd);
+							}
+							if (start && end && isAfterDay(current, start) && isBeforeDay(current, end)) _fr0st_query.default.addClass(td, this.constructor.classes.rangeBetween);
+							if (descriptions.length) _fr0st_query.default.setAttribute(td, { "aria-description": descriptions.join(", ") });
+						}
 						if (this.options.renderDay) {
 							this.options.renderDay(current, td);
 							if (!this.node) return;
@@ -2236,7 +2419,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			const modalHeader = _fr0st_query.default.create("div", { class: this.constructor.classes.modalHeader });
 			_fr0st_query.default.append(modalContent, modalHeader);
 			let titleText;
-			if (!this.#hasHours) titleText = this.constructor.lang.selectDate;
+			if (this.options.range) titleText = this.constructor.lang.selectRange;
+			else if (!this.#hasHours) titleText = this.constructor.lang.selectDate;
 			else if (!this.#hasDate) titleText = this.constructor.lang.selectTime;
 			else titleText = this.constructor.lang.selectDateTime;
 			const modalTitle = _fr0st_query.default.create("h6", {
@@ -2582,7 +2766,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			if (this.#timeContainer) _fr0st_query.default.stop(this.#timeContainer);
 			this.#viewMode = this.#minView;
 			this.#timeViewMode = null;
-			if (this.options.multiDate && this.#dates.length) this.#viewDate = this.#dates[0];
+			if (this.options.range && this.#range) this.#viewDate = this.#range[0];
+			else if (this.options.multiDate && this.#dates.length) this.#viewDate = this.#dates[0];
 			else if (this.#date) this.#viewDate = this.#date;
 			else {
 				this.#viewDate = this.#defaultDate;
@@ -2651,6 +2836,36 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			});
 		}
 		/**
+		* Sets or clears a complete range.
+		* @param {(DateTime|null)[]|null} range The input endpoints.
+		* @param {object} options The assignment options.
+		* @param {boolean} [options.updateValue=true] Whether to commit the pair.
+		*/
+		#setRange(range, { updateValue = true } = {}) {
+			if (!this.#isEditable()) return;
+			const selectionId = this.#selectionId;
+			range = this.#normalizeRange(range);
+			if (!this.#isEditable() || selectionId !== this.#selectionId) return;
+			const oldRange = this.getDate();
+			const oldValue = _fr0st_query.default.getValue(this.node);
+			const id = ++this.#selectionId;
+			this.#range = range;
+			this.#rangeStart = null;
+			if (updateValue) {
+				this.#updateValue();
+				if (this.#useModal && this.#open) this.#originalDate = range?.slice() || null;
+			}
+			this.#refresh();
+			if (!this.node || id !== this.#selectionId || !updateValue || oldValue === _fr0st_query.default.getValue(this.node)) return;
+			_fr0st_query.default.triggerEvent(this.node, "change.ui.datetimepicker", {
+				data: { skipUpdate: true },
+				detail: {
+					old: oldRange,
+					new: range?.slice() || null
+				}
+			});
+		}
+		/**
 		* Switches panels and ignores completions from interrupted transitions.
 		* @param {HTMLElement} target The panel to show.
 		* @param {HTMLElement} source The panel to hide.
@@ -2675,7 +2890,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		*/
 		#updateValue() {
 			let value;
-			if (this.options.multiDate) value = this.#dates.map((date) => date.format(this.#format)).join(this.options.multiDateSeparator);
+			if (this.options.range) value = this.#range ? this.#range.map((date) => date.format(this.#format)).join(this.options.rangeSeparator) : "";
+			else if (this.options.multiDate) value = this.#dates.map((date) => date.format(this.#format)).join(this.options.multiDateSeparator);
 			else value = this.#date ? this.#date.format(this.#format) : "";
 			_fr0st_query.default.setValue(this.node, value);
 		}

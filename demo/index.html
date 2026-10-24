@@ -149,11 +149,15 @@
         <section class="mb-5" id="selection">
             <header class="border-bottom pb-3 mb-4">
                 <h2 class="h3 mb-1">Selection and availability</h2>
-                <p class="text-body-secondary mb-0">Choose several dates or limit available appointments.</p>
+                <p class="text-body-secondary mb-0">Choose a range, several dates, or limit available appointments.</p>
             </header>
             <div class="row g-4">
                 <div class="col-md-6"><div class="card card-body h-100 p-4">
-                    <h3 class="h5">Multiple dates</h3>
+                    <h3 class="h5">Ranges and multiple dates</h3>
+                    <label class="mb-2" for="range-date">Trip dates</label>
+                    <input class="input-outline" id="range-date" type="text" autocomplete="off"
+                        data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd" data-ui-range="true" aria-describedby="range-help">
+                    <p class="form-text mb-3" id="range-help">Choose a start and end date. Both endpoints are included; selecting again starts a new range.</p>
                     <label class="mb-2" for="multi-date">Workshop days</label>
                     <input class="input-outline" id="multi-date" type="text" autocomplete="off"
                         data-ui-toggle="datetimepicker" data-ui-format="yyyy-MM-dd" data-ui-multi-date="true"

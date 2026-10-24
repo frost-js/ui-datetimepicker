@@ -11,6 +11,8 @@ import { adjustDate, createGrid, createTable, getDateKey, getKeyboardDate, rende
  * @typedef {string|number|number[]|Date|DateTime|null} DateInput
  */
 
+/** @typedef {[DateTime, DateTime]} DateRange */
+
 /**
  * @typedef {object} DateTimePickerOptions
  * @property {string|null} [format=null] The date/time format; null derives it from the locale.
@@ -31,6 +33,8 @@ import { adjustDate, createGrid, createTable, getDateKey, getKeyboardDate, rende
  * @property {((date: DateTime, node: HTMLElement) => void)|null} [renderYear=null] Customizes a year cell.
  * @property {boolean} [multiDate=false] Whether to allow multiple dates; excludes time formats.
  * @property {string} [multiDateSeparator=','] The separator between formatted dates.
+ * @property {boolean} [range=false] Whether to select an inclusive pair of calendar dates.
+ * @property {string} [rangeSeparator=' – '] The separator between formatted endpoints.
  * @property {number} [minuteStepping=1] The minute interval, an integer from 1 to 60.
  * @property {boolean} [useCurrent=false] Whether an empty single-date input starts at the current time.
  * @property {boolean} [keepOpen=false] Whether to keep the calendar open after selection.
@@ -83,6 +87,10 @@ export default class DateTimePicker extends BaseComponent {
         modalTitle: 'modal-title',
         navigation: 'text-primary fs-5 lh-1',
         periodButton: 'btn btn-primary d-block',
+        rangeBetween: 'datetimepicker-range-between',
+        rangeEnd: 'datetimepicker-range-end',
+        rangeStart: 'datetimepicker-range-start',
+        rangeStatus: 'visually-hidden',
         row: 'row g-0',
         rowContainer: 'p-0',
         spacingNav: 'py-2',
@@ -122,6 +130,8 @@ export default class DateTimePicker extends BaseComponent {
         renderYear: null,
         multiDate: false,
         multiDateSeparator: ',',
+        range: false,
+        rangeSeparator: ' – ',
         minuteStepping: 1,
         useCurrent: false,
         keepOpen: false,
@@ -166,11 +176,16 @@ export default class DateTimePicker extends BaseComponent {
         prevDecade: 'Previous Decade',
         prevMonth: 'Previous Month',
         prevYear: 'Previous Year',
+        rangeEnd: 'Range end',
+        rangeStart: 'Range start',
         selectDate: 'Select Date',
         selectDateTime: 'Select Date & Time',
         selectHour: 'Select Hour',
         selectMinute: 'Select Minute',
         selectMonth: 'Select Month',
+        selectRange: 'Select Date Range',
+        selectRangeEnd: 'Select an end date.',
+        selectRangeStart: 'Select a start date.',
         selectTime: 'Select Time',
         selectYear: 'Select Year',
         set: 'Set',
@@ -207,6 +222,9 @@ export default class DateTimePicker extends BaseComponent {
     #open = false;
     #originalDate = null;
     #popper = null;
+    #range = null;
+    #rangeStart = null;
+    #rangeStatus = null;
     #refreshing = false;
     #releaseDisplay = null;
     #resetTimers = new Set();
@@ -291,7 +309,7 @@ export default class DateTimePicker extends BaseComponent {
             this.#format = this.options.format;
 
             if (!this.#format) {
-                this.#format = this.options.multiDate ?
+                this.#format = this.options.multiDate || this.options.range ?
                     getDefaultDateFormat(this.#dateOptions.locale) :
                     getDefaultFormat(this.#dateOptions.locale, this.#useDayPeriod);
             }
@@ -305,7 +323,17 @@ export default class DateTimePicker extends BaseComponent {
 
             const value = $.getValue(this.node);
 
-            if (this.options.multiDate) {
+            if (this.options.range) {
+                const id = this.#selectionId;
+                const range = this.#normalizeRange(
+                    value.split(this.options.rangeSeparator)
+                        .map((part) => this.#makeDate(part)),
+                );
+
+                if (this.node && id === this.#selectionId) {
+                    this.#range = range;
+                }
+            } else if (this.options.multiDate) {
                 this.#dates = this.#normalizeDates(
                     value.split(this.options.multiDateSeparator)
                         .map((value) => this.#makeDate(value)),
@@ -342,6 +370,7 @@ export default class DateTimePicker extends BaseComponent {
 
             if (
                 this.#date ||
+                this.#range ||
                 (this.options.multiDate && this.#dates.length) ||
                 (value && !this.options.keepInvalid)
             ) {
@@ -438,6 +467,9 @@ export default class DateTimePicker extends BaseComponent {
         this.#date = null;
         this.#dates = null;
         this.#originalDate = null;
+        this.#range = null;
+        this.#rangeStart = null;
+        this.#rangeStatus = null;
         this.#minDate = null;
         this.#maxDate = null;
         this.#viewDate = null;
@@ -477,10 +509,16 @@ export default class DateTimePicker extends BaseComponent {
 
     /**
      * Gets the current date(s).
-     * @returns {DateTime|null|DateTime[]} The current date(s).
+     * @returns {DateTime|DateRange|DateTime[]|null} The committed date(s).
      */
     getDate() {
-        const committed = this.options.multiDate ? this.#dates : this.#date;
+        let committed;
+
+        if (this.options.range) {
+            committed = this.#range;
+        } else {
+            committed = this.options.multiDate ? this.#dates : this.#date;
+        }
 
         // Modal edits remain a draft until the user confirms them.
         const date = this.#useModal && this.#open ? this.#originalDate : committed;
@@ -529,6 +567,11 @@ export default class DateTimePicker extends BaseComponent {
             return;
         }
 
+        if (this.#rangeStart) {
+            this.#rangeStart = null;
+            ++this.#selectionId;
+        }
+
         this.#open = false;
         $.setAttribute(this.node, { 'aria-expanded': false });
         $.setAttribute($.find('[tabindex]', this.#menuNode), { tabindex: -1 });
@@ -569,7 +612,9 @@ export default class DateTimePicker extends BaseComponent {
             return;
         }
 
-        if (this.options.multiDate) {
+        if (this.options.range) {
+            this.#setRange(this.getDate());
+        } else if (this.options.multiDate) {
             this.#setDates(this.#dates);
         } else {
             this.#setDate(this.#date);
@@ -578,10 +623,23 @@ export default class DateTimePicker extends BaseComponent {
 
     /**
      * Sets the current date(s).
-     * @param {DateInput|DateInput[]} date The input date, or an array of dates in multi-date mode.
+     * @param {DateInput|DateInput[]} date The input date, pair in range mode, or array in multi-date mode.
      */
     setDate(date) {
-        if (this.options.multiDate) {
+        if (this.options.range) {
+            if (date === null || date === undefined) {
+                this.#setRange(null);
+                return;
+            }
+
+            if (!Array.isArray(date) || date.length !== 2) {
+                throw new TypeError('Range selection requires exactly two dates or null.');
+            }
+
+            const range = date.map((date) => this.#parseDate(date));
+
+            this.#setRange(range);
+        } else if (this.options.multiDate) {
             const dates = this.#parseDates(date);
 
             this.#setDates(dates);
@@ -788,6 +846,20 @@ export default class DateTimePicker extends BaseComponent {
             throw new Error('Time selector cannot be used with multiDate option.');
         }
 
+        if (this.options.range) {
+            if (this.options.multiDate) {
+                throw new Error('Range selection cannot be used with multiDate option.');
+            }
+
+            if (!this.#hasDate || this.#hasHours) {
+                throw new Error('Range selection requires a date-only format with year, month, and day.');
+            }
+
+            if (typeof this.options.rangeSeparator !== 'string' || !this.options.rangeSeparator.length) {
+                throw new TypeError('rangeSeparator must be a nonempty string.');
+            }
+        }
+
         this.#defaultView = this.options.defaultView;
 
         if (this.#hasDate) {
@@ -888,6 +960,9 @@ export default class DateTimePicker extends BaseComponent {
 
                     this.#date = null;
                     this.#dates = [];
+                    this.#range = null;
+                    this.#rangeStart = null;
+                    this.#originalDate = null;
                     this.#readInput(true);
                     this.#keepDate = false;
                     this.hide();
@@ -1073,7 +1148,36 @@ export default class DateTimePicker extends BaseComponent {
                         $.getDataset(element, 'uiDate'),
                     );
 
-                    if (this.options.multiDate) {
+                    if (this.options.range) {
+                        const id = this.#selectionId;
+
+                        tempDate = tempDate.startOfDay();
+
+                        if (!this.#isValid(tempDate, { granularity: 'day' }) || !this.#isEditable() || id !== this.#selectionId) {
+                            return;
+                        }
+
+                        this.#viewDate = tempDate;
+
+                        if (this.#rangeStart) {
+                            this.#setRange([this.#rangeStart, tempDate], { updateValue });
+                        } else {
+                            this.#rangeStart = tempDate;
+                            ++this.#selectionId;
+                            this.#refresh();
+                        }
+
+                        if (!this.node || id + 1 !== this.#selectionId || (!this.options.inline && !this.#open)) {
+                            return;
+                        }
+
+                        if (this.#range && !this.#rangeStart && !this.options.keepOpen && !this.#useModal && !this.options.inline) {
+                            $.focus(this.node);
+                            this.hide();
+                        } else {
+                            $.focus(this.#focusedDateItem);
+                        }
+                    } else if (this.options.multiDate) {
                         let dates;
                         let granularity;
 
@@ -1260,8 +1364,32 @@ export default class DateTimePicker extends BaseComponent {
             refreshDate();
         });
 
+        if (this.options.range) {
+            $.addEventDelegate(this.#dateContainer, 'mouseover.ui.datetimepicker', '[data-ui-date]', (event) => {
+                this.#previewRange(event.currentTarget);
+            });
+            $.addEvent(this.#dateContainer, 'mouseout.ui.datetimepicker', () => {
+                this.#previewRange(null);
+            });
+        }
+
         $.addEvent(this.#dateContainer, 'keydown.ui.datetimepicker', (event) => {
             if (!this.#isEditable()) {
+                return;
+            }
+
+            if (event.code === 'Escape' && this.options.inline && this.#rangeStart) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                this.#rangeStart = null;
+                ++this.#selectionId;
+                this.#refresh();
+
+                if (this.node) {
+                    $.focus(this.#focusedDateItem);
+                }
+
                 return;
             }
 
@@ -1278,8 +1406,8 @@ export default class DateTimePicker extends BaseComponent {
             }
 
             if (
-                !this.#isBeforeMax(tempView, { allowSame: true }) ||
-                !this.#isAfterMin(tempView, { allowSame: true })
+                !this.#isBeforeMax(tempView, { granularity: this.options.range ? 'day' : null, allowSame: true }) ||
+                !this.#isAfterMin(tempView, { granularity: this.options.range ? 'day' : null, allowSame: true })
             ) {
                 return;
             }
@@ -1303,7 +1431,7 @@ export default class DateTimePicker extends BaseComponent {
                 return false;
             }
 
-            this.#originalDate = this.options.multiDate ? this.#dates.slice() : this.#date;
+            this.#originalDate = this.getDate();
             this.#keepDate = false;
             this.#open = true;
             $.setAttribute(this.node, { 'aria-expanded': true });
@@ -1325,11 +1453,16 @@ export default class DateTimePicker extends BaseComponent {
 
             // Set commits the draft; dismissal restores the value from opening.
             if (this.#keepDate) {
-                if (this.options.multiDate) {
+                if (this.options.range) {
+                    this.#setRange(this.#range);
+                } else if (this.options.multiDate) {
                     this.#setDates(this.#dates);
                 } else {
                     this.#setDate(this.#date);
                 }
+            } else if (this.options.range) {
+                this.#range = this.#originalDate?.slice() || null;
+                ++this.#selectionId;
             } else if (this.options.multiDate) {
                 this.#dates = this.#originalDate.slice();
             } else {
@@ -1338,6 +1471,11 @@ export default class DateTimePicker extends BaseComponent {
 
             if (!this.node) {
                 return false;
+            }
+
+            if (this.#rangeStart) {
+                this.#rangeStart = null;
+                ++this.#selectionId;
             }
 
             this.#open = false;
@@ -1356,7 +1494,7 @@ export default class DateTimePicker extends BaseComponent {
         });
 
         $.addEvent(this.#setBtn, 'click.ui.datetimepicker', () => {
-            if (!this.node) {
+            if (!this.#isEditable() || this.#rangeStart) {
                 return;
             }
 
@@ -1768,6 +1906,14 @@ export default class DateTimePicker extends BaseComponent {
                 break;
         }
 
+        if (this.options.range) {
+            if (this.#rangeStart) {
+                return callback(date, this.#rangeStart);
+            }
+
+            return this.#range?.some((currentDate) => callback(date, currentDate)) || false;
+        }
+
         if (this.options.multiDate) {
             return this.#dates.some((currentDate) => callback(date, currentDate));
         }
@@ -1905,6 +2051,28 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
+     * Validates and orders both endpoints without dropping equal dates.
+     * @param {(DateTime|null)[]|null} dates The input endpoints.
+     * @returns {DateRange|null} The normalized pair, or null if either endpoint is invalid.
+     */
+    #normalizeRange(dates) {
+        if (dates?.length !== 2 || dates.some((date) => !date?.isValid)) {
+            return null;
+        }
+
+        const id = this.#selectionId;
+        const range = dates.map((date) => date.startOfDay());
+
+        for (const date of range) {
+            if (!this.#isValid(date, { granularity: 'day' }) || !this.node || id !== this.#selectionId) {
+                return null;
+            }
+        }
+
+        return isAfterDay(range[0], range[1]) ? range.reverse() : range;
+    }
+
+    /**
      * Creates a new DateTime object set to the current date/time.
      * @returns {DateTime} The new DateTime.
      */
@@ -1975,15 +2143,65 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
+     * Highlights a pending range without changing selection or rebuilding cells.
+     * @param {HTMLElement|null} item The hovered day, or null to clear the preview.
+     */
+    #previewRange(item) {
+        if (!this.#rangeStart || !this.#isEditable() || this.#viewMode !== 'days') {
+            return;
+        }
+
+        $.removeClass(this.#dateItems, this.constructor.classes.rangeBetween);
+
+        if (!item || $.getAttribute(item, 'aria-disabled') !== 'false') {
+            return;
+        }
+
+        const date = this.#rangeStart.withYear(
+            $.getDataset(item, 'uiYear'),
+            $.getDataset(item, 'uiMonth'),
+            $.getDataset(item, 'uiDate'),
+        );
+        const [start, end] = isBeforeDay(date, this.#rangeStart) ? [date, this.#rangeStart] : [this.#rangeStart, date];
+
+        for (const node of this.#dateItems) {
+            const current = this.#rangeStart.withYear(
+                $.getDataset(node, 'uiYear'),
+                $.getDataset(node, 'uiMonth'),
+                $.getDataset(node, 'uiDate'),
+            );
+
+            if (!isSameDay(current, this.#rangeStart) && !isBeforeDay(current, start) && !isAfterDay(current, end)) {
+                $.addClass(node, this.constructor.classes.rangeBetween);
+            }
+        }
+    }
+
+    /**
      * Synchronizes native input changes without emitting another change event.
      * @param {boolean} normalize Whether to normalize or restore invalid text.
      */
     #readInput(normalize) {
         const options = this.options;
         const value = $.getValue(this.node);
+        const id = this.#selectionId;
         let valid;
 
-        if (options.multiDate) {
+        if (options.range) {
+            const committed = this.getDate();
+            const range = this.#normalizeRange(
+                value.split(options.rangeSeparator)
+                    .map((part) => this.#makeDate(part)),
+            );
+
+            if (!this.node || id !== this.#selectionId) {
+                return;
+            }
+
+            valid = Boolean(range);
+            this.#rangeStart = null;
+            this.#range = valid || !value || (normalize && options.keepInvalid) ? range : committed;
+        } else if (options.multiDate) {
             const parsed = value.split(options.multiDateSeparator)
                 .map((part) => this.#makeDate(part));
             const dates = this.#normalizeDates(parsed);
@@ -2014,7 +2232,11 @@ export default class DateTimePicker extends BaseComponent {
 
         if (this.#useModal && this.#open) {
             // External input changes replace the committed value behind a draft.
-            this.#originalDate = options.multiDate ? this.#dates.slice() : this.#date;
+            if (options.range) {
+                this.#originalDate = this.#range?.slice() || null;
+            } else {
+                this.#originalDate = options.multiDate ? this.#dates.slice() : this.#date;
+            }
         }
 
         this.#resetView();
@@ -2036,7 +2258,30 @@ export default class DateTimePicker extends BaseComponent {
         const selectionId = this.#selectionId;
 
         try {
-            if (this.options.showToolbar) {
+            if (this.options.range) {
+                const lang = this.constructor.lang;
+                const format = this.options.ariaFormat || this.#format;
+                let status = lang.selectRangeStart;
+
+                if (this.#rangeStart) {
+                    status = `${lang.rangeStart}: ${this.#rangeStart.format(format)}. ${lang.selectRangeEnd}`;
+                } else if (this.#range) {
+                    status = `${lang.rangeStart}: ${this.#range[0].format(format)}. ${lang.rangeEnd}: ${this.#range[1].format(format)}. ${lang.selectRangeStart}`;
+                }
+
+                if (this.#rangeStatus && $.getText(this.#rangeStatus) !== status) {
+                    $.setText(this.#rangeStatus, status);
+                }
+
+                if (this.options.showToolbar) {
+                    const dates = this.#rangeStart ? [this.#rangeStart] : this.#range;
+
+                    $.setText(this.#toolbarYear, '');
+                    $.setText(this.#toolbarDate, dates ? dates.map((date) => date.format(this.#format)).join(this.options.rangeSeparator) : '- -');
+                }
+
+                $.setProperty(this.#setBtn, 'disabled', !this.#isEditable() || Boolean(this.#rangeStart));
+            } else if (this.options.showToolbar) {
                 if (this.#date) {
                     if (this.#hasYear) {
                         $.setText(this.#toolbarYear, this.#date.format('yyyy'));
@@ -2219,6 +2464,12 @@ export default class DateTimePicker extends BaseComponent {
 
         if (!this.#isEditable()) {
             $.addClass(this.#menuNode, this.constructor.classes.disabled);
+
+            if (this.#rangeStart) {
+                this.#rangeStart = null;
+                ++this.#selectionId;
+                this.#refresh(false);
+            }
         } else {
             $.removeClass(this.#menuNode, this.constructor.classes.disabled);
         }
@@ -2229,6 +2480,10 @@ export default class DateTimePicker extends BaseComponent {
      */
     #refreshState() {
         this.#refreshDisabled();
+
+        if (!this.node) {
+            return;
+        }
 
         for (const container of [this.#dateContainer, this.#timeContainer]) {
             if (container) {
@@ -2242,7 +2497,7 @@ export default class DateTimePicker extends BaseComponent {
 
         const editable = this.#isEditable();
 
-        $.setProperty(this.#setBtn, 'disabled', !editable);
+        $.setProperty(this.#setBtn, 'disabled', !editable || Boolean(this.#rangeStart));
 
         if (!editable) {
             this.hide();
@@ -2336,6 +2591,21 @@ export default class DateTimePicker extends BaseComponent {
 
         if (this.options.showToolbar) {
             this.#renderToolbar();
+        }
+
+        if (this.options.range) {
+            $.setAttribute(this.#menuNode, { 'aria-label': this.constructor.lang.selectRange });
+
+            this.#rangeStatus = $.create('p', {
+                class: this.constructor.classes.rangeStatus,
+                attributes: {
+                    'role': 'status',
+                    'aria-live': 'polite',
+                    'aria-atomic': true,
+                },
+            });
+
+            $.append(this.#menuNode, this.#rangeStatus);
         }
 
         this.#container = $.create('div', {
@@ -2602,6 +2872,30 @@ export default class DateTimePicker extends BaseComponent {
                         $.addClass(td, this.constructor.classes.today);
                     }
 
+                    if (this.options.range) {
+                        const start = this.#rangeStart || this.#range?.[0];
+                        const end = this.#rangeStart ? null : this.#range?.[1];
+                        const descriptions = [];
+
+                        if (start && isSameDay(current, start)) {
+                            $.addClass(td, this.constructor.classes.rangeStart);
+                            descriptions.push(this.constructor.lang.rangeStart);
+                        }
+
+                        if (end && isSameDay(current, end)) {
+                            $.addClass(td, this.constructor.classes.rangeEnd);
+                            descriptions.push(this.constructor.lang.rangeEnd);
+                        }
+
+                        if (start && end && isAfterDay(current, start) && isBeforeDay(current, end)) {
+                            $.addClass(td, this.constructor.classes.rangeBetween);
+                        }
+
+                        if (descriptions.length) {
+                            $.setAttribute(td, { 'aria-description': descriptions.join(', ') });
+                        }
+                    }
+
                     if (this.options.renderDay) {
                         this.options.renderDay(current, td);
 
@@ -2791,7 +3085,9 @@ export default class DateTimePicker extends BaseComponent {
 
         let titleText;
 
-        if (!this.#hasHours) {
+        if (this.options.range) {
+            titleText = this.constructor.lang.selectRange;
+        } else if (!this.#hasHours) {
             titleText = this.constructor.lang.selectDate;
         } else if (!this.#hasDate) {
             titleText = this.constructor.lang.selectTime;
@@ -3336,7 +3632,9 @@ export default class DateTimePicker extends BaseComponent {
         this.#viewMode = this.#minView;
         this.#timeViewMode = null;
 
-        if (this.options.multiDate && this.#dates.length) {
+        if (this.options.range && this.#range) {
+            this.#viewDate = this.#range[0];
+        } else if (this.options.multiDate && this.#dates.length) {
             this.#viewDate = this.#dates[0];
         } else if (this.#date) {
             this.#viewDate = this.#date;
@@ -3453,6 +3751,57 @@ export default class DateTimePicker extends BaseComponent {
     }
 
     /**
+     * Sets or clears a complete range.
+     * @param {(DateTime|null)[]|null} range The input endpoints.
+     * @param {object} options The assignment options.
+     * @param {boolean} [options.updateValue=true] Whether to commit the pair.
+     */
+    #setRange(range, { updateValue = true } = {}) {
+        if (!this.#isEditable()) {
+            return;
+        }
+
+        const selectionId = this.#selectionId;
+
+        range = this.#normalizeRange(range);
+
+        if (!this.#isEditable() || selectionId !== this.#selectionId) {
+            return;
+        }
+
+        const oldRange = this.getDate();
+        const oldValue = $.getValue(this.node);
+        const id = ++this.#selectionId;
+
+        this.#range = range;
+        this.#rangeStart = null;
+
+        if (updateValue) {
+            this.#updateValue();
+
+            if (this.#useModal && this.#open) {
+                this.#originalDate = range?.slice() || null;
+            }
+        }
+
+        this.#refresh();
+
+        if (
+            !this.node ||
+            id !== this.#selectionId ||
+            !updateValue ||
+            oldValue === $.getValue(this.node)
+        ) {
+            return;
+        }
+
+        $.triggerEvent(this.node, 'change.ui.datetimepicker', {
+            data: { skipUpdate: true },
+            detail: { old: oldRange, new: range?.slice() || null },
+        });
+    }
+
+    /**
      * Switches panels and ignores completions from interrupted transitions.
      * @param {HTMLElement} target The panel to show.
      * @param {HTMLElement} source The panel to hide.
@@ -3493,7 +3842,11 @@ export default class DateTimePicker extends BaseComponent {
     #updateValue() {
         let value;
 
-        if (this.options.multiDate) {
+        if (this.options.range) {
+            value = this.#range ? this.#range
+                .map((date) => date.format(this.#format))
+                .join(this.options.rangeSeparator) : '';
+        } else if (this.options.multiDate) {
             value = this.#dates
                 .map((date) => date.format(this.#format))
                 .join(this.options.multiDateSeparator);

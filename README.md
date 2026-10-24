@@ -15,6 +15,7 @@ Locale-aware date and time selection for Frost UI, with popup calendars, inline 
 - Date, month, year, time, and combined date/time pickers
 - Locale-based formats and week starts, explicit 12/24-hour clocks, and time zones
 - Multiple dates with sorting, deduplication, and a configurable separator
+- Inclusive date ranges with two selections in one calendar
 - Inclusive bounds, validation callbacks, minute stepping, and custom calendar cells
 - Popup, inline, side-by-side, and modal layouts with Set/Cancel
 - Keyboard navigation, accessible states, and native form reset synchronization
@@ -143,7 +144,7 @@ Dispose and reinitialize after changing the input's form association. `defaultDa
 | `hh:mm a` | 12-hour time with period toggle |
 | `yyyy-MM-dd HH:mm` | Date and time |
 
-With `format: null`, single-date mode derives a date/time format from the locale; multi-date mode derives a date-only format. Explicit hour tokens override the locale's default hour cycle. Days require a month and year; minutes require hours; combined date/time requires a complete calendar date. Time controls cannot be combined with `multiDate`.
+With `format: null`, single-date mode derives a date/time format from the locale; multi-date and range modes derive a date-only format. Explicit hour tokens override the locale's default hour cycle. Days require a month and year; minutes require hours; combined date/time requires a complete calendar date. Time controls cannot be combined with `multiDate` or `range`.
 
 Patterns use [Frost DateTime tokens](https://github.com/frost-js/datetime/blob/main/Formats.md). Quote literal letters, for example `yyyy-MM-dd 'at' HH:mm`. Controls cover years, months, days, hours, and minutes; there are no second or millisecond controls.
 
@@ -163,6 +164,31 @@ In multi-date mode, pass an array of date inputs or null: `[[2026, 9, 15], [2026
 Strings do not fall back to general ISO parsing. Add an appropriate `altFormats` pattern or convert to a Date/DateTime first. Invalid programmatic values clear a single-date selection; invalid entries are filtered from multi-date values. Invalid bounds parse as null and remove the bound.
 
 Locale and time zone use DateTime's defaults at initialization when omitted. Locale controls labels and week starts; the time zone controls interpretation and display. Time-only strings such as `09:30` use DateTime's January 1, 1970 anchor, while Date/DateTime inputs preserve their actual date. Use consistent anchors for time-only bounds, or `isValidTime` for recurring time-of-day rules. Nonexistent DST wall times are rejected; ambiguous times follow DateTime's parsing rules.
+
+### Date ranges
+
+Enable `range` to select two inclusive endpoints in one calendar:
+
+```js
+const picker = DateTimePicker.init(document.querySelector('#stay'), {
+    range: true,
+    format: 'yyyy-MM-dd',
+});
+
+picker.setDate(['2026-11-01', '2026-11-05']);
+const [start, end] = picker.getDate();
+// Input: 2026-11-01 – 2026-11-05
+```
+
+The first selection starts a draft; hovering another selectable day previews the range, and the second selection commits the pair. Reversed endpoints are sorted, and selecting the same day twice creates a one-day range. Selecting again starts a replacement. The input and `getDate()` retain the committed value until the pair is complete. Popup dismissal discards an incomplete draft; Escape also cancels an inline draft. In a modal, Set commits the completed pair and is disabled while an endpoint is pending.
+
+`getDate()` returns a copied `[DateTime, DateTime]` pair or `null`. `setDate()` accepts exactly two date inputs, or `null`/`undefined` to clear. Nest tuple endpoints: `[[2026, 11, 1], [2026, 11, 5]]`. A scalar or an array of another length throws `TypeError`; an invalid endpoint clears the whole range. Endpoints normalize to the start of their day in the configured time zone.
+
+Ranges require a complete date-only format and cannot be combined with `multiDate`. `useCurrent` does not create a range; `defaultDate` controls the initial view. Month/year panels remain available for navigation.
+
+`rangeSeparator` defaults to `' – '` and must be a nonempty string that does not occur in a formatted endpoint. Typed input must contain two dates separated by that exact string; each date accepts `format` or `altFormats`. Invalid text follows `keepInvalid`: restore the previous value when false, or retain the text and clear the internal range on normalization when true.
+
+Bounds and validation callbacks apply to both endpoints at day precision. Disabled interior days may be crossed: a Friday-to-Monday range can include a disabled weekend. `refresh()` and bound setters discard range drafts and revalidate the committed pair, clearing it if either endpoint is invalid. Programmatic `setDate()` and `clear()` commit immediately, including while a modal is open.
 
 ### Layouts, multiple dates, and callbacks
 
@@ -247,6 +273,8 @@ Resolved `instance.options` are shallow-frozen.
 | `multiDateSeparator` | `string` | `','` | Input/output separator for multiple dates. |
 | `placement` | `'auto' \| 'top' \| 'bottom' \| 'start' \| 'end'` | `'bottom'` | UI Popper placement: `'top'`, `'bottom'`, `'start'`, `'end'`, or `'auto'`; logical sides follow RTL. |
 | `position` | `'start' \| 'center' \| 'end'` | `'start'` | Alignment along the popup edge: `'start'`, `'center'`, or `'end'`. |
+| `range` | `boolean` | `false` | Inclusive date-only pair; excludes multi-date and time selection. |
+| `rangeSeparator` | `string` | `' – '` | Literal input/output separator between range endpoints. |
 | `renderDay` | `((date: DateTime, node: HTMLElement) => void) \| null` | `null` | `(date, node) => void` day-cell customization. |
 | `renderMonth` | `((date: DateTime, node: HTMLElement) => void) \| null` | `null` | `(date, node) => void` month-cell customization. |
 | `renderYear` | `((date: DateTime, node: HTMLElement) => void) \| null` | `null` | `(date, node) => void` year-cell customization. |
@@ -292,7 +320,7 @@ Data attributes configure options; they do not initialize DateTimePicker by them
 | `disable()` | `void` | Disable the native input and picker. Disabled ancestor fieldsets still apply. |
 | `dispose()` | `void` | Remove owned events, calendars, modal resources, and registered state, then restore the input's styles and attributes. |
 | `enable()` | `void` | Enable the native input and picker. Disabled ancestor fieldsets still apply. |
-| `getDate()` | `DateTime \| DateTime[] \| null` | Return the committed selection, or a copied array in multi-date mode. |
+| `getDate()` | `DateTime \| DateTime[] \| null` | Return the committed selection; arrays are copied in multi-date and range modes. |
 | `getMaxDate()` | `DateTime \| null` | Return the parsed upper bound. |
 | `getMinDate()` | `DateTime \| null` | Return the parsed lower bound. |
 | `getViewDate()` | `DateTime` | Return the current calendar navigation date. |

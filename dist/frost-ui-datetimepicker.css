@@ -29,6 +29,9 @@
 .datetimepicker.datetimepicker-disabled {
   pointer-events: none;
 }
+.datetimepicker .datetimepicker-range-between {
+  background-color: var(--ui-primary-subtle);
+}
 
 .datetimepicker-inline {
   --ui-datetimepicker-bg: transparent;
@@ -40,11 +43,15 @@
 }
 .datetimepicker-action:hover {
   color: var(--ui-body-color);
-  background-color: rgba(var(--ui-body-color-rgb), 0.1);
+  background-color: rgb(from var(--ui-body-color) r g b/0.1);
 }
 .datetimepicker-action:focus-visible {
   outline: 0;
-  background-color: rgba(var(--ui-primary-rgb), 0.2);
+  background-color: rgb(from var(--ui-primary) r g b/0.2);
+}
+.datetimepicker-action.datetimepicker-range-between:hover {
+  color: var(--ui-primary-contrast);
+  background-color: var(--ui-primary-highlight);
 }
 .datetimepicker-action.datetimepicker-active {
   color: var(--ui-primary-contrast);
@@ -60,7 +67,7 @@
 }
 .datetimepicker-disabled:focus-visible {
   outline: 0;
-  background-color: rgba(var(--ui-primary-rgb), 0.2);
+  background-color: rgb(from var(--ui-primary) r g b/0.2);
 }
 
 .datetimepicker-time {

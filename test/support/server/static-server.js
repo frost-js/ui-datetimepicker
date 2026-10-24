@@ -8,24 +8,12 @@ const resolveModule = (specifier) => new URL(import.meta.resolve(specifier));
 
 const routes = new Map([
     ['/', { contentType: html, file: new URL('../app/index.html', import.meta.url) }],
-    ['/esm', { contentType: html, file: new URL('../app/esm.html', import.meta.url) }],
+    ['/assets/frost-ui-datetimepicker.js', { contentType: javaScript, file: new URL('../../../dist/frost-ui-datetimepicker.js', import.meta.url) }],
     ['/assets/frost-ui-datetimepicker.css', { contentType: css, file: new URL('../../../dist/frost-ui-datetimepicker.css', import.meta.url) }],
     ['/assets/frost-ui-bundle.js', { contentType: javaScript, file: resolveModule('@fr0st/ui/dist/frost-ui-bundle.js') }],
     ['/assets/frost-ui.css', { contentType: css, file: resolveModule('@fr0st/ui/dist/frost-ui.css') }],
     ['/assets/frost-datetime.js', { contentType: javaScript, file: resolveModule('@fr0st/datetime/dist/frost-datetime.js') }],
-    ['/assets/frost-core.esm.js', { contentType: javaScript, file: resolveModule('@fr0st/core') }],
-    ['/assets/fquery.esm.js', { contentType: javaScript, file: resolveModule('@fr0st/query') }],
-    ['/assets/frost-ui.esm.js', { contentType: javaScript, file: resolveModule('@fr0st/ui') }],
-    ['/assets/frost-datetime.esm.js', { contentType: javaScript, file: resolveModule('@fr0st/datetime') }],
 ]);
-
-for (const suffix of ['', '.min', '.esm', '.esm.min']) {
-    const filename = `frost-ui-datetimepicker${suffix}.js`;
-    routes.set(`/assets/${filename}`, {
-        contentType: javaScript,
-        file: new URL(`../../../dist/${filename}`, import.meta.url),
-    });
-}
 
 const server = createServer(async (request, response) => {
     const url = new URL(request.url ?? '/', 'http://localhost');
@@ -38,10 +26,7 @@ const server = createServer(async (request, response) => {
     }
 
     try {
-        let data = await readFile(route.file);
-        if (url.pathname === '/' && url.searchParams.has('min')) {
-            data = data.toString().replace('frost-ui-datetimepicker.js', 'frost-ui-datetimepicker.min.js');
-        }
+        const data = await readFile(route.file);
 
         response.writeHead(200, { 'Content-Type': route.contentType });
         response.end(data);

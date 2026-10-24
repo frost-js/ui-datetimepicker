@@ -49,7 +49,7 @@
         "build": "npm run build:js && npm run build:css",
         "build:css": "npm run compile:css && npm run autoprefix:css && npm run minify:css",
         "build:js": "vite build && vite build --mode umd",
-        "compile:css": "sass --style expanded --source-map --embed-sources --no-error-css src/scss/datetimepicker.scss dist/frost-ui-datetimepicker.css",
+        "compile:css": "sass --load-path=node_modules --style expanded --source-map --embed-sources --no-error-css src/scss/datetimepicker.scss dist/frost-ui-datetimepicker.css",
         "lint": "npm run lint:js && npm run lint:css",
         "lint:css": "stylelint \"src/scss/**/*.scss\"",
         "lint:js": "eslint",
