@@ -474,20 +474,7 @@ test.describe('DateTimePicker', () => {
         });
     });
 
-    test.describe('#getViewDate', () => {
-        test('returns the date reached by calendar navigation', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
-                format: 'yyyy-MM-dd',
-                inline: true,
-            }));
-
-            await page.getByRole('button', { name: 'Next Month', exact: true }).click();
-
-            expect(await page.evaluate(() => $('#date').datetimepicker('getViewDate').format('yyyy-MM-dd'))).toBe('2026-10-15');
-        });
-    });
-
-    for (const bound of ['Min', 'Max']) {
+    for (const bound of ['Max', 'Min']) {
         test.describe(`#get${bound}Date`, () => {
             test('returns the configured bound', async ({ page }) => {
                 expect(await page.evaluate((name) => {
@@ -502,6 +489,69 @@ test.describe('DateTimePicker', () => {
             });
         });
     }
+
+    test.describe('#getViewDate', () => {
+        test('returns the date reached by calendar navigation', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
+                format: 'yyyy-MM-dd',
+                inline: true,
+            }));
+
+            await page.getByRole('button', { name: 'Next Month', exact: true }).click();
+
+            expect(await page.evaluate(() => $('#date').datetimepicker('getViewDate').format('yyyy-MM-dd'))).toBe('2026-10-15');
+        });
+    });
+
+    test.describe('#hide', () => {
+        test('closes the popup and clears expanded state', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).show());
+
+            await expect(page.getByRole('dialog')).toBeVisible();
+
+            await page.evaluate(() => $('#date').datetimepicker('hide'));
+
+            await expect(page.getByRole('dialog')).toHaveCount(0);
+            await expect(page.getByLabel('Date', { exact: true })).toHaveAttribute('aria-expanded', 'false');
+        });
+    });
+
+    test.describe('#refresh', () => {
+        for (const { name, refresh } of [
+            {
+                name: 'class',
+                refresh: () => {
+                    window.allowed = false;
+                    UI.DateTimePicker.init($.findOne('#date')).refresh();
+                },
+            },
+            {
+                name: 'QuerySet',
+                refresh: () => {
+                    window.allowed = false;
+                    $('#date').datetimepicker('refresh');
+                },
+            },
+        ]) {
+            test(`revalidates a selection after callback rules change (${name})`, async ({ page }) => {
+                await page.evaluate(() => {
+                    window.allowed = true;
+                    UI.DateTimePicker.init($.findOne('#date'), {
+                        format: 'yyyy-MM-dd',
+                        inline: true,
+                        isValidDay: () => window.allowed,
+                    }).setDate('2026-09-15');
+                });
+
+                await expect(page.locator('#date')).toHaveValue('2026-09-15');
+
+                await page.evaluate(refresh);
+
+                await expect(page.locator('#date')).toHaveValue('');
+                await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toBeDisabled();
+            });
+        }
+    });
 
     test.describe('#setDate', () => {
         for (const { name, makeDate } of [
@@ -592,7 +642,7 @@ test.describe('DateTimePicker', () => {
         });
     });
 
-    for (const bound of ['Min', 'Max']) {
+    for (const bound of ['Max', 'Min']) {
         test.describe(`#set${bound}Date`, () => {
             test('updates bounds, revalidates the value, and permits clearing the bound', async ({ page }) => {
                 const instance = await page.evaluateHandle(() => {
@@ -619,43 +669,6 @@ test.describe('DateTimePicker', () => {
         });
     }
 
-    test.describe('#refresh', () => {
-        for (const { name, refresh } of [
-            {
-                name: 'class',
-                refresh: () => {
-                    window.allowed = false;
-                    UI.DateTimePicker.init($.findOne('#date')).refresh();
-                },
-            },
-            {
-                name: 'QuerySet',
-                refresh: () => {
-                    window.allowed = false;
-                    $('#date').datetimepicker('refresh');
-                },
-            },
-        ]) {
-            test(`revalidates a selection after callback rules change (${name})`, async ({ page }) => {
-                await page.evaluate(() => {
-                    window.allowed = true;
-                    UI.DateTimePicker.init($.findOne('#date'), {
-                        format: 'yyyy-MM-dd',
-                        inline: true,
-                        isValidDay: () => window.allowed,
-                    }).setDate('2026-09-15');
-                });
-
-                await expect(page.locator('#date')).toHaveValue('2026-09-15');
-
-                await page.evaluate(refresh);
-
-                await expect(page.locator('#date')).toHaveValue('');
-                await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toBeDisabled();
-            });
-        }
-    });
-
     test.describe('#show', () => {
         test('renders a popup with selectable calendar dates', async ({ page }) => {
             await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).show());
@@ -672,19 +685,6 @@ test.describe('DateTimePicker', () => {
 
             await expect(page.locator('.modal')).toBeVisible();
             await expect(page.getByRole('button', { name: 'Set', exact: true })).toBeVisible();
-        });
-    });
-
-    test.describe('#hide', () => {
-        test('closes the popup and clears expanded state', async ({ page }) => {
-            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).show());
-
-            await expect(page.getByRole('dialog')).toBeVisible();
-
-            await page.evaluate(() => $('#date').datetimepicker('hide'));
-
-            await expect(page.getByRole('dialog')).toHaveCount(0);
-            await expect(page.getByLabel('Date', { exact: true })).toHaveAttribute('aria-expanded', 'false');
         });
     });
 

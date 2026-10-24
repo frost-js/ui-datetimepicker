@@ -463,6 +463,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 //#endregion
 //#region src/js/date-time-picker.js
 /** @import { Placement, Position } from '@fr0st/ui/src/js/popper/popper.js'; */
+	var document$1 = _fr0st_query.default.getContext();
+	var window = _fr0st_query.default.getWindow();
 	/**
 	* A date string in the configured format, UNIX seconds, a 1-based date tuple,
 	* a native Date, a DateTime, or null to clear a value.
@@ -752,7 +754,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				this.#useDayPeriod = checkDayPeriod(this.#dateOptions.locale);
 				this.#format = this.options.format;
 				if (!this.#format) this.#format = this.options.multiDate || this.options.range ? getDefaultDateFormat(this.#dateOptions.locale) : getDefaultFormat(this.#dateOptions.locale, this.#useDayPeriod);
-				const mobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
+				const mobile = /Android|webOS|iPhone|iPad|iPod/i.test(window.navigator.userAgent);
 				this.#useModal = !this.options.inline && (this.options.modal || this.options.mobileModal && mobile);
 				this.#checkFormat();
 				this.#minDate = this.#parseDate(this.options.minDate);
@@ -809,7 +811,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			++this.#transitionId;
 			++this.#viewTransitionId;
 			++this.#selectionId;
-			for (const timer of this.#resetTimers) clearTimeout(timer);
+			for (const timer of this.#resetTimers) window.clearTimeout(timer);
 			this.#resetTimers.clear();
 			this.#observer?.disconnect();
 			this.#popper?.dispose();
@@ -1140,7 +1142,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			});
 			if (this.#form) this.listen(this.#form, "reset.ui.datetimepicker", (event) => {
 				if (!this.node) return;
-				const timer = setTimeout(() => {
+				const timer = window.setTimeout(() => {
 					this.#resetTimers.delete(timer);
 					if (!this.node || event.defaultPrevented) return;
 					this.#date = null;
@@ -1159,7 +1161,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			_fr0st_query.default.addEvent(this.#menuNode, "click.ui.datetimepicker", (event) => {
 				event.stopPropagation();
 			});
-			this.#observer = new MutationObserver(() => {
+			this.#observer = new window.MutationObserver(() => {
 				if (this.node) this.#refreshState();
 			});
 			this.#observer.observe(this.node, {
@@ -1178,7 +1180,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			});
 			if (!this.#useModal) {
 				this.listen(this.node, "focus.ui.datetimepicker", () => {
-					if (!this.node || !_fr0st_query.default.isSame(this.node, document.activeElement)) return;
+					if (!this.node || !_fr0st_query.default.isSame(this.node, document$1.activeElement)) return;
 					this.show();
 				});
 				_fr0st_query.default.addEvent(this.#menuNode, "keydown.ui.datetimepicker", (event) => {
@@ -2906,6 +2908,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 
 //#endregion
 //#region src/js/index.js
+	var document = _fr0st_query.default.getContext();
 	(0, _fr0st_ui.initComponent)("datetimepicker", DateTimePicker);
 	_fr0st_query.default.addEvent(document, "mousedown.ui.datetimepicker", (event) => {
 		const target = (0, _fr0st_ui.getClickTarget)(event);

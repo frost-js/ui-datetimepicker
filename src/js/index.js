@@ -2,6 +2,8 @@ import $ from '@fr0st/query';
 import { getClickTarget, initComponent } from '@fr0st/ui';
 import DateTimePicker from './date-time-picker.js';
 
+const document = $.getContext();
+
 // DateTimePicker init
 initComponent('datetimepicker', DateTimePicker);
 

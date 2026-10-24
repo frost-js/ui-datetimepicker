@@ -7,6 +7,9 @@ import { isAfterDay, isAfterInstant, isAfterMonth, isAfterYear, isBeforeDay, isB
 import { checkDayPeriod, getDefaultDateFormat, getDefaultFormat, getDefaultTimeFormat } from './formats.js';
 import { adjustDate, createGrid, createTable, getDateKey, getKeyboardDate, renderTimeColumn, renderTimeSeparator } from './helpers.js';
 
+const document = $.getContext();
+const window = $.getWindow();
+
 /**
  * A date string in the configured format, UNIX seconds, a 1-based date tuple,
  * a native Date, a DateTime, or null to clear a value.
@@ -321,7 +324,7 @@ export default class DateTimePicker extends BaseComponent {
                     getDefaultFormat(this.#dateOptions.locale, this.#useDayPeriod);
             }
 
-            const mobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const mobile = /Android|webOS|iPhone|iPad|iPod/i.test(window.navigator.userAgent);
             this.#useModal = !this.options.inline && (this.options.modal || (this.options.mobileModal && mobile));
 
             this.#checkFormat();
@@ -432,7 +435,7 @@ export default class DateTimePicker extends BaseComponent {
         ++this.#selectionId;
 
         for (const timer of this.#resetTimers) {
-            clearTimeout(timer);
+            window.clearTimeout(timer);
         }
         this.#resetTimers.clear();
         this.#observer?.disconnect();
@@ -942,7 +945,7 @@ export default class DateTimePicker extends BaseComponent {
                 }
 
                 // The browser restores native values after the reset event.
-                const timer = setTimeout(() => {
+                const timer = window.setTimeout(() => {
                     this.#resetTimers.delete(timer);
 
                     if (!this.node || event.defaultPrevented) {
@@ -975,7 +978,7 @@ export default class DateTimePicker extends BaseComponent {
             event.stopPropagation();
         });
 
-        this.#observer = new MutationObserver(() => {
+        this.#observer = new window.MutationObserver(() => {
             if (this.node) {
                 this.#refreshState();
             }
