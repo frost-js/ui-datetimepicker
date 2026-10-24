@@ -65,17 +65,16 @@ $.ready(() => {
     const today = DateTime.now({ locale: 'en-GB' }).startOfDay();
     $.setProperty($.findOne('#form-date'), 'defaultValue', today.format('yyyy-MM-dd'));
 
-    // Initialize callback/DateTime options before the shared selector, which reuses instances.
-    DateTimePicker.init($.findOne('#limited-date'), {
-        format: 'yyyy-MM-dd',
-        minDate: today,
-        maxDate: today.addDays(30).endOfDay(),
+    // Initialize custom examples before the shared selector, which reuses instances.
+    DateTimePicker.init($.findOne('#hero-date'), {
+        // Keep the popup outside the hero card's rounded overflow clipping.
+        appendTo: document.body,
     });
-    $.setAttribute($.findOne('#limited-date'), 'aria-describedby', 'limit-help');
-    $.setText($.findOne('#limit-help'), `${today.format('yyyy-MM-dd')} through ${today.addDays(30).format('yyyy-MM-dd')}, inclusive.`);
 
     DateTimePicker.init($.findOne('#work-date'), {
         format: 'yyyy-MM-dd HH:mm',
+        minDate: today,
+        maxDate: today.addDays(30).endOfDay(),
         minuteStepping: 15,
         showClose: true,
         isValidDay: (date) => date.getWeekDay() >= 1 && date.getWeekDay() <= 5,

@@ -1,12 +1,12 @@
 # Frost UI DateTimePicker
 
-[![CI](https://github.com/elusivecodes/FrostUI-DateTimePicker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/elusivecodes/FrostUI-DateTimePicker/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/elusivecodes/FrostUI-DateTimePicker/branch/main/graph/badge.svg)](https://codecov.io/gh/elusivecodes/FrostUI-DateTimePicker)
+[![CI](https://github.com/frost-js/ui-datetimepicker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/frost-js/ui-datetimepicker/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/frost-js/ui-datetimepicker/branch/main/graph/badge.svg)](https://codecov.io/gh/frost-js/ui-datetimepicker)
 [![npm version](https://img.shields.io/npm/v/%40fr0st%2Fui-datetimepicker?style=flat-square)](https://www.npmjs.com/package/@fr0st/ui-datetimepicker)
 [![npm downloads](https://img.shields.io/npm/dm/%40fr0st%2Fui-datetimepicker?style=flat-square)](https://www.npmjs.com/package/@fr0st/ui-datetimepicker)
-[![JS gzip size](https://img.badgesize.io/elusivecodes/FrostUI-DateTimePicker/main/dist/frost-ui-datetimepicker.min.js?compression=gzip&label=JS%20gzip%20size&style=flat-square)](https://github.com/elusivecodes/FrostUI-DateTimePicker/blob/main/dist/frost-ui-datetimepicker.min.js)
-[![CSS gzip size](https://img.badgesize.io/elusivecodes/FrostUI-DateTimePicker/main/dist/frost-ui-datetimepicker.min.css?compression=gzip&label=CSS%20gzip%20size&style=flat-square)](https://github.com/elusivecodes/FrostUI-DateTimePicker/blob/main/dist/frost-ui-datetimepicker.min.css)
-[![license](https://img.shields.io/github/license/elusivecodes/FrostUI-DateTimePicker?style=flat-square)](./LICENSE)
+[![JS gzip size](https://img.badgesize.io/frost-js/ui-datetimepicker/main/dist/frost-ui-datetimepicker.min.js?compression=gzip&label=JS%20gzip%20size&style=flat-square)](https://github.com/frost-js/ui-datetimepicker/blob/main/dist/frost-ui-datetimepicker.min.js)
+[![CSS gzip size](https://img.badgesize.io/frost-js/ui-datetimepicker/main/dist/frost-ui-datetimepicker.min.css?compression=gzip&label=CSS%20gzip%20size&style=flat-square)](https://github.com/frost-js/ui-datetimepicker/blob/main/dist/frost-ui-datetimepicker.min.css)
+[![license](https://img.shields.io/github/license/frost-js/ui-datetimepicker?style=flat-square)](./LICENSE)
 
 Locale-aware date and time selection for Frost UI, with popup calendars, inline layouts, modal drafts, and multiple dates.
 
@@ -380,7 +380,7 @@ Provide a visible label and format instructions, optionally linked with `aria-de
 | Hour/minute grid | Arrows move among enabled choices; Enter/Space selects. |
 | Action control | Enter/Space activates. |
 
-Tab/Shift+Tab move among input/calendar controls. Escape and completed popup selection restore input focus. UI handles modal focus restoration, nested modals, and focus redirection from outside page controls. Its shared focus trap can allow Tab to reach browser chrome when a modal is the document's last focusable content; see the [known issues](./MIGRATION_PROPOSAL.md).
+Tab/Shift+Tab move among input/calendar controls. Escape and completed popup selection restore input focus. UI handles modal focus restoration, nested modals, and focus redirection from outside page controls. Its shared focus trap can allow Tab to reach browser chrome when a modal is the document's last focusable content.
 
 Inline mode hides the native input from focus and the accessibility tree. Give the visible calendar a nearby heading and descriptive text. Reduced motion disables picker animations. Custom rendering must preserve generated accessibility and focus attributes.
 
@@ -453,18 +453,6 @@ Component CSS variables are `--ui-datetimepicker-z-index`, `--ui-datetimepicker-
 ```
 
 Use Sass for widths, today-marker dimensions, and action styling. Inline/modal variants override their own background/border defaults.
-
-## Migrating from 3.x
-
-- Upgrade peers to UI 4, fQuery 5, and DateTime 8.1.3+. The package root is built ESM; UMD files remain under `dist/` and extend `UI`.
-- Replace source `wrapper.js` references with `browser.js`. Prototype composition and underscore internals are removed; use public methods and `node`/`options` getters.
-- Options are frozen. Use bound setters or dispose/reinitialize instead of mutating options.
-- DateTime's immutable `with*` methods replace removed `set*` methods. Numeric picker inputs remain UNIX seconds, including zero.
-- After clearing a multi-date selection, `getDate()` returns an empty array; setters reject scalars and deduplicate at day/month/year precision.
-- Invalid stepping throws; accepted values are integers 1–60. Invalid Date/DateTime values no longer become valid dates through copying.
-- Strings require `format`/`altFormats`. Explicit hour tokens now determine the 12/24-hour controls.
-- Replace `--datetimepicker-*` with `--ui-datetimepicker-*`. Replace Sass `@import` with `@use ... with (...)`; `_vars.scss` is forwarded by `datetimepicker.scss`.
-- Demos are consolidated into `demo/index.html`; the separate light/dark and methods/events pages have been removed.
 
 ## Development
 
