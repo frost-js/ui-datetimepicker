@@ -1,3 +1,5 @@
+/** @import DateTime from '@fr0st/datetime'; */
+
 /**
  * Checks whether a date is after another date (day).
  * @param {DateTime} a The date to test.

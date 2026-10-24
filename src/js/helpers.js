@@ -1,3 +1,5 @@
+/** @import DateTime from '@fr0st/datetime'; */
+
 import $ from '@fr0st/query';
 
 /**

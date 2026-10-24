@@ -1,3 +1,5 @@
+/** @import { Placement, Position } from '@fr0st/ui/src/js/popper/popper.js'; */
+
 import DateTime from '@fr0st/datetime';
 import $ from '@fr0st/query';
 import { BaseComponent, generateId, Modal, Popper, waitForTransition } from '@fr0st/ui';
@@ -49,8 +51,8 @@ import { adjustDate, createGrid, createTable, getDateKey, getKeyboardDate, rende
  * @property {boolean} [mobileModal=true] Whether supported mobile user agents use a modal.
  * @property {number} [duration=100] The popup and panel transition duration, respecting reduced motion.
  * @property {string|HTMLElement|null} [appendTo=null] The popup or modal container.
- * @property {'top'|'bottom'|'left'|'right'} [placement='bottom'] The preferred popup placement.
- * @property {'start'|'center'|'end'} [position='start'] The popup alignment.
+ * @property {Placement} [placement='bottom'] The preferred popup placement.
+ * @property {Position} [position='start'] The popup alignment.
  * @property {boolean} [fixed=false] Whether Popper preserves the preferred placement.
  * @property {number} [spacing=0] The distance from the input.
  * @property {number|false|null} [minContact=false] The minimum contact with the input.
@@ -278,8 +280,11 @@ export default class DateTimePicker extends BaseComponent {
 
     /**
      * Creates a DateTimePicker.
-     * @param {HTMLElement} node The input node.
+     * @param {HTMLInputElement} node The input node.
      * @param {DateTimePickerOptions} [options] The component options.
+     * @throws {TypeError} When the node is not an input element or the range separator is invalid.
+     * @throws {RangeError} When minuteStepping is not an integer from 1 to 60.
+     * @throws {Error} When the date/time format or selection mode is incompatible.
      */
     constructor(node, options) {
         if (!$._isElement(node) || !$.is(node, 'input')) {
@@ -3638,7 +3643,7 @@ export default class DateTimePicker extends BaseComponent {
     /**
      * Sets the current date.
      * @param {DateTime|null} [date] The input date.
-     * @param {object} options The options for setting the date.
+     * @param {object} [options] The options for setting the date.
      * @param {boolean} [options.updateValue=true] Whether to update the value.
      */
     #setDate(date, { updateValue = true } = {}) {
@@ -3691,7 +3696,7 @@ export default class DateTimePicker extends BaseComponent {
     /**
      * Sets the current dates.
      * @param {DateTime[]} dates The input dates.
-     * @param {object} options The options for setting the date.
+     * @param {object} [options] The options for setting the date.
      * @param {boolean} [options.updateValue=true] Whether to update the value.
      */
     #setDates(dates, { updateValue = true } = {}) {
@@ -3739,7 +3744,7 @@ export default class DateTimePicker extends BaseComponent {
     /**
      * Sets or clears a complete range.
      * @param {(DateTime|null)[]|null} range The input endpoints.
-     * @param {object} options The assignment options.
+     * @param {object} [options] The assignment options.
      * @param {boolean} [options.updateValue=true] Whether to commit the pair.
      */
     #setRange(range, { updateValue = true } = {}) {
@@ -3791,7 +3796,7 @@ export default class DateTimePicker extends BaseComponent {
      * Switches panels and ignores completions from interrupted transitions.
      * @param {HTMLElement} target The panel to show.
      * @param {HTMLElement} source The panel to hide.
-     * @param {Function} focus The focus restoration callback.
+     * @param {() => void} focus The focus restoration callback.
      */
     #switchView(target, source, focus) {
         if (!this.node) {

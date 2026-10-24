@@ -3,6 +3,7 @@ import { BaseComponent, Modal, Popper, generateId, getClickTarget, initComponent
 import DateTime from "@fr0st/datetime";
 
 //#region src/js/comparisons.js
+/** @import DateTime from '@fr0st/datetime'; */
 /**
 * Checks whether a date is after another date (day).
 * @param {DateTime} a The date to test.
@@ -202,6 +203,7 @@ function formatFromParts(locale, options, hasDayPeriod) {
 
 //#endregion
 //#region src/js/helpers.js
+/** @import DateTime from '@fr0st/datetime'; */
 /**
 * Adjusts a date by a signed number of units.
 * @param {DateTime} date The starting date.
@@ -428,6 +430,7 @@ function renderTimeSeparator(classes, options) {
 
 //#endregion
 //#region src/js/date-time-picker.js
+/** @import { Placement, Position } from '@fr0st/ui/src/js/popper/popper.js'; */
 /**
 * A date string in the configured format, UNIX seconds, a 1-based date tuple,
 * a native Date, a DateTime, or null to clear a value.
@@ -470,8 +473,8 @@ function renderTimeSeparator(classes, options) {
 * @property {boolean} [mobileModal=true] Whether supported mobile user agents use a modal.
 * @property {number} [duration=100] The popup and panel transition duration, respecting reduced motion.
 * @property {string|HTMLElement|null} [appendTo=null] The popup or modal container.
-* @property {'top'|'bottom'|'left'|'right'} [placement='bottom'] The preferred popup placement.
-* @property {'start'|'center'|'end'} [position='start'] The popup alignment.
+* @property {Placement} [placement='bottom'] The preferred popup placement.
+* @property {Position} [position='start'] The popup alignment.
 * @property {boolean} [fixed=false] Whether Popper preserves the preferred placement.
 * @property {number} [spacing=0] The distance from the input.
 * @property {number|false|null} [minContact=false] The minimum contact with the input.
@@ -693,8 +696,11 @@ var DateTimePicker = class extends BaseComponent {
 	}
 	/**
 	* Creates a DateTimePicker.
-	* @param {HTMLElement} node The input node.
+	* @param {HTMLInputElement} node The input node.
 	* @param {DateTimePickerOptions} [options] The component options.
+	* @throws {TypeError} When the node is not an input element or the range separator is invalid.
+	* @throws {RangeError} When minuteStepping is not an integer from 1 to 60.
+	* @throws {Error} When the date/time format or selection mode is incompatible.
 	*/
 	constructor(node, options) {
 		if (!$._isElement(node) || !$.is(node, "input")) throw new TypeError("DateTimePicker must be created on an input element.");
@@ -2742,7 +2748,7 @@ var DateTimePicker = class extends BaseComponent {
 	/**
 	* Sets the current date.
 	* @param {DateTime|null} [date] The input date.
-	* @param {object} options The options for setting the date.
+	* @param {object} [options] The options for setting the date.
 	* @param {boolean} [options.updateValue=true] Whether to update the value.
 	*/
 	#setDate(date, { updateValue = true } = {}) {
@@ -2771,7 +2777,7 @@ var DateTimePicker = class extends BaseComponent {
 	/**
 	* Sets the current dates.
 	* @param {DateTime[]} dates The input dates.
-	* @param {object} options The options for setting the date.
+	* @param {object} [options] The options for setting the date.
 	* @param {boolean} [options.updateValue=true] Whether to update the value.
 	*/
 	#setDates(dates, { updateValue = true } = {}) {
@@ -2799,7 +2805,7 @@ var DateTimePicker = class extends BaseComponent {
 	/**
 	* Sets or clears a complete range.
 	* @param {(DateTime|null)[]|null} range The input endpoints.
-	* @param {object} options The assignment options.
+	* @param {object} [options] The assignment options.
 	* @param {boolean} [options.updateValue=true] Whether to commit the pair.
 	*/
 	#setRange(range, { updateValue = true } = {}) {
@@ -2830,7 +2836,7 @@ var DateTimePicker = class extends BaseComponent {
 	* Switches panels and ignores completions from interrupted transitions.
 	* @param {HTMLElement} target The panel to show.
 	* @param {HTMLElement} source The panel to hide.
-	* @param {Function} focus The focus restoration callback.
+	* @param {() => void} focus The focus restoration callback.
 	*/
 	#switchView(target, source, focus) {
 		if (!this.node) return;
