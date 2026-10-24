@@ -8,8 +8,8 @@ const resolveModule = (specifier) => new URL(import.meta.resolve(specifier));
 
 const routes = new Map([
     ['/', { contentType: html, file: new URL('../app/index.html', import.meta.url) }],
-    ['/assets/frost-ui-datetimepicker.js', { contentType: javaScript, file: new URL('../../../dist/frost-ui-datetimepicker.js', import.meta.url) }],
     ['/assets/frost-ui-datetimepicker.css', { contentType: css, file: new URL('../../../dist/frost-ui-datetimepicker.css', import.meta.url) }],
+    ['/assets/frost-ui-datetimepicker.js', { contentType: javaScript, file: new URL('../../../dist/frost-ui-datetimepicker.js', import.meta.url) }],
     ['/assets/frost-ui-bundle.js', { contentType: javaScript, file: resolveModule('@fr0st/ui/dist/frost-ui-bundle.js') }],
     ['/assets/frost-ui.css', { contentType: css, file: resolveModule('@fr0st/ui/dist/frost-ui.css') }],
     ['/assets/frost-datetime.js', { contentType: javaScript, file: resolveModule('@fr0st/datetime/dist/frost-datetime.js') }],
@@ -20,7 +20,9 @@ const server = createServer(async (request, response) => {
     const route = routes.get(url.pathname);
 
     if (!route) {
-        response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        response.writeHead(404, {
+            'Content-Type': 'text/plain; charset=utf-8',
+        });
         response.end('Not found');
         return;
     }
@@ -28,10 +30,14 @@ const server = createServer(async (request, response) => {
     try {
         const data = await readFile(route.file);
 
-        response.writeHead(200, { 'Content-Type': route.contentType });
+        response.writeHead(200, {
+            'Content-Type': route.contentType,
+        });
         response.end(data);
     } catch {
-        response.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+        response.writeHead(500, {
+            'Content-Type': 'text/plain; charset=utf-8',
+        });
         response.end('Internal server error');
     }
 });

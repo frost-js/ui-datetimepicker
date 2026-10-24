@@ -4,9 +4,18 @@ const baseURL = `http://localhost:${process.env.PORT ?? 3001}`;
 
 export default defineConfig({
     projects: [
-        { name: 'chromium', use: { browserName: 'chromium' } },
-        { name: 'firefox', use: { browserName: 'firefox' } },
-        { name: 'webkit', use: { browserName: 'webkit' } },
+        {
+            name: 'chromium',
+            use: { browserName: 'chromium' },
+        },
+        {
+            name: 'firefox',
+            use: { browserName: 'firefox' },
+        },
+        {
+            name: 'webkit',
+            use: { browserName: 'webkit' },
+        },
     ],
     testDir: './test/browser',
     testMatch: '**/*.test.js',
@@ -17,7 +26,10 @@ export default defineConfig({
         locale: 'en-GB',
         reducedMotion: 'reduce',
         timezoneId: 'UTC',
-        viewport: { height: 600, width: 800 },
+        viewport: {
+            height: 600,
+            width: 800,
+        },
     },
     webServer: {
         command: 'node test/support/server/static-server.js',
