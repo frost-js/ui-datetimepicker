@@ -144,6 +144,16 @@ test.describe('DateTimePicker calendar', () => {
             await expect(page.getByRole('dialog')).toHaveCount(0);
         });
 
+        test('dismisses the popup when tabbing past its last control', async ({ page }) => {
+            await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).show());
+
+            await page.getByRole('dialog').locator('[tabindex="0"]').last().focus();
+            await page.keyboard.press('Tab');
+
+            await expect(page.getByRole('dialog')).toHaveCount(0);
+            await expect(page.getByRole('button', { name: 'Outside', exact: true })).toBeFocused();
+        });
+
         test('dismisses Escape from a focused date and restores input focus', async ({ page }) => {
             await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd' }).show());
 

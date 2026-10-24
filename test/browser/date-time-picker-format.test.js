@@ -179,6 +179,30 @@ test.describe('DateTimePicker formats and limits', () => {
     });
 
     test.describe('inclusive bounds', () => {
+        for (const { format, minDate, maxDate, before, first, last, after } of [
+            { format: 'yyyy-MM', minDate: '2026-09', maxDate: '2026-10', before: 'Aug', first: 'Sep', last: 'Oct', after: 'Nov' },
+            { format: 'yyyy', minDate: '2026', maxDate: '2027', before: '2025', first: '2026', last: '2027', after: '2028' },
+        ]) {
+            test(`includes boundary choices and disables adjacent choices in ${format}`, async ({ page }) => {
+                await page.evaluate((options) => UI.DateTimePicker.init($.findOne('#date'), {
+                    ...options,
+                    inline: true,
+                    locale: 'en-US',
+                }), { format, minDate, maxDate });
+
+                await expect(page.getByRole('button', { name: before, exact: true })).toBeDisabled();
+                await expect(page.getByRole('button', { name: after, exact: true })).toBeDisabled();
+
+                await page.getByRole('button', { name: first, exact: true }).click();
+
+                await expect(page.getByLabel('Appointment')).toHaveValue(minDate);
+
+                await page.getByRole('button', { name: last, exact: true }).click();
+
+                await expect(page.getByLabel('Appointment')).toHaveValue(maxDate);
+            });
+        }
+
         test('validates rounded minute rollover against inclusive bounds', async ({ page }) => {
             const picker = await page.evaluateHandle(() => UI.DateTimePicker.init($.findOne('#date'), {
                 format: 'yyyy-MM-dd HH:mm',

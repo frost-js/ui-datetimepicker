@@ -416,7 +416,7 @@ test.describe('DateTimePicker ranges', () => {
         test('renders localized endpoints and range status in RTL', async ({ page }) => {
             await page.evaluate(() => $.setAttribute(document.body, { dir: 'rtl', lang: 'ar' }));
             await setupRange(page, { locale: 'ar', inline: true });
-            await page.evaluate(() => $('#date').datetimepicker('setDate', ['2026-09-15', '2026-09-18']));
+            await page.evaluate(() => $('#date').datetimepicker('setDate', [[2026, 9, 15], [2026, 9, 18]]));
 
             await expect(page.locator('.datetimepicker')).toHaveCSS('direction', 'rtl');
             await expect(page.locator('.datetimepicker-range-start')).toHaveAccessibleName(/[\u0600-\u06ff]/);

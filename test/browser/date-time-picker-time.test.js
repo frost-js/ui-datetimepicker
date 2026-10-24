@@ -61,11 +61,15 @@ test.describe('DateTimePicker time', () => {
     });
 
     test.describe('keyboard and focus', () => {
-        for (const { control, key, expected } of [
+        for (const { control, key, expected, focus = control } of [
             { control: 'Select Hour', key: 'ArrowUp', expected: '13:30' },
             { control: 'Select Hour', key: 'ArrowDown', expected: '11:30' },
             { control: 'Select Minute', key: 'ArrowUp', expected: '12:35' },
             { control: 'Select Minute', key: 'ArrowDown', expected: '12:25' },
+            { control: 'Increment Hour', key: 'ArrowUp', expected: '13:30', focus: 'Select Hour' },
+            { control: 'Decrement Hour', key: 'ArrowDown', expected: '11:30', focus: 'Select Hour' },
+            { control: 'Increment Minute', key: 'ArrowUp', expected: '12:35', focus: 'Select Minute' },
+            { control: 'Decrement Minute', key: 'ArrowDown', expected: '12:25', focus: 'Select Minute' },
         ]) {
             test(`changes ${control} with ${key}`, async ({ page }) => {
                 await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), {
@@ -77,7 +81,7 @@ test.describe('DateTimePicker time', () => {
                 await page.getByRole('button', { name: control, exact: true }).press(key);
 
                 await expect(page.locator('#date')).toHaveValue(expected);
-                await expect(page.getByRole('button', { name: control, exact: true })).toBeFocused();
+                await expect(page.getByRole('button', { name: focus, exact: true })).toBeFocused();
             });
         }
 
@@ -106,6 +110,24 @@ test.describe('DateTimePicker time', () => {
                 await page.keyboard.press('Enter');
 
                 await expect(page.locator('#date')).toHaveValue(expected);
+            });
+        }
+
+        for (const { format, date, view, target, expected } of [
+            { format: 'hh a', date: '10 am', view: 'Hour', target: '11', expected: '11 am' },
+            { format: 'hh:mm a', date: '10:30 am', view: 'Minute', target: '35', expected: '10:35 am' },
+        ]) {
+            test(`focuses the period after selecting ${view} in ${format}`, async ({ page }) => {
+                await page.evaluate(({ format, date }) => UI.DateTimePicker.init($.findOne('#date'), {
+                    format,
+                    inline: true,
+                }).setDate(date), { format, date });
+
+                await page.getByRole('button', { name: `Select ${view}`, exact: true }).click();
+                await page.getByRole('button', { name: target, exact: true }).press('Enter');
+
+                await expect(page.locator('#date')).toHaveValue(expected);
+                await expect(page.getByRole('button', { name: 'Toggle Period', exact: true })).toBeFocused();
             });
         }
 
