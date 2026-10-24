@@ -1,5 +1,5 @@
 import $ from "@fr0st/query";
-import { BaseComponent, Modal, Popper, generateId, getClickTarget, initComponent } from "@fr0st/ui";
+import { BaseComponent, Modal, Popper, generateId, getClickTarget, initComponent, waitForTransition } from "@fr0st/ui";
 import DateTime from "@fr0st/datetime";
 
 //#region src/js/comparisons.js
@@ -468,7 +468,7 @@ function renderTimeSeparator(classes, options) {
 * @property {boolean} [ignoreReadonly=false] Whether readonly inputs remain editable through the picker.
 * @property {boolean} [modal=false] Whether to use a modal; inline mode takes precedence.
 * @property {boolean} [mobileModal=true] Whether supported mobile user agents use a modal.
-* @property {number} [duration=100] The popup animation duration in milliseconds.
+* @property {number} [duration=100] The popup and panel transition duration, respecting reduced motion.
 * @property {string|HTMLElement|null} [appendTo=null] The popup or modal container.
 * @property {'top'|'bottom'|'left'|'right'} [placement='bottom'] The preferred popup placement.
 * @property {'start'|'center'|'end'} [position='start'] The popup alignment.
@@ -494,6 +494,7 @@ var DateTimePicker = class extends BaseComponent {
 		hourColumn: "col-3 p-1",
 		menu: "datetimepicker",
 		menuInline: "datetimepicker-inline",
+		menuPopup: "datetimepicker-popup",
 		menuShadow: "shadow-sm",
 		menuWide: "datetimepicker-wide",
 		modal: "modal",
@@ -506,6 +507,7 @@ var DateTimePicker = class extends BaseComponent {
 		modalHeader: "modal-header",
 		modalTitle: "modal-title",
 		navigation: "text-primary fs-5 lh-1",
+		panelTransition: "datetimepicker-panel-transition",
 		periodButton: "btn btn-primary d-block",
 		rangeBetween: "datetimepicker-range-between",
 		rangeEnd: "datetimepicker-range-end",
@@ -772,11 +774,6 @@ var DateTimePicker = class extends BaseComponent {
 		for (const timer of this.#resetTimers) clearTimeout(timer);
 		this.#resetTimers.clear();
 		this.#observer?.disconnect();
-		for (const node of [
-			this.#menuNode,
-			this.#dateContainer,
-			this.#timeContainer
-		]) if (node) $.stop(node);
 		this.#popper?.dispose();
 		if (this.#modal) {
 			$.getData(this.#modal, Modal.DATA_KEY)?.dispose();
@@ -880,16 +877,16 @@ var DateTimePicker = class extends BaseComponent {
 		$.setAttribute($.find("[tabindex]", this.#menuNode), { tabindex: -1 });
 		const menu = this.#menuNode;
 		const id = ++this.#transitionId;
-		$.stop(menu);
 		$.setDataset(menu, { uiAnimating: "out" });
-		$.fadeOut(menu, { duration: this.#duration() }).then(() => {
+		$.removeClass(menu, "show");
+		waitForTransition(menu, ["opacity"]).then(() => {
 			if (!this.node || id !== this.#transitionId) return;
 			this.#popper?.dispose();
 			this.#popper = null;
 			$.detach(menu);
 			$.removeDataset(menu, "uiAnimating");
 			$.triggerEvent(this.node, "hidden.ui.datetimepicker");
-		}).catch(() => {});
+		});
 	}
 	/**
 	* Refreshes the DateTimePicker.
@@ -963,7 +960,6 @@ var DateTimePicker = class extends BaseComponent {
 		$.setAttribute(this.node, { "aria-expanded": true });
 		const menu = this.#menuNode;
 		const id = ++this.#transitionId;
-		$.stop(menu);
 		$.setDataset(menu, { uiAnimating: "in" });
 		if (this.options.appendTo) $.append(this.options.appendTo, menu);
 		else $.after(this.node, menu);
@@ -979,11 +975,13 @@ var DateTimePicker = class extends BaseComponent {
 			spacing: this.options.spacing,
 			minContact: this.options.minContact
 		});
-		$.fadeIn(menu, { duration: this.#duration() }).then(() => {
+		$.css(menu, "opacity");
+		$.addClass(menu, "show");
+		waitForTransition(menu, ["opacity"]).then(() => {
 			if (!this.node || id !== this.#transitionId) return;
 			$.removeDataset(menu, "uiAnimating");
 			$.triggerEvent(this.node, "shown.ui.datetimepicker");
-		}).catch(() => {});
+		});
 	}
 	/**
 	* Toggles the DateTimePicker.
@@ -1091,13 +1089,6 @@ var DateTimePicker = class extends BaseComponent {
 		const stepMinutes = Math.min($._toStep(minutes, this.options.minuteStepping), 60);
 		if (minutes !== stepMinutes) return date.withMinutes(stepMinutes);
 		return date;
-	}
-	/**
-	* Gets the effective animation duration, respecting reduced motion.
-	* @returns {number} The duration in milliseconds.
-	*/
-	#duration() {
-		return matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : this.options.duration;
 	}
 	/**
 	* Attaches events for the DateTimePicker.
@@ -2053,6 +2044,7 @@ var DateTimePicker = class extends BaseComponent {
 		const menuId = generateId("datetimepicker");
 		this.#menuNode = $.create("div", {
 			class: this.constructor.classes.menu,
+			style: { "--ui-datetimepicker-duration": `${Math.max(0, Number(this.options.duration) || 0)}ms` },
 			attributes: {
 				"id": menuId,
 				"role": this.options.inline ? "group" : "dialog",
@@ -2163,7 +2155,7 @@ var DateTimePicker = class extends BaseComponent {
 			$.addClass(this.#menuNode, this.constructor.classes.menuInline);
 			$.after(this.node, this.#menuNode);
 			this.#releaseDisplay = $.setStyleLock(this.node, "display", "none");
-		} else $.addClass(this.#menuNode, this.constructor.classes.menuShadow);
+		} else $.addClass(this.#menuNode, this.constructor.classes.menuPopup, this.constructor.classes.menuShadow);
 	}
 	/**
 	* Renders the days picker.
@@ -2730,8 +2722,9 @@ var DateTimePicker = class extends BaseComponent {
 	*/
 	#resetView() {
 		++this.#viewTransitionId;
-		if (this.#dateContainer) $.stop(this.#dateContainer);
-		if (this.#timeContainer) $.stop(this.#timeContainer);
+		const panels = [this.#dateContainer, this.#timeContainer].filter(Boolean);
+		$.removeClass(panels, this.constructor.classes.panelTransition);
+		$.setStyle(panels, { height: "" });
 		this.#viewMode = this.#minView;
 		this.#timeViewMode = null;
 		if (this.options.range && this.#range) this.#viewDate = this.#range[0];
@@ -2842,16 +2835,24 @@ var DateTimePicker = class extends BaseComponent {
 	#switchView(target, source, focus) {
 		if (!this.node) return;
 		const id = ++this.#viewTransitionId;
-		$.stop(target);
-		$.stop(source);
+		const targetHeight = $.isConnected(target) ? $.height(target) : 0;
+		const sourceHeight = $.height(source);
+		const panels = [target, source];
 		$.append(this.#container, target);
-		$.setStyle(target, { display: "" });
-		Promise.all([$.squeezeIn(target, { duration: this.#duration() }), $.squeezeOut(source, { duration: this.#duration() })]).then(() => {
+		$.setStyle(target, { height: targetHeight });
+		$.setStyle(source, { height: sourceHeight });
+		$.addClass(panels, this.constructor.classes.panelTransition);
+		const height = $.height(target, { boxSize: $.SCROLL_BOX });
+		$.setStyle(target, { height });
+		$.setStyle(source, { height: 0 });
+		Promise.all([waitForTransition(target, ["height"]), waitForTransition(source, ["height"])]).then(() => {
 			if (!this.node || id !== this.#viewTransitionId) return;
 			$.detach(source);
+			$.removeClass(panels, this.constructor.classes.panelTransition);
+			$.setStyle(panels, { height: "" });
 			this.update();
-			focus();
-		}).catch(() => {});
+			if (this.#isEditable() && (this.options.inline || this.#open)) focus();
+		});
 	}
 	/**
 	* Updates the input value to the current date.

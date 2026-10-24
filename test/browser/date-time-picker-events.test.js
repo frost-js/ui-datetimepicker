@@ -22,9 +22,8 @@ test.describe('DateTimePicker events', () => {
             await expect.poll(() => page.evaluate(() => window.events.join(','))).toBe('show,shown,hide,hidden');
         });
 
-        test('ignores interrupted popup animations and permits reopening', async ({ page }) => {
+        test('ignores interrupted popup transitions and permits reopening', async ({ page }) => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
-            await page.clock.install();
             await page.evaluate(() => {
                 const picker = UI.DateTimePicker.init($.findOne('#date'), {
                     format: 'yyyy-MM-dd',
@@ -39,18 +38,43 @@ test.describe('DateTimePicker events', () => {
                 picker.hide();
                 picker.show();
             });
-            await page.clock.runFor(300);
 
+            await expect.poll(() => page.evaluate(() => window.shown)).toBe(1);
             await expect(page.getByRole('dialog')).toBeVisible();
-            expect(await page.evaluate(() => window.shown)).toBe(1);
+            await expect(page.getByRole('dialog')).toHaveCSS('opacity', '1');
             expect(await page.evaluate(() => window.hidden)).toBe(0);
 
             await page.evaluate(() => $('#date').datetimepicker('hide'));
-            await page.clock.runFor(300);
 
             await expect(page.getByRole('dialog')).toHaveCount(0);
             expect(await page.evaluate(() => window.hidden)).toBe(1);
         });
+
+        for (const { reducedMotion, duration } of [
+            { reducedMotion: 'reduce', duration: 1000 },
+            { reducedMotion: 'no-preference', duration: 0 },
+        ]) {
+            test(`settles without animation (motion=${reducedMotion}, duration=${duration})`, async ({ page }) => {
+                await page.emulateMedia({ reducedMotion });
+                await page.evaluate((duration) => {
+                    window.events = [];
+
+                    for (const event of ['shown', 'hidden']) {
+                        $.addEvent('#date', `${event}.ui.datetimepicker`, () => window.events.push(event));
+                    }
+                    UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', duration }).show();
+                }, duration);
+
+                await expect.poll(() => page.evaluate(() => window.events.join(','))).toBe('shown');
+                await expect(page.getByRole('dialog')).toHaveCSS('transition-duration', '0s');
+                await expect(page.getByRole('dialog')).toHaveCSS('opacity', '1');
+
+                await page.evaluate(() => $('#date').datetimepicker('hide'));
+
+                await expect(page.getByRole('dialog')).toHaveCount(0);
+                expect(await page.evaluate(() => window.events.join(','))).toBe('shown,hidden');
+            });
+        }
     });
 
     test.describe('change event', () => {

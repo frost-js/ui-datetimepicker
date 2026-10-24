@@ -500,7 +500,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 	* @property {boolean} [ignoreReadonly=false] Whether readonly inputs remain editable through the picker.
 	* @property {boolean} [modal=false] Whether to use a modal; inline mode takes precedence.
 	* @property {boolean} [mobileModal=true] Whether supported mobile user agents use a modal.
-	* @property {number} [duration=100] The popup animation duration in milliseconds.
+	* @property {number} [duration=100] The popup and panel transition duration, respecting reduced motion.
 	* @property {string|HTMLElement|null} [appendTo=null] The popup or modal container.
 	* @property {'top'|'bottom'|'left'|'right'} [placement='bottom'] The preferred popup placement.
 	* @property {'start'|'center'|'end'} [position='start'] The popup alignment.
@@ -526,6 +526,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			hourColumn: "col-3 p-1",
 			menu: "datetimepicker",
 			menuInline: "datetimepicker-inline",
+			menuPopup: "datetimepicker-popup",
 			menuShadow: "shadow-sm",
 			menuWide: "datetimepicker-wide",
 			modal: "modal",
@@ -538,6 +539,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			modalHeader: "modal-header",
 			modalTitle: "modal-title",
 			navigation: "text-primary fs-5 lh-1",
+			panelTransition: "datetimepicker-panel-transition",
 			periodButton: "btn btn-primary d-block",
 			rangeBetween: "datetimepicker-range-between",
 			rangeEnd: "datetimepicker-range-end",
@@ -804,11 +806,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			for (const timer of this.#resetTimers) clearTimeout(timer);
 			this.#resetTimers.clear();
 			this.#observer?.disconnect();
-			for (const node of [
-				this.#menuNode,
-				this.#dateContainer,
-				this.#timeContainer
-			]) if (node) _fr0st_query.default.stop(node);
 			this.#popper?.dispose();
 			if (this.#modal) {
 				_fr0st_query.default.getData(this.#modal, _fr0st_ui.Modal.DATA_KEY)?.dispose();
@@ -912,16 +909,16 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			_fr0st_query.default.setAttribute(_fr0st_query.default.find("[tabindex]", this.#menuNode), { tabindex: -1 });
 			const menu = this.#menuNode;
 			const id = ++this.#transitionId;
-			_fr0st_query.default.stop(menu);
 			_fr0st_query.default.setDataset(menu, { uiAnimating: "out" });
-			_fr0st_query.default.fadeOut(menu, { duration: this.#duration() }).then(() => {
+			_fr0st_query.default.removeClass(menu, "show");
+			(0, _fr0st_ui.waitForTransition)(menu, ["opacity"]).then(() => {
 				if (!this.node || id !== this.#transitionId) return;
 				this.#popper?.dispose();
 				this.#popper = null;
 				_fr0st_query.default.detach(menu);
 				_fr0st_query.default.removeDataset(menu, "uiAnimating");
 				_fr0st_query.default.triggerEvent(this.node, "hidden.ui.datetimepicker");
-			}).catch(() => {});
+			});
 		}
 		/**
 		* Refreshes the DateTimePicker.
@@ -995,7 +992,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			_fr0st_query.default.setAttribute(this.node, { "aria-expanded": true });
 			const menu = this.#menuNode;
 			const id = ++this.#transitionId;
-			_fr0st_query.default.stop(menu);
 			_fr0st_query.default.setDataset(menu, { uiAnimating: "in" });
 			if (this.options.appendTo) _fr0st_query.default.append(this.options.appendTo, menu);
 			else _fr0st_query.default.after(this.node, menu);
@@ -1011,11 +1007,13 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				spacing: this.options.spacing,
 				minContact: this.options.minContact
 			});
-			_fr0st_query.default.fadeIn(menu, { duration: this.#duration() }).then(() => {
+			_fr0st_query.default.css(menu, "opacity");
+			_fr0st_query.default.addClass(menu, "show");
+			(0, _fr0st_ui.waitForTransition)(menu, ["opacity"]).then(() => {
 				if (!this.node || id !== this.#transitionId) return;
 				_fr0st_query.default.removeDataset(menu, "uiAnimating");
 				_fr0st_query.default.triggerEvent(this.node, "shown.ui.datetimepicker");
-			}).catch(() => {});
+			});
 		}
 		/**
 		* Toggles the DateTimePicker.
@@ -1123,13 +1121,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			const stepMinutes = Math.min(_fr0st_query.default._toStep(minutes, this.options.minuteStepping), 60);
 			if (minutes !== stepMinutes) return date.withMinutes(stepMinutes);
 			return date;
-		}
-		/**
-		* Gets the effective animation duration, respecting reduced motion.
-		* @returns {number} The duration in milliseconds.
-		*/
-		#duration() {
-			return matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : this.options.duration;
 		}
 		/**
 		* Attaches events for the DateTimePicker.
@@ -2085,6 +2076,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			const menuId = (0, _fr0st_ui.generateId)("datetimepicker");
 			this.#menuNode = _fr0st_query.default.create("div", {
 				class: this.constructor.classes.menu,
+				style: { "--ui-datetimepicker-duration": `${Math.max(0, Number(this.options.duration) || 0)}ms` },
 				attributes: {
 					"id": menuId,
 					"role": this.options.inline ? "group" : "dialog",
@@ -2195,7 +2187,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				_fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.menuInline);
 				_fr0st_query.default.after(this.node, this.#menuNode);
 				this.#releaseDisplay = _fr0st_query.default.setStyleLock(this.node, "display", "none");
-			} else _fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.menuShadow);
+			} else _fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.menuPopup, this.constructor.classes.menuShadow);
 		}
 		/**
 		* Renders the days picker.
@@ -2762,8 +2754,9 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		*/
 		#resetView() {
 			++this.#viewTransitionId;
-			if (this.#dateContainer) _fr0st_query.default.stop(this.#dateContainer);
-			if (this.#timeContainer) _fr0st_query.default.stop(this.#timeContainer);
+			const panels = [this.#dateContainer, this.#timeContainer].filter(Boolean);
+			_fr0st_query.default.removeClass(panels, this.constructor.classes.panelTransition);
+			_fr0st_query.default.setStyle(panels, { height: "" });
 			this.#viewMode = this.#minView;
 			this.#timeViewMode = null;
 			if (this.options.range && this.#range) this.#viewDate = this.#range[0];
@@ -2874,16 +2867,24 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		#switchView(target, source, focus) {
 			if (!this.node) return;
 			const id = ++this.#viewTransitionId;
-			_fr0st_query.default.stop(target);
-			_fr0st_query.default.stop(source);
+			const targetHeight = _fr0st_query.default.isConnected(target) ? _fr0st_query.default.height(target) : 0;
+			const sourceHeight = _fr0st_query.default.height(source);
+			const panels = [target, source];
 			_fr0st_query.default.append(this.#container, target);
-			_fr0st_query.default.setStyle(target, { display: "" });
-			Promise.all([_fr0st_query.default.squeezeIn(target, { duration: this.#duration() }), _fr0st_query.default.squeezeOut(source, { duration: this.#duration() })]).then(() => {
+			_fr0st_query.default.setStyle(target, { height: targetHeight });
+			_fr0st_query.default.setStyle(source, { height: sourceHeight });
+			_fr0st_query.default.addClass(panels, this.constructor.classes.panelTransition);
+			const height = _fr0st_query.default.height(target, { boxSize: _fr0st_query.default.SCROLL_BOX });
+			_fr0st_query.default.setStyle(target, { height });
+			_fr0st_query.default.setStyle(source, { height: 0 });
+			Promise.all([(0, _fr0st_ui.waitForTransition)(target, ["height"]), (0, _fr0st_ui.waitForTransition)(source, ["height"])]).then(() => {
 				if (!this.node || id !== this.#viewTransitionId) return;
 				_fr0st_query.default.detach(source);
+				_fr0st_query.default.removeClass(panels, this.constructor.classes.panelTransition);
+				_fr0st_query.default.setStyle(panels, { height: "" });
 				this.update();
-				focus();
-			}).catch(() => {});
+				if (this.#isEditable() && (this.options.inline || this.#open)) focus();
+			});
 		}
 		/**
 		* Updates the input value to the current date.

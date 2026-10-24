@@ -309,9 +309,73 @@ test.describe('DateTimePicker time', () => {
             await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toBeVisible();
         });
 
-        test('can be disposed during an animated panel switch', async ({ page }) => {
+        test('reverses a panel transition without detaching the active panel or losing focus', async ({ page }) => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
-            await page.clock.install();
+            await page.evaluate(() => {
+                UI.DateTimePicker.init($.findOne('#date'), {
+                    format: 'yyyy-MM-dd HH:mm',
+                    inline: true,
+                    duration: 100,
+                });
+
+                $.click('[data-ui-action="showTime"]');
+                $.click('[data-ui-action="showDate"]');
+            });
+
+            await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toBeFocused();
+            await expect(page.getByRole('button', { name: 'Select Hour', exact: true })).toHaveCount(0);
+            await expect(page.locator('.datetimepicker-panel-transition')).toHaveCount(0);
+
+            await page.getByRole('button', { name: 'Select Time', exact: true }).click();
+
+            await expect(page.getByRole('button', { name: 'Select Hour', exact: true })).toBeFocused();
+            await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toHaveCount(0);
+        });
+
+        test('resets an unfinished panel transition when reopening the popup', async ({ page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            await page.evaluate(() => {
+                const picker = UI.DateTimePicker.init($.findOne('#date'), {
+                    format: 'yyyy-MM-dd HH:mm',
+                    mobileModal: false,
+                    duration: 100,
+                });
+
+                picker.show();
+                $.click('[data-ui-action="showTime"]');
+                picker.hide();
+                picker.show();
+                $.focus('#outside');
+            });
+
+            await expect(page.getByRole('dialog')).toHaveCSS('opacity', '1');
+            await expect(page.locator('.datetimepicker-panel-transition')).toHaveCount(0);
+            await expect(page.getByRole('button', { name: 'September 15, 2026', exact: true })).toBeVisible();
+            await expect(page.getByRole('button', { name: 'Select Hour', exact: true })).toHaveCount(0);
+            await expect(page.getByRole('button', { name: 'Outside', exact: true })).toBeFocused();
+        });
+
+        test('does not restore panel focus after the popup closes', async ({ page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            await page.evaluate(() => {
+                const picker = UI.DateTimePicker.init($.findOne('#date'), {
+                    format: 'yyyy-MM-dd HH:mm',
+                    mobileModal: false,
+                    duration: 100,
+                });
+
+                picker.show();
+                $.click('[data-ui-action="showTime"]');
+                picker.hide();
+                $.focus('#outside');
+            });
+
+            await expect(page.getByRole('dialog')).toHaveCount(0);
+            await expect(page.getByRole('button', { name: 'Outside', exact: true })).toBeFocused();
+        });
+
+        test('can be disposed during a panel transition', async ({ page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
             await page.evaluate(() => {
                 const picker = UI.DateTimePicker.init($.findOne('#date'), {
                     format: 'yyyy-MM-dd HH:mm',
@@ -322,7 +386,6 @@ test.describe('DateTimePicker time', () => {
                 $.click('[data-ui-action="showTime"]');
                 picker.dispose();
             });
-            await page.clock.runFor(300);
 
             await expect(page.locator('.datetimepicker')).toHaveCount(0);
             await expect(page.getByLabel('Date', { exact: true })).toBeVisible();

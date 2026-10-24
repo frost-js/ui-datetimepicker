@@ -251,7 +251,7 @@ Resolved `instance.options` are shallow-frozen.
 | `ariaFormat` | `string \| null` | `'LLLL d, yyyy'` | Accessible day-cell label pattern. |
 | `defaultDate` | `DateInput` | `null` | Starting view when empty; null uses now. |
 | `defaultView` | `'days' \| 'months' \| 'years' \| null` | `null` | `'days'`, `'months'`, or `'years'`; defaults to the smallest supported view. |
-| `duration` | `number` | `100` | Popup/panel animation milliseconds; respects reduced motion. Modal transitions use UI styling. |
+| `duration` | `number` | `100` | CSS transition duration in milliseconds for popup opacity and panel height; respects reduced motion. Modal transitions use UI styling. |
 | `fixed` | `boolean` | `false` | Preserve the preferred placement; this is not CSS fixed positioning. |
 | `format` | `string \| null` | `null` | DateTime pattern; derive from locale when null. |
 | `ignoreReadonly` | `boolean` | `false` | Allow picker selection on readonly inputs; disabled inputs remain disabled. |
@@ -472,7 +472,7 @@ Frost UI follows the user's preferred color scheme by default. Set `data-ui-them
 
 Set `dir="rtl"` on the document or a containing region for RTL alignment and the mirrored today marker. Use logical Popper placements (`start`/`end`) for horizontal attachment.
 
-Component CSS variables are `--ui-datetimepicker-z-index`, `--ui-datetimepicker-bg`, `--ui-datetimepicker-border-width`, and `--ui-datetimepicker-border-color`. Override them on the rendered `.datetimepicker`, not only the input:
+Component CSS variables are `--ui-datetimepicker-z-index`, `--ui-datetimepicker-bg`, `--ui-datetimepicker-border-width`, `--ui-datetimepicker-border-color`, and `--ui-datetimepicker-duration` (set from the `duration` option). Override them on the rendered `.datetimepicker`, not only the input:
 
 ```css
 .datetimepicker {

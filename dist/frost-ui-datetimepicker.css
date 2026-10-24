@@ -33,9 +33,28 @@
   background-color: var(--ui-primary-subtle);
 }
 
+.datetimepicker-popup {
+  opacity: 0;
+  transition: opacity var(--ui-datetimepicker-duration, var(--ui-transition-duration)) var(--ui-transition-timing-function);
+}
+.datetimepicker-popup.show {
+  opacity: 1;
+}
+
 .datetimepicker-inline {
   --ui-datetimepicker-bg: transparent;
   --ui-datetimepicker-border-width: 0;
+}
+
+.datetimepicker-modal {
+  --ui-datetimepicker-border-width: 0;
+  width: 100%;
+}
+
+.datetimepicker-panel-transition {
+  min-height: 0;
+  overflow: hidden;
+  transition: height var(--ui-datetimepicker-duration, var(--ui-transition-duration)) var(--ui-transition-timing-function);
 }
 
 .datetimepicker-action {
@@ -99,9 +118,11 @@
     width: 600px;
   }
 }
-.datetimepicker-modal {
-  --ui-datetimepicker-border-width: 0;
-  width: 100%;
+@media (prefers-reduced-motion: reduce) {
+  .datetimepicker-popup,
+  .datetimepicker-panel-transition {
+    transition: none;
+  }
 }
 
 /*# sourceMappingURL=frost-ui-datetimepicker.css.map */
