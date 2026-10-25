@@ -33,7 +33,7 @@ test.describe('DateTimePicker ranges', () => {
 
             await page.evaluate(() => $('#date').datetimepicker('setDate', [[2026, 11, 5], [2026, 11, 1]]));
 
-            await expect(page.locator('#date')).toHaveValue('01/11/2026 – 05/11/2026');
+            await expect(page.locator('#date')).toHaveValue('01/11/2026 - 05/11/2026');
         });
 
         for (const options of [
@@ -71,7 +71,7 @@ test.describe('DateTimePicker ranges', () => {
                         return error instanceof TypeError;
                     }
                 }, value)).toBe(true);
-                await expect(page.locator('#date')).toHaveValue('2026-09-15 – 2026-09-18');
+                await expect(page.locator('#date')).toHaveValue('2026-09-15 - 2026-09-18');
             });
         }
 
@@ -110,7 +110,7 @@ test.describe('DateTimePicker ranges', () => {
             await page.getByRole('button', { name: 'September 18, 2026', exact: true }).click();
 
             await expect(page.getByRole('dialog')).toHaveCount(0);
-            await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-15 – 2026-09-18');
+            await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-15 - 2026-09-18');
             await expect(page.getByLabel('Date', { exact: true })).toBeFocused();
             await expect(page.locator('#date')).toHaveAttribute('data-changes', '1');
 
@@ -132,7 +132,7 @@ test.describe('DateTimePicker ranges', () => {
                 await page.getByRole('button', { name: `September ${end}, 2026`, exact: true }).click();
                 await page.getByRole('button', { name: 'September 15, 2026', exact: true }).click();
 
-                await expect(page.locator('#date')).toHaveValue(`2026-09-15 – 2026-09-${end}`);
+                await expect(page.locator('#date')).toHaveValue(`2026-09-15 - 2026-09-${end}`);
                 await expect(page.locator('.datetimepicker-range-start')).toHaveAttribute('aria-pressed', 'true');
                 await expect(page.locator('.datetimepicker-range-end')).toHaveAttribute('aria-pressed', 'true');
 
@@ -154,13 +154,13 @@ test.describe('DateTimePicker ranges', () => {
             await page.getByLabel('Date', { exact: true }).click();
             await page.getByRole('button', { name: 'September 21, 2026', exact: true }).click();
 
-            await expect(page.locator('#date')).toHaveValue('2026-09-15 – 2026-09-18');
+            await expect(page.locator('#date')).toHaveValue('2026-09-15 - 2026-09-18');
             await expect(page.locator('.datetimepicker-range-between')).toHaveCount(0);
 
             await page.getByRole('button', { name: 'September 23, 2026', exact: true }).click();
 
             await expect(page.getByRole('dialog')).toBeVisible();
-            await expect(page.locator('#date')).toHaveValue('2026-09-21 – 2026-09-23');
+            await expect(page.locator('#date')).toHaveValue('2026-09-21 - 2026-09-23');
         });
     });
 
@@ -179,7 +179,7 @@ test.describe('DateTimePicker ranges', () => {
                 await expect(page.locator('.datetimepicker-range-between')).toHaveCount(3);
                 await expect(page.getByRole('button', { name: `September ${day}, 2026`, exact: true })).toHaveClass(/datetimepicker-range-between/);
                 await expect(page.locator('[data-ui-date][aria-pressed="true"]')).toHaveCount(1);
-                await expect(page.locator('#date')).toHaveValue('2026-09-15 – 2026-09-18');
+                await expect(page.locator('#date')).toHaveValue('2026-09-15 - 2026-09-18');
                 await expect(page.getByRole('status')).toContainText('Range start: September 21, 2026.');
             }
 
@@ -192,7 +192,7 @@ test.describe('DateTimePicker ranges', () => {
             await page.getByRole('button', { name: 'September 24, 2026', exact: true }).click();
             await page.getByRole('button', { name: 'Outside', exact: true }).hover();
 
-            await expect(page.locator('#date')).toHaveValue('2026-09-21 – 2026-09-24');
+            await expect(page.locator('#date')).toHaveValue('2026-09-21 - 2026-09-24');
             await expect(page.locator('.datetimepicker-range-between')).toHaveCount(2);
         });
 
@@ -221,10 +221,10 @@ test.describe('DateTimePicker ranges', () => {
             await page.keyboard.press('ArrowRight');
             await page.keyboard.press('Enter');
 
-            await expect(page.locator('#date')).toHaveValue('2026-12-31 – 2027-01-01');
+            await expect(page.locator('#date')).toHaveValue('2026-12-31 - 2027-01-01');
             await expect(page.getByRole('button', { name: 'January 1, 2027', exact: true })).toBeFocused();
             await expect(page.locator('[data-ui-date][tabindex="0"]')).toHaveCount(1);
-            await expect(page.locator('.datetimepicker .fs-3')).toHaveText('2026-12-31 – 2027-01-01');
+            await expect(page.locator('.datetimepicker .fs-3')).toHaveText('2026-12-31 - 2027-01-01');
         });
 
         test('cancels an inline draft with Escape', async ({ page }) => {
@@ -260,7 +260,7 @@ test.describe('DateTimePicker ranges', () => {
                 await page.getByLabel('Date', { exact: true }).click();
                 await page.getByRole('button', { name: 'September 22, 2026', exact: true }).click();
 
-                await expect(page.locator('#date')).toHaveValue('2026-09-15 – 2026-09-18');
+                await expect(page.locator('#date')).toHaveValue('2026-09-15 - 2026-09-18');
                 await expect(page.getByRole('status')).toContainText('Select an end date.');
             });
         }
@@ -275,7 +275,7 @@ test.describe('DateTimePicker ranges', () => {
             });
             await page.getByRole('button', { name: 'September 18, 2026', exact: true }).click();
 
-            await expect(page.locator('#date')).toHaveValue('2026-09-15 – 2026-09-18');
+            await expect(page.locator('#date')).toHaveValue('2026-09-15 - 2026-09-18');
         });
     });
 
@@ -300,13 +300,13 @@ test.describe('DateTimePicker ranges', () => {
             await page.getByRole('button', { name: 'September 23, 2026', exact: true }).click();
 
             await expect(page.getByRole('button', { name: 'Set', exact: true })).toBeEnabled();
-            await expect(page.locator('#date')).toHaveValue('2026-09-15 – 2026-09-18');
+            await expect(page.locator('#date')).toHaveValue('2026-09-15 - 2026-09-18');
             expect(await page.evaluate(() => $('#date').datetimepicker('getDate')[0].format('yyyy-MM-dd'))).toBe('2026-09-15');
 
             await page.getByRole('button', { name: 'Set', exact: true }).click();
 
             await expect(page.getByRole('dialog')).toHaveCount(0);
-            await expect(page.locator('#date')).toHaveValue('2026-09-21 – 2026-09-23');
+            await expect(page.locator('#date')).toHaveValue('2026-09-21 - 2026-09-23');
             await expect(page.locator('#date')).toHaveAttribute('data-changes', '1');
             await expect(page.locator('#date')).toHaveAttribute('data-old', '2026-09-15,2026-09-18');
         });
@@ -325,7 +325,7 @@ test.describe('DateTimePicker ranges', () => {
                 }
 
                 await expect(page.getByRole('dialog')).toHaveCount(0);
-                await expect(page.locator('#date')).toHaveValue('2026-09-15 – 2026-09-18');
+                await expect(page.locator('#date')).toHaveValue('2026-09-15 - 2026-09-18');
                 await expect(page.locator('#date')).not.toHaveAttribute('data-changes');
             });
         }
@@ -337,7 +337,7 @@ test.describe('DateTimePicker ranges', () => {
             await page.getByRole('button', { name: 'Set', exact: true }).click();
 
             await expect(page.getByRole('dialog')).toBeVisible();
-            await expect(page.locator('#date')).toHaveValue('2026-09-15 – 2026-09-18');
+            await expect(page.locator('#date')).toHaveValue('2026-09-15 - 2026-09-18');
 
             await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 
@@ -350,7 +350,7 @@ test.describe('DateTimePicker ranges', () => {
             await page.getByRole('button', { name: 'September 23, 2026', exact: true }).click();
             await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 
-            await expect(page.locator('#date')).toHaveValue('2026-09-24 – 2026-09-25');
+            await expect(page.locator('#date')).toHaveValue('2026-09-24 - 2026-09-25');
         });
 
         test('discards drafts during refresh and revalidates committed bounds', async ({ page }) => {
@@ -386,7 +386,7 @@ test.describe('DateTimePicker ranges', () => {
             await page.getByRole('button', { name: 'September 18, 2026', exact: true }).click();
             await page.getByRole('button', { name: 'September 21, 2026', exact: true }).click();
 
-            await expect(page.locator('#date')).toHaveValue('2026-09-18 – 2026-09-21');
+            await expect(page.locator('#date')).toHaveValue('2026-09-18 - 2026-09-21');
             await expect(page.getByRole('button', { name: 'September 19, 2026', exact: true })).toBeDisabled();
             await expect(page.getByRole('button', { name: 'September 19, 2026', exact: true })).toHaveClass(/datetimepicker-range-between/);
 
@@ -405,7 +405,7 @@ test.describe('DateTimePicker ranges', () => {
                 new Date('2026-03-08T12:00:00Z'),
             ]));
 
-            await expect(page.locator('#date')).toHaveValue('2026-03-08 – 2026-03-09');
+            await expect(page.locator('#date')).toHaveValue('2026-03-08 - 2026-03-09');
             expect(await page.evaluate(() => {
                 const [start, end] = $('#date').datetimepicker('getDate');
 
@@ -447,13 +447,13 @@ test.describe('DateTimePicker ranges', () => {
             test(`handles incomplete typed ranges with keepInvalid=${keepInvalid}`, async ({ page }) => {
                 await setupRange(page, { keepInvalid });
                 await page.evaluate(() => $('#date').datetimepicker('setDate', ['2026-09-15', '2026-09-18']));
-                await page.getByLabel('Date', { exact: true }).fill('2026-09-21 – invalid');
+                await page.getByLabel('Date', { exact: true }).fill('2026-09-21 - invalid');
 
                 expect(await page.evaluate(() => $('#date').datetimepicker('getDate')?.length)).toBe(2);
 
                 await page.getByLabel('Date', { exact: true }).press('Tab');
 
-                await expect(page.locator('#date')).toHaveValue(keepInvalid ? '2026-09-21 – invalid' : '2026-09-15 – 2026-09-18');
+                await expect(page.locator('#date')).toHaveValue(keepInvalid ? '2026-09-21 - invalid' : '2026-09-15 - 2026-09-18');
                 expect(await page.evaluate(() => $('#date').datetimepicker('getDate') === null)).toBe(keepInvalid);
             });
         }
@@ -463,14 +463,14 @@ test.describe('DateTimePicker ranges', () => {
         test('submits the pair and restores the original pair on form reset', async ({ page }) => {
             await page.evaluate(() => $.setHtml(document.body,
                 '<form><label for="date">Date</label>' +
-                '<input id="date" name="stay" value="2026-09-15 – 2026-09-18">' +
+                '<input id="date" name="stay" value="2026-09-15 - 2026-09-18">' +
                 '<button type="reset">Reset</button></form>',
             ));
             await setupRange(page, { inline: true });
             await page.getByRole('button', { name: 'September 21, 2026', exact: true }).click();
             await page.getByRole('button', { name: 'September 23, 2026', exact: true }).click();
 
-            expect(await page.evaluate(() => new FormData($.findOne('form')).get('stay'))).toBe('2026-09-21 – 2026-09-23');
+            expect(await page.evaluate(() => new FormData($.findOne('form')).get('stay'))).toBe('2026-09-21 - 2026-09-23');
 
             await page.getByRole('button', { name: 'September 24, 2026', exact: true }).click();
             await page.evaluate(() => $.addEventOnce('form', 'reset', (event) => event.preventDefault()));
@@ -480,7 +480,7 @@ test.describe('DateTimePicker ranges', () => {
 
             await page.getByRole('button', { name: 'Reset', exact: true }).click();
 
-            await expect(page.locator('#date')).toHaveValue('2026-09-15 – 2026-09-18');
+            await expect(page.locator('#date')).toHaveValue('2026-09-15 - 2026-09-18');
             await expect(page.getByRole('status')).toContainText('Range end: September 18, 2026.');
         });
 
@@ -500,7 +500,7 @@ test.describe('DateTimePicker ranges', () => {
 
                 await page.getByRole('button', { name: 'September 18, 2026', exact: true }).click();
 
-                await expect(page.locator('#date')).toHaveValue('2026-09-16 – 2026-09-18');
+                await expect(page.locator('#date')).toHaveValue('2026-09-16 - 2026-09-18');
             });
         }
     });
@@ -513,7 +513,7 @@ test.describe('DateTimePicker ranges', () => {
             }));
             await page.getByRole('button', { name: 'September 15, 2026', exact: true }).click();
 
-            await expect(page.locator('#date')).toHaveValue('2026-09-21 – 2026-09-23');
+            await expect(page.locator('#date')).toHaveValue('2026-09-21 - 2026-09-23');
             await expect(page.getByRole('button', { name: 'September 21, 2026', exact: true })).toHaveAttribute('aria-pressed', 'true');
             await expect(page.getByRole('status')).toContainText('Range end: September 23, 2026.');
         });
@@ -538,7 +538,7 @@ test.describe('DateTimePicker ranges', () => {
                 picker.setDate(['2026-09-15', '2026-09-18']);
             });
 
-            await expect(page.locator('#date')).toHaveValue('2026-09-21 – 2026-09-23');
+            await expect(page.locator('#date')).toHaveValue('2026-09-21 - 2026-09-23');
         });
 
         test('allows disposal from a range validation callback', async ({ page }) => {

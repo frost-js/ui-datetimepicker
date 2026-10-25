@@ -177,7 +177,7 @@ const picker = DateTimePicker.init(document.querySelector('#stay'), {
 
 picker.setDate(['2026-11-01', '2026-11-05']);
 const [start, end] = picker.getDate();
-// Input: 2026-11-01 – 2026-11-05
+// Input: 2026-11-01 - 2026-11-05
 ```
 
 The first selection starts a draft; hovering another selectable day previews the range, and the second selection commits the pair. Reversed endpoints are sorted, and selecting the same day twice creates a one-day range. Selecting again starts a replacement. The input and `getDate()` retain the committed value until the pair is complete. Popup dismissal discards an incomplete draft; Escape also cancels an inline draft. In a modal, Set commits the completed pair and is disabled while an endpoint is pending.
@@ -186,7 +186,7 @@ The first selection starts a draft; hovering another selectable day previews the
 
 Ranges require a complete date-only format and cannot be combined with `multiDate`. `useCurrent` does not create a range; `defaultDate` controls the initial view. Month/year panels remain available for navigation.
 
-`rangeSeparator` defaults to `' – '` and must be a nonempty string that does not occur in a formatted endpoint. Typed input must contain two dates separated by that exact string; each date accepts `format` or `altFormats`. Invalid text follows `keepInvalid`: restore the previous value when false, or retain the text and clear the internal range on normalization when true.
+`rangeSeparator` defaults to `' - '` and must be a nonempty string that does not occur in a formatted endpoint. Typed input must contain two dates separated by that exact string; each date accepts `format` or `altFormats`. Invalid text follows `keepInvalid`: restore the previous value when false, or retain the text and clear the internal range on normalization when true.
 
 Bounds and validation callbacks apply to both endpoints at day precision. Disabled interior days may be crossed: a Friday-to-Monday range can include a disabled weekend. `refresh()` and bound setters discard range drafts and revalidate the committed pair, clearing it if either endpoint is invalid. Programmatic `setDate()` and `clear()` commit immediately, including while a modal is open.
 
@@ -274,7 +274,7 @@ Resolved `instance.options` are shallow-frozen.
 | `placement` | `'auto' \| 'top' \| 'bottom' \| 'start' \| 'end'` | `'bottom'` | UI Popper placement: `'top'`, `'bottom'`, `'start'`, `'end'`, or `'auto'`; logical sides follow RTL. |
 | `position` | `'start' \| 'center' \| 'end'` | `'start'` | Alignment along the popup edge: `'start'`, `'center'`, or `'end'`. |
 | `range` | `boolean` | `false` | Inclusive date-only pair; excludes multi-date and time selection. |
-| `rangeSeparator` | `string` | `' – '` | Literal input/output separator between range endpoints. |
+| `rangeSeparator` | `string` | `' - '` | Literal input/output separator between range endpoints. |
 | `renderDay` | `((date: DateTime, node: HTMLElement) => void) \| null` | `null` | `(date, node) => void` day-cell customization. |
 | `renderMonth` | `((date: DateTime, node: HTMLElement) => void) \| null` | `null` | `(date, node) => void` month-cell customization. |
 | `renderYear` | `((date: DateTime, node: HTMLElement) => void) \| null` | `null` | `(date, node) => void` year-cell customization. |

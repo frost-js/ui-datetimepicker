@@ -492,7 +492,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 	* @property {boolean} [multiDate=false] Whether to allow multiple dates; excludes time formats.
 	* @property {string} [multiDateSeparator=','] The separator between formatted dates.
 	* @property {boolean} [range=false] Whether to select an inclusive pair of calendar dates.
-	* @property {string} [rangeSeparator=' – '] The separator between formatted endpoints.
+	* @property {string} [rangeSeparator=' - '] The separator between formatted endpoints.
 	* @property {number} [minuteStepping=1] The minute interval, an integer from 1 to 60.
 	* @property {boolean} [useCurrent=false] Whether an empty single-date input starts at the current time.
 	* @property {boolean} [keepOpen=false] Whether to keep the calendar open after selection.
@@ -590,7 +590,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			multiDate: false,
 			multiDateSeparator: ",",
 			range: false,
-			rangeSeparator: " – ",
+			rangeSeparator: " - ",
 			minuteStepping: 1,
 			useCurrent: false,
 			keepOpen: false,
