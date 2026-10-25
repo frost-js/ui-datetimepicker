@@ -10,9 +10,7 @@ export async function setupClock(page) {
 
 /**
  * Creates the labeled input and outside control for picker interaction tests.
- * @param {object} fixtures The test fixtures.
- * @param {Page} fixtures.page The test page.
- * @returns {Promise<void>} Resolves when the input markup is ready.
+ * @param {{page: Page}} fixtures The Playwright fixtures.
  */
 export async function setupInput({ page }) {
     await page.evaluate(() => {
