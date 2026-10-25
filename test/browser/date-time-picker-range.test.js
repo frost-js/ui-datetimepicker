@@ -36,26 +36,28 @@ test.describe('DateTimePicker ranges', () => {
             await expect(page.locator('#date')).toHaveValue('01/11/2026 - 05/11/2026');
         });
 
-        for (const options of [
-            { multiDate: true },
-            { format: 'yyyy-MM-dd HH:mm' },
-            { format: 'yyyy-MM' },
-            { format: 'yyyy' },
-            { rangeSeparator: '' },
-            { rangeSeparator: null },
-        ]) {
-            test(`rejects incompatible options ${JSON.stringify(options)}`, async ({ page }) => {
-                expect(await page.evaluate((options) => {
-                    try {
-                        UI.DateTimePicker.init($.findOne('#date'), { range: true, format: 'yyyy-MM-dd', ...options });
-                    } catch (error) {
-                        return error instanceof Error;
-                    }
-                }, options)).toBe(true);
-                expect(await page.evaluate(() => $.hasData('#date', UI.DateTimePicker.DATA_KEY))).toBe(false);
-                await expect(page.locator('.datetimepicker, .modal')).toHaveCount(0);
-            });
-        }
+        test.describe('failed initialization', () => {
+            for (const options of [
+                { multiDate: true },
+                { format: 'yyyy-MM-dd HH:mm' },
+                { format: 'yyyy-MM' },
+                { format: 'yyyy' },
+                { rangeSeparator: '' },
+                { rangeSeparator: null },
+            ]) {
+                test(`rejects incompatible options ${JSON.stringify(options)}`, async ({ page }) => {
+                    expect(await page.evaluate((options) => {
+                        try {
+                            UI.DateTimePicker.init($.findOne('#date'), { range: true, format: 'yyyy-MM-dd', ...options });
+                        } catch (error) {
+                            return error instanceof Error;
+                        }
+                    }, options)).toBe(true);
+                    expect(await page.evaluate(() => $.hasData('#date', UI.DateTimePicker.DATA_KEY))).toBe(false);
+                    await expect(page.locator('.datetimepicker, .modal')).toHaveCount(0);
+                });
+            }
+        });
     });
 
     test.describe('#setDate', () => {

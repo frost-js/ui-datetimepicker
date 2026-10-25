@@ -123,7 +123,7 @@ test.describe('DateTimePicker modal', () => {
         });
     });
 
-    test.describe('focus and keyboard', () => {
+    test.describe('keyboard and focus', () => {
         test('opens from the keyboard and returns focus', async ({ page }) => {
             await page.evaluate(() => UI.DateTimePicker.init($.findOne('#date'), { format: 'yyyy-MM-dd', modal: true }));
 
