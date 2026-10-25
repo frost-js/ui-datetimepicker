@@ -2,7 +2,7 @@ import $ from "@fr0st/query";
 import { BaseComponent, Modal, Popper, generateId, getClickTarget, initComponent, waitForTransition } from "@fr0st/ui";
 import DateTime from "@fr0st/datetime";
 
-//#region src/js/comparisons.js
+// src/js/comparisons.js
 /** @import DateTime from '@fr0st/datetime'; */
 /**
 * Checks whether a date is after another date (day).
@@ -113,8 +113,7 @@ function isSameYear(a, b) {
 	return a.getYear() === b.getYear();
 }
 
-//#endregion
-//#region src/js/formats.js
+// src/js/formats.js
 var dayPeriods = {};
 var defaultFormats = {};
 var defaultDateFormats = {};
@@ -201,8 +200,7 @@ function formatFromParts(locale, options, hasDayPeriod) {
 	}).join("");
 }
 
-//#endregion
-//#region src/js/helpers.js
+// src/js/helpers.js
 /** @import DateTime from '@fr0st/datetime'; */
 /**
 * Adjusts a date by a signed number of units.
@@ -428,8 +426,7 @@ function renderTimeSeparator(classes, options) {
 	$.append(options.downTr, separatorDownTd);
 }
 
-//#endregion
-//#region src/js/date-time-picker.js
+// src/js/date-time-picker.js
 /** @import { Placement, Position } from '@fr0st/ui/src/js/popper/popper.js'; */
 var document$1 = $.getContext();
 var window = $.getWindow();
@@ -2878,8 +2875,7 @@ var DateTimePicker = class extends BaseComponent {
 	}
 };
 
-//#endregion
-//#region src/js/index.js
+// src/js/index.js
 var document = $.getContext();
 initComponent("datetimepicker", DateTimePicker);
 $.addEvent(document, "mousedown.ui.datetimepicker", (event) => {
@@ -2911,6 +2907,5 @@ $.addEvent(document, "keydown.ui.datetimepicker", (event) => {
 }, { capture: true });
 var js_default = DateTimePicker;
 
-//#endregion
 export { js_default as default };
 //# sourceMappingURL=frost-ui-datetimepicker.esm.js.map

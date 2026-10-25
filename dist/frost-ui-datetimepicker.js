@@ -1,10 +1,10 @@
 (function(global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ?  factory(exports, require('@fr0st/query'), require('@fr0st/ui'), require('@fr0st/datetime')) :
-  typeof define === 'function' && define.amd ? define(['exports', '@fr0st/query', '@fr0st/ui', '@fr0st/datetime'], factory) :
+  typeof exports === 'object' && typeof module !== 'undefined' ?  factory(exports, require("@fr0st/query"), require("@fr0st/ui"), require("@fr0st/datetime")) :
+  typeof define === 'function' && define.amd ? define(['exports', "@fr0st/query", "@fr0st/ui", "@fr0st/datetime"], factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.UI = global.UI || {}), global.fQuery,global.UI,global.DateTime));
 })(this, function(exports, _fr0st_query, _fr0st_ui, _fr0st_datetime) {
 Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-//#region \0rolldown/runtime.js
+// \0rolldown/runtime.js
 	var __create = Object.create;
 	var __defProp = Object.defineProperty;
 	var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -30,11 +30,10 @@ Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 		enumerable: true
 	}) : target, mod));
 
-//#endregion
 _fr0st_query = __toESM(_fr0st_query, 1);
 _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 
-//#region src/js/comparisons.js
+// src/js/comparisons.js
 /** @import DateTime from '@fr0st/datetime'; */
 	/**
 	* Checks whether a date is after another date (day).
@@ -145,8 +144,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		return a.getYear() === b.getYear();
 	}
 
-//#endregion
-//#region src/js/formats.js
+// src/js/formats.js
 	var dayPeriods = {};
 	var defaultFormats = {};
 	var defaultDateFormats = {};
@@ -233,8 +231,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		}).join("");
 	}
 
-//#endregion
-//#region src/js/helpers.js
+// src/js/helpers.js
 /** @import DateTime from '@fr0st/datetime'; */
 	/**
 	* Adjusts a date by a signed number of units.
@@ -460,8 +457,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		_fr0st_query.default.append(options.downTr, separatorDownTd);
 	}
 
-//#endregion
-//#region src/js/date-time-picker.js
+// src/js/date-time-picker.js
 /** @import { Placement, Position } from '@fr0st/ui/src/js/popper/popper.js'; */
 	var document$1 = _fr0st_query.default.getContext();
 	var window = _fr0st_query.default.getWindow();
@@ -2910,8 +2906,7 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 		}
 	};
 
-//#endregion
-//#region src/js/index.js
+// src/js/index.js
 	var document = _fr0st_query.default.getContext();
 	(0, _fr0st_ui.initComponent)("datetimepicker", DateTimePicker);
 	_fr0st_query.default.addEvent(document, "mousedown.ui.datetimepicker", (event) => {
@@ -2943,7 +2938,6 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 	}, { capture: true });
 	var js_default = DateTimePicker;
 
-//#endregion
 exports.DateTimePicker = js_default;
 });
 //# sourceMappingURL=frost-ui-datetimepicker.js.map
