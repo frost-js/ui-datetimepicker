@@ -438,13 +438,12 @@ export default class DateTimePicker extends BaseComponent {
             window.clearTimeout(timer);
         }
         this.#resetTimers.clear();
-        this.#observer?.disconnect();
 
+        this.#observer?.disconnect();
         this.#popper?.dispose();
 
         if (this.#modal) {
             $.getData(this.#modal, Modal.DATA_KEY)?.dispose();
-            $.remove(this.#modal);
         }
 
         // fQuery cleans the menu's descendants, but a panel detached during a
@@ -456,6 +455,7 @@ export default class DateTimePicker extends BaseComponent {
         }
 
         $.remove(this.#menuNode);
+        $.remove(this.#modal);
 
         this.#releaseDisplay?.();
 
@@ -467,38 +467,40 @@ export default class DateTimePicker extends BaseComponent {
             }
         }
 
-        this.#open = false;
         this.#date = null;
         this.#dates = null;
+        this.#dateOptions = null;
+        this.#defaultDate = null;
+        this.#maxDate = null;
+        this.#minDate = null;
+        this.#open = false;
         this.#originalDate = null;
         this.#range = null;
         this.#rangeStart = null;
-        this.#rangeStatus = null;
-        this.#minDate = null;
-        this.#maxDate = null;
         this.#viewDate = null;
-        this.#defaultDate = null;
-        this.#dateOptions = null;
-        this.#menuNode = null;
-        this.#modal = null;
-        this.#observer = null;
-        this.#popper = null;
+
+        this.#closeTable = null;
         this.#container = null;
         this.#dateContainer = null;
         this.#dateItems = [];
         this.#focusedDateItem = null;
         this.#focusedTimeItem = null;
+        this.#form = null;
+        this.#menuNode = null;
+        this.#modal = null;
+        this.#observer = null;
+        this.#popper = null;
+        this.#rangeStatus = null;
+        this.#releaseDisplay = null;
+        this.#setBtn = null;
+        this.#showDateTable = null;
+        this.#showTimeTable = null;
         this.#timeContainer = null;
         this.#timeItems = [];
-        this.#showTimeTable = null;
-        this.#showDateTable = null;
-        this.#closeTable = null;
         this.#toolbarDate = null;
         this.#toolbarTime = null;
         this.#toolbarYear = null;
-        this.#setBtn = null;
-        this.#form = null;
-        this.#releaseDisplay = null;
+
         super.dispose();
     }
 
@@ -1161,6 +1163,7 @@ export default class DateTimePicker extends BaseComponent {
                             this.#refresh();
                         }
 
+                        // Selecting an endpoint advances the ID once; callbacks may advance it again.
                         if (!this.node || id + 1 !== this.#selectionId || (!this.options.inline && !this.#open)) {
                             return;
                         }
@@ -2194,7 +2197,12 @@ export default class DateTimePicker extends BaseComponent {
 
             valid = Boolean(range);
             this.#rangeStart = null;
-            this.#range = valid || !value || (normalize && options.keepInvalid) ? range : committed;
+
+            if (valid || !value || (normalize && options.keepInvalid)) {
+                this.#range = range;
+            } else {
+                this.#range = committed;
+            }
         } else if (options.multiDate) {
             const parsed = value.split(options.multiDateSeparator)
                 .map((part) => this.#makeDate(part));
@@ -2260,7 +2268,10 @@ export default class DateTimePicker extends BaseComponent {
                 if (this.#rangeStart) {
                     status = `${lang.rangeStart}: ${this.#rangeStart.format(format)}. ${lang.selectRangeEnd}`;
                 } else if (this.#range) {
-                    status = `${lang.rangeStart}: ${this.#range[0].format(format)}. ${lang.rangeEnd}: ${this.#range[1].format(format)}. ${lang.selectRangeStart}`;
+                    const start = this.#range[0].format(format);
+                    const end = this.#range[1].format(format);
+
+                    status = `${lang.rangeStart}: ${start}. ${lang.rangeEnd}: ${end}. ${lang.selectRangeStart}`;
                 }
 
                 if (this.#rangeStatus && $.getText(this.#rangeStatus) !== status) {
@@ -2269,9 +2280,13 @@ export default class DateTimePicker extends BaseComponent {
 
                 if (this.options.showToolbar) {
                     const dates = this.#rangeStart ? [this.#rangeStart] : this.#range;
+                    const value = dates ?
+                        dates.map((date) => date.format(this.#format))
+                            .join(this.options.rangeSeparator) :
+                        '- -';
 
                     $.setText(this.#toolbarYear, '');
-                    $.setText(this.#toolbarDate, dates ? dates.map((date) => date.format(this.#format)).join(this.options.rangeSeparator) : '- -');
+                    $.setText(this.#toolbarDate, value);
                 }
 
                 $.setProperty(this.#setBtn, 'disabled', !this.#isEditable() || Boolean(this.#rangeStart));
@@ -3849,9 +3864,10 @@ export default class DateTimePicker extends BaseComponent {
         let value;
 
         if (this.options.range) {
-            value = this.#range ? this.#range
-                .map((date) => date.format(this.#format))
-                .join(this.options.rangeSeparator) : '';
+            value = this.#range ?
+                this.#range.map((date) => date.format(this.#format))
+                    .join(this.options.rangeSeparator) :
+                '';
         } else if (this.options.multiDate) {
             value = this.#dates
                 .map((date) => date.format(this.#format))

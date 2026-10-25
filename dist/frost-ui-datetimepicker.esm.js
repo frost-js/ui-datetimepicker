@@ -783,47 +783,45 @@ var DateTimePicker = class extends BaseComponent {
 		this.#resetTimers.clear();
 		this.#observer?.disconnect();
 		this.#popper?.dispose();
-		if (this.#modal) {
-			$.getData(this.#modal, Modal.DATA_KEY)?.dispose();
-			$.remove(this.#modal);
-		}
+		if (this.#modal) $.getData(this.#modal, Modal.DATA_KEY)?.dispose();
 		for (const container of [this.#dateContainer, this.#timeContainer]) if (container && !$.hasDescendent(this.#menuNode, container)) $.remove(container);
 		$.remove(this.#menuNode);
+		$.remove(this.#modal);
 		this.#releaseDisplay?.();
 		for (const [name, value] of this.#attributes) if (value === null) $.removeAttribute(this.node, name);
 		else $.setAttribute(this.node, { [name]: value });
-		this.#open = false;
 		this.#date = null;
 		this.#dates = null;
+		this.#dateOptions = null;
+		this.#defaultDate = null;
+		this.#maxDate = null;
+		this.#minDate = null;
+		this.#open = false;
 		this.#originalDate = null;
 		this.#range = null;
 		this.#rangeStart = null;
-		this.#rangeStatus = null;
-		this.#minDate = null;
-		this.#maxDate = null;
 		this.#viewDate = null;
-		this.#defaultDate = null;
-		this.#dateOptions = null;
-		this.#menuNode = null;
-		this.#modal = null;
-		this.#observer = null;
-		this.#popper = null;
+		this.#closeTable = null;
 		this.#container = null;
 		this.#dateContainer = null;
 		this.#dateItems = [];
 		this.#focusedDateItem = null;
 		this.#focusedTimeItem = null;
+		this.#form = null;
+		this.#menuNode = null;
+		this.#modal = null;
+		this.#observer = null;
+		this.#popper = null;
+		this.#rangeStatus = null;
+		this.#releaseDisplay = null;
+		this.#setBtn = null;
+		this.#showDateTable = null;
+		this.#showTimeTable = null;
 		this.#timeContainer = null;
 		this.#timeItems = [];
-		this.#showTimeTable = null;
-		this.#showDateTable = null;
-		this.#closeTable = null;
 		this.#toolbarDate = null;
 		this.#toolbarTime = null;
 		this.#toolbarYear = null;
-		this.#setBtn = null;
-		this.#form = null;
-		this.#releaseDisplay = null;
 		super.dispose();
 	}
 	/**
@@ -1841,7 +1839,8 @@ var DateTimePicker = class extends BaseComponent {
 			if (!this.node || id !== this.#selectionId) return;
 			valid = Boolean(range);
 			this.#rangeStart = null;
-			this.#range = valid || !value || normalize && options.keepInvalid ? range : committed;
+			if (valid || !value || normalize && options.keepInvalid) this.#range = range;
+			else this.#range = committed;
 		} else if (options.multiDate) {
 			const parsed = value.split(options.multiDateSeparator).map((part) => this.#makeDate(part));
 			const dates = this.#normalizeDates(parsed);
@@ -1876,12 +1875,17 @@ var DateTimePicker = class extends BaseComponent {
 				const format = this.options.ariaFormat || this.#format;
 				let status = lang.selectRangeStart;
 				if (this.#rangeStart) status = `${lang.rangeStart}: ${this.#rangeStart.format(format)}. ${lang.selectRangeEnd}`;
-				else if (this.#range) status = `${lang.rangeStart}: ${this.#range[0].format(format)}. ${lang.rangeEnd}: ${this.#range[1].format(format)}. ${lang.selectRangeStart}`;
+				else if (this.#range) {
+					const start = this.#range[0].format(format);
+					const end = this.#range[1].format(format);
+					status = `${lang.rangeStart}: ${start}. ${lang.rangeEnd}: ${end}. ${lang.selectRangeStart}`;
+				}
 				if (this.#rangeStatus && $.getText(this.#rangeStatus) !== status) $.setText(this.#rangeStatus, status);
 				if (this.options.showToolbar) {
 					const dates = this.#rangeStart ? [this.#rangeStart] : this.#range;
+					const value = dates ? dates.map((date) => date.format(this.#format)).join(this.options.rangeSeparator) : "- -";
 					$.setText(this.#toolbarYear, "");
-					$.setText(this.#toolbarDate, dates ? dates.map((date) => date.format(this.#format)).join(this.options.rangeSeparator) : "- -");
+					$.setText(this.#toolbarDate, value);
 				}
 				$.setProperty(this.#setBtn, "disabled", !this.#isEditable() || Boolean(this.#rangeStart));
 			} else if (this.options.showToolbar) {

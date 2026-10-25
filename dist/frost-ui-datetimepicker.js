@@ -815,47 +815,45 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 			this.#resetTimers.clear();
 			this.#observer?.disconnect();
 			this.#popper?.dispose();
-			if (this.#modal) {
-				_fr0st_query.default.getData(this.#modal, _fr0st_ui.Modal.DATA_KEY)?.dispose();
-				_fr0st_query.default.remove(this.#modal);
-			}
+			if (this.#modal) _fr0st_query.default.getData(this.#modal, _fr0st_ui.Modal.DATA_KEY)?.dispose();
 			for (const container of [this.#dateContainer, this.#timeContainer]) if (container && !_fr0st_query.default.hasDescendent(this.#menuNode, container)) _fr0st_query.default.remove(container);
 			_fr0st_query.default.remove(this.#menuNode);
+			_fr0st_query.default.remove(this.#modal);
 			this.#releaseDisplay?.();
 			for (const [name, value] of this.#attributes) if (value === null) _fr0st_query.default.removeAttribute(this.node, name);
 			else _fr0st_query.default.setAttribute(this.node, { [name]: value });
-			this.#open = false;
 			this.#date = null;
 			this.#dates = null;
+			this.#dateOptions = null;
+			this.#defaultDate = null;
+			this.#maxDate = null;
+			this.#minDate = null;
+			this.#open = false;
 			this.#originalDate = null;
 			this.#range = null;
 			this.#rangeStart = null;
-			this.#rangeStatus = null;
-			this.#minDate = null;
-			this.#maxDate = null;
 			this.#viewDate = null;
-			this.#defaultDate = null;
-			this.#dateOptions = null;
-			this.#menuNode = null;
-			this.#modal = null;
-			this.#observer = null;
-			this.#popper = null;
+			this.#closeTable = null;
 			this.#container = null;
 			this.#dateContainer = null;
 			this.#dateItems = [];
 			this.#focusedDateItem = null;
 			this.#focusedTimeItem = null;
+			this.#form = null;
+			this.#menuNode = null;
+			this.#modal = null;
+			this.#observer = null;
+			this.#popper = null;
+			this.#rangeStatus = null;
+			this.#releaseDisplay = null;
+			this.#setBtn = null;
+			this.#showDateTable = null;
+			this.#showTimeTable = null;
 			this.#timeContainer = null;
 			this.#timeItems = [];
-			this.#showTimeTable = null;
-			this.#showDateTable = null;
-			this.#closeTable = null;
 			this.#toolbarDate = null;
 			this.#toolbarTime = null;
 			this.#toolbarYear = null;
-			this.#setBtn = null;
-			this.#form = null;
-			this.#releaseDisplay = null;
 			super.dispose();
 		}
 		/**
@@ -1873,7 +1871,8 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 				if (!this.node || id !== this.#selectionId) return;
 				valid = Boolean(range);
 				this.#rangeStart = null;
-				this.#range = valid || !value || normalize && options.keepInvalid ? range : committed;
+				if (valid || !value || normalize && options.keepInvalid) this.#range = range;
+				else this.#range = committed;
 			} else if (options.multiDate) {
 				const parsed = value.split(options.multiDateSeparator).map((part) => this.#makeDate(part));
 				const dates = this.#normalizeDates(parsed);
@@ -1908,12 +1907,17 @@ _fr0st_datetime = __toESM(_fr0st_datetime, 1);
 					const format = this.options.ariaFormat || this.#format;
 					let status = lang.selectRangeStart;
 					if (this.#rangeStart) status = `${lang.rangeStart}: ${this.#rangeStart.format(format)}. ${lang.selectRangeEnd}`;
-					else if (this.#range) status = `${lang.rangeStart}: ${this.#range[0].format(format)}. ${lang.rangeEnd}: ${this.#range[1].format(format)}. ${lang.selectRangeStart}`;
+					else if (this.#range) {
+						const start = this.#range[0].format(format);
+						const end = this.#range[1].format(format);
+						status = `${lang.rangeStart}: ${start}. ${lang.rangeEnd}: ${end}. ${lang.selectRangeStart}`;
+					}
 					if (this.#rangeStatus && _fr0st_query.default.getText(this.#rangeStatus) !== status) _fr0st_query.default.setText(this.#rangeStatus, status);
 					if (this.options.showToolbar) {
 						const dates = this.#rangeStart ? [this.#rangeStart] : this.#range;
+						const value = dates ? dates.map((date) => date.format(this.#format)).join(this.options.rangeSeparator) : "- -";
 						_fr0st_query.default.setText(this.#toolbarYear, "");
-						_fr0st_query.default.setText(this.#toolbarDate, dates ? dates.map((date) => date.format(this.#format)).join(this.options.rangeSeparator) : "- -");
+						_fr0st_query.default.setText(this.#toolbarDate, value);
 					}
 					_fr0st_query.default.setProperty(this.#setBtn, "disabled", !this.#isEditable() || Boolean(this.#rangeStart));
 				} else if (this.options.showToolbar) {
